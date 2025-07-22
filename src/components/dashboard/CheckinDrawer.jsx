@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import { gsap } from "gsap";
-import { Button } from "@/components/ui/button";
+import { Button } from "../ui/Button";
 import {
   Drawer,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
   DrawerFooter,
-} from "@/components/ui/drawer";
-import { Textarea } from "@/components/ui/textarea";
+} from "../ui/drawer";
+import { Textarea } from "../ui/textarea";
 import { X, Sparkles, Send } from "lucide-react";
 
 const CheckinDrawer = ({

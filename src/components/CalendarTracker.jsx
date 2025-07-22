@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "./ui/dialog";
 
 const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0 }) => {
   const { user } = useAuth();

@@ -34,19 +34,19 @@ import {
 import { notificationService } from "../services/notifications";
 import { openaiService } from "../services/openai";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "./ui/Button";
+import { Badge } from "./ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { Label } from "@/components/ui/label";
+} from "./ui/popover";
+import { Textarea } from "./ui/textarea";
+import { Progress } from "./ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Separator } from "./ui/separator";
+import { Label } from "./ui/label";
 import {
   Drawer,
   DrawerContent,
@@ -54,7 +54,7 @@ import {
   DrawerTitle,
   DrawerFooter,
   DrawerTrigger,
-} from "@/components/ui/drawer";
+} from "./ui/drawer";
 import {
   Smile,
   TrendingUp,
