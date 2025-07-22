@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { useTheme } from "../contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "./ui/Card";
 import { X, Sparkles, Heart, Brain } from "lucide-react";
 import { openaiService } from "../services/openai";
 

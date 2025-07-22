@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useMemo, useState } from "react";
 import { gsap } from "gsap";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "./ui/Card";
 import { Calendar, ChevronLeft, ChevronRight, Flame, CheckCircle } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { getUserCheckins } from "../services/database";
