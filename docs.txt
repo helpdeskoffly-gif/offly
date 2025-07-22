@@ -1,0 +1,320 @@
+Table: public.achievement_definitions
+
+
+   * Purpose: Stores the definitions of all possible
+     achievements in the application.
+   * Columns:
+       * id (UUID, Primary Key): Unique identifier for
+         the achievement definition.
+       * achievement_id (TEXT, Unique): A unique,
+         human-readable identifier for the achievement
+         (e.g., "first_checkin", "seven_day_streak").
+       * achievement_name (TEXT): Display name of the
+         achievement (e.g., "First Check-in", "Seven Day
+         Streak").
+       * achievement_description (TEXT, Nullable): A
+         brief description of how to unlock the
+         achievement.
+       * achievement_icon (TEXT, Nullable): An icon
+         associated with the achievement.
+       * achievement_category (TEXT, Nullable): Category
+         the achievement belongs to (e.g., "Check-ins",
+         "Streaks", "Activities").
+       * target (INTEGER, Nullable, Default: 1): The
+         target value to reach for this achievement
+         (e.g., 7 for a seven-day streak).
+       * created_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Timestamp when the achievement
+         definition was created.
+
+  Table: public.achievements
+
+
+   * Purpose: Tracks the progress and unlocked status of
+     achievements for each user.
+   * Columns:
+       * id (UUID, Primary Key): Unique identifier for
+         the user's achievement record.
+       * user_id (UUID, Foreign Key to public.users.id):
+         The ID of the user who owns this achievement
+         record.
+       * achievement_id (TEXT): References
+         public.achievement_definitions.achievement_id.
+       * achievement_name (TEXT): Display name of the
+         achievement (copied from definition).
+       * achievement_description (TEXT, Nullable):
+         Description of the achievement (copied from
+         definition).
+       * achievement_icon (TEXT, Nullable): Icon for the
+         achievement (copied from definition).
+       * achievement_category (TEXT, Nullable): Category
+         of the achievement (copied from definition).
+       * unlocked_at (TIMESTAMP WITH TIME ZONE,
+         Nullable, Default: now()): Timestamp when the
+         achievement was unlocked by the user.
+       * progress (INTEGER, Default: 0): Current
+         progress towards unlocking the achievement.
+       * target (INTEGER, Default: 1): The target value
+         for this achievement (copied from definition).
+       * is_unlocked (BOOLEAN, Default: false): Flag
+         indicating if the achievement is unlocked.
+       * created_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Timestamp when this record was created.
+
+       * updated_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Last update timestamp (managed by
+         trigger).
+
+  Table: public.activities
+
+
+
+   * Purpose: Stores user-defined activities or tasks.
+   * Columns:
+       * id (UUID, Primary Key): Unique identifier for
+         the activity.
+       * user_id (UUID, Foreign Key to public.users.id):
+         The ID of the user who owns this activity.
+       * title (TEXT): Title of the activity.
+       * description (TEXT, Nullable): Detailed
+         description of the activity.
+       * status (TEXT, Default: 'pending'): Current
+         status of the activity ('pending', 'completed',
+         'cancelled').
+       * priority (INTEGER, Default: 1): Priority level
+         (1-3).
+       * due_date (DATE, Nullable): Optional due date
+         for the activity.
+       * completed_at (TIMESTAMP WITH TIME ZONE,
+         Nullable): Timestamp when the activity was
+         completed.
+       * created_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Timestamp when the activity was
+         created.
+       * updated_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Last update timestamp (managed by
+         trigger).
+
+  Table: public.anti_todo_items
+
+
+
+   * Purpose: Stores individual items within an
+     anti-todo list.
+   * Columns:
+       * id (UUID, Primary Key): Unique identifier for
+         the anti-todo item.
+       * list_id (UUID, Nullable, Foreign Key to
+         public.anti_todo_lists.id): The ID of the
+         anti-todo list this item belongs to.
+       * user_id (UUID, Nullable, Foreign Key to
+         public.users.id): The ID of the user who owns
+         this item.
+       * content (TEXT): The description of the
+         anti-todo item.
+       * is_completed (BOOLEAN, Default: false): Flag
+         indicating if the item is completed.
+       * completed_at (TIMESTAMP WITH TIME ZONE,
+         Nullable): Timestamp when the item was
+         completed.
+       * created_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Timestamp when the item was created.
+       * updated_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Last update timestamp (managed by
+         trigger).
+       * status (TEXT, Default: 'not started'): Current
+         status of the anti-todo item ('not started', 'ongoing', 'completed').
+       * source (TEXT, Default: 'user'): Indicates if the
+         item was generated by 'user' or 'ai'.
+
+  Table: public.anti_todo_lists
+
+
+   * Purpose: Stores user-created anti-todo lists.
+   * Columns:
+       * id (UUID, Primary Key): Unique identifier for
+         the anti-todo list.
+       * user_id (UUID, Nullable, Foreign Key to
+         public.users.id): The ID of the user who owns
+         this list.
+       * title (TEXT): Title of the anti-todo list.
+       * description (TEXT, Nullable): Description of
+         the list.
+       * category (TEXT, Nullable): Category of the
+         list.
+       * is_archived (BOOLEAN, Default: false): Flag
+         indicating if the list is archived.
+       * created_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Timestamp when the list was created.
+       * updated_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Last update timestamp (managed by
+         trigger).
+
+  Table: public.checkins
+
+
+   * Purpose: Stores daily mood check-in data for users.
+   * Columns:
+       * id (UUID, Primary Key): Unique identifier for
+         the check-in.
+       * user_id (UUID, Nullable, Foreign Key to
+         public.users.id): The ID of the user who made
+         the check-in.
+       * mood_score (INTEGER): A numerical score
+         representing the user's mood (1-10).
+       * mood_text (TEXT, Nullable): Textual description
+         of the user's mood.
+       * mood_emoji (TEXT, Default: ''): Emoji
+         representing the user's mood.
+       * hashtags (TEXT, Nullable): Hashtags associated
+         with the check-in.
+       * ai_score (REAL, Default: 0): AI-generated score
+         for the check-in.
+       * sentiment_score (REAL, Default: 0): Sentiment
+         analysis score.
+       * checkin_date (DATE, Default: CURRENT_DATE):
+         Date of the check-in.
+       * checkin_time (TIME WITHOUT TIME ZONE, Default:
+         CURRENT_TIME): Time of the check-in.
+       * created_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Timestamp when the check-in was
+         created.
+       * updated_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Last update timestamp (managed by
+         trigger).
+
+  Table: public.landing_page_views
+
+
+
+   * Purpose: Logs views on the landing page for
+     analytics.
+   * Columns:
+       * id (UUID, Primary Key): Unique identifier for
+         the page view.
+       * page_path (TEXT, Nullable): The path of the
+         page viewed.
+       * user_agent (TEXT, Nullable): User agent string
+         of the client.
+       * referrer (TEXT, Nullable): Referrer URL.
+       * ip_address (INET, Nullable): IP address of the
+         client.
+       * country (TEXT, Nullable): Country derived from
+         the IP address.
+       * created_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Timestamp of the page view.
+
+  Table: public.notifications
+
+
+   * Purpose: Stores notifications for users.
+   * Columns:
+       * id (UUID, Primary Key): Unique identifier for
+         the notification.
+       * user_id (UUID, Nullable, Foreign Key to
+         public.users.id): The ID of the user receiving
+         the notification.
+       * title (TEXT): Title of the notification.
+       * message (TEXT): Content of the notification.
+       * type (TEXT, Default: 'info'): Type of
+         notification ('info', 'success', 'warning',
+         'error', etc.).
+       * priority (TEXT, Default: 'normal'): Priority of
+         the notification ('low', 'normal', 'high').
+       * read (BOOLEAN, Default: false): Flag indicating
+         if the notification has been read.
+       * dismissed (BOOLEAN, Default: false): Flag
+         indicating if the notification has been
+         dismissed.
+       * data (JSONB, Nullable): Additional JSON data
+         related to the notification.
+       * expires_at (TIMESTAMP WITH TIME ZONE,
+         Nullable): Timestamp when the notification
+         expires.
+       * created_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Timestamp when the notification was
+         created.
+       * updated_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Last update timestamp (managed by
+         trigger).
+
+  Table: public.user_analytics
+
+
+   * Purpose: Stores aggregated analytics data for each
+     user.
+   * Columns:
+       * id (UUID, Primary Key): Unique identifier for
+         the analytics record.
+       * user_id (UUID, Unique, Foreign Key to
+         public.users.id): The ID of the user this
+         analytics record belongs to.
+       * username (TEXT, Nullable): User's username
+         (denormalized for convenience).
+       * daily_checkin_counter (INTEGER, Default: 0):
+         Counter for daily check-ins.
+       * total_checkins (INTEGER, Default: 0): Total
+         number of check-ins.
+       * current_ai_score (REAL, Default: 0): Current
+         AI-generated mood score.
+       * today_average_sentiment (REAL, Default: 0):
+         Average sentiment score for today.
+       * overall_average_sentiment (REAL, Default: 0):
+         Overall average sentiment score.
+       * average_mood_score (REAL, Default: 0): Overall
+         average mood score.
+       * current_streak (INTEGER, Default: 0): Current
+         check-in streak.
+       * last_checkin_date (DATE, Nullable): Date of the
+         last check-in.
+       * weekly_unique_checkin_days (INTEGER, Default: 0):
+         Number of unique days with check-ins in the last 7 days.
+       * created_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Timestamp when the record was created.
+       * updated_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Last update timestamp (managed by
+         trigger).
+
+  Table: public.users
+
+
+   * Purpose: Stores public user profile information.
+   * Columns:
+       * id (UUID, Primary Key, Foreign Key to
+         auth.users.id): Unique identifier for the user
+         (matches auth.users.id).
+       * username (TEXT, Nullable, Unique): User's
+         chosen username.
+       * email (TEXT, Nullable): User's email address.
+       * full_name (TEXT, Nullable): User's full name.
+       * avatar_url (TEXT, Nullable): URL to the user's
+         avatar image.
+       * created_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Timestamp when the user record was
+         created.
+       * updated_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Last update timestamp (managed by
+         trigger).
+       * hobbies (TEXT[], Nullable): Array of text strings
+         representing user's hobbies.
+
+
+  Table: public.waitlist
+
+
+   * Purpose: Stores information for users on a
+     waitlist.
+   * Columns:
+       * id (UUID, Primary Key): Unique identifier for
+         the waitlist entry.
+       * email (TEXT, Unique): User's email address.
+       * name (TEXT, Nullable): User's name.
+       * referral_source (TEXT, Nullable): How the user
+         heard about the waitlist.
+       * interested_features (TEXT[], Nullable): Array
+         of features the user is interested in.
+       * created_at (TIMESTAMP WITH TIME ZONE, Default:
+         now()): Timestamp when the waitlist entry was
+         created.
+   * Purpose: Stores information for users on a
+     waitlist.
