@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../contexts/ThemeContext.jsx";
 import { Button } from "./ui/Button";
 import { useNavigate, useLocation } from "react-router-dom";
+import { getUserAvatarUrl } from "../services/avatars";
 
 export function Navbar() {
   const { user, userProfile, signOut } = useAuth();
@@ -73,23 +74,7 @@ export function Navbar() {
 
   const getProfileImage = () => {
     if (!user) return null;
-
-    if (profileImageError || !user.photoURL) {
-      // Create a fallback avatar with user's initials
-      const name = userProfile?.username || user.displayName || user.email;
-      const initials = name
-        ? name
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
-            .toUpperCase()
-            .slice(0, 2)
-        : "U";
-
-      return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=8B5CF6&color=fff&size=128&format=svg`;
-    }
-
-    return user.photoURL;
+    return getUserAvatarUrl(user, userProfile);
   };
 
   const handleImageError = () => {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import { getUserAnalytics, createActiveUser, initializeOrUpdateUserAnalytics } from "../services/database";
+import { getUserAvatarUrl } from "../services/avatars";
 
 export const useAuth = () => {
   const [user, setUser] = useState(null);
@@ -123,15 +124,40 @@ export const useAuth = () => {
                   ),
                 ),
               ]),
-              supabase.from('users').select('username, hobbies').eq('id', supabaseUser.id).single(),
+              supabase.from('users').select('username, hobbies, avatar_url, full_name, bio').eq('id', supabaseUser.id).single(),
             ]);
 
           let userHobbies = [];
           let userUsername = supabaseUser.user_metadata?.full_name || supabaseUser.email || "User";
+          let userFullName = supabaseUser.user_metadata?.full_name || "";
+          let userBio = "";
+          let userAvatarUrl = "";
 
           if (userProfileResult.data) {
             userHobbies = userProfileResult.data.hobbies || [];
             userUsername = userProfileResult.data.username || userUsername;
+            userFullName = userProfileResult.data.full_name || userFullName;
+            userBio = userProfileResult.data.bio || "";
+            userAvatarUrl = userProfileResult.data.avatar_url || "";
+            
+            // If user doesn't have an avatar assigned, assign one now and save it
+            if (!userAvatarUrl) {
+              try {
+                console.log("User has no avatar, assigning random avatar...");
+                const { assignRandomAvatar } = await import('../services/avatars');
+                const avatarResult = await assignRandomAvatar(supabaseUser.id);
+                if (avatarResult.success) {
+                  userAvatarUrl = avatarResult.avatarUrl;
+                  console.log("✅ Successfully assigned random avatar to existing user:", userAvatarUrl);
+                } else {
+                  console.error("❌ Failed to assign avatar:", avatarResult.error);
+                }
+              } catch (avatarError) {
+                console.error("❌ Error assigning avatar to existing user:", avatarError);
+              }
+            } else {
+              console.log("✅ User already has avatar:", userAvatarUrl);
+            }
           } else if (userProfileResult.error && userProfileResult.error.code !== 'PGRST116') {
             console.error('Error fetching user profile from "users" table:', userProfileResult.error);
           }
@@ -145,6 +171,9 @@ export const useAuth = () => {
             console.log("useAuth: Analytics data received:", analytics);
             setUserProfile({
               username: userUsername,
+              full_name: userFullName,
+              bio: userBio,
+              avatar_url: userAvatarUrl,
               hobbies: userHobbies,
               profileCompleted: profileCompleted,
               level: Math.floor(analytics.total_checkins / 10) + 1,
@@ -223,7 +252,7 @@ export const useAuth = () => {
         
         const [analyticsResult, userProfileResult] = await Promise.all([
           getUserAnalytics(user.id),
-          supabase.from('users').select('username, hobbies').eq('id', user.id).single(),
+          supabase.from('users').select('username, hobbies, avatar_url, full_name, bio').eq('id', user.id).single(),
         ]);
 
         console.log("refreshUserProfile: Raw analytics result:", analyticsResult);
@@ -231,10 +260,30 @@ export const useAuth = () => {
 
         let userHobbies = [];
         let userUsername = user.user_metadata?.full_name || user.email || "User";
+        let userFullName = user.user_metadata?.full_name || "";
+        let userBio = "";
+        let userAvatarUrl = "";
 
         if (userProfileResult.data) {
           userHobbies = userProfileResult.data.hobbies || [];
           userUsername = userProfileResult.data.username || userUsername;
+          userFullName = userProfileResult.data.full_name || userFullName;
+          userBio = userProfileResult.data.bio || "";
+          userAvatarUrl = userProfileResult.data.avatar_url || "";
+          
+          // If user doesn't have an avatar assigned, assign one now and save it
+          if (!userAvatarUrl) {
+            try {
+              const { assignRandomAvatar } = await import('../services/avatars');
+              const avatarResult = await assignRandomAvatar(user.id);
+              if (avatarResult.success) {
+                userAvatarUrl = avatarResult.avatarUrl;
+                console.log("Assigned random avatar to existing user during refresh:", userAvatarUrl);
+              }
+            } catch (avatarError) {
+              console.error("Failed to assign avatar to existing user during refresh:", avatarError);
+            }
+          }
         } else if (userProfileResult.error && userProfileResult.error.code !== 'PGRST116') {
           console.error('Error fetching user profile from "users" table during refresh:', userProfileResult.error);
         }
@@ -249,6 +298,9 @@ export const useAuth = () => {
           
           const newUserProfile = {
             username: userUsername,
+            full_name: userFullName,
+            bio: userBio,
+            avatar_url: userAvatarUrl,
             hobbies: userHobbies,
             profileCompleted: profileCompleted,
             level: Math.floor(analytics.total_checkins / 10) + 1,

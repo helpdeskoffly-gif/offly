@@ -38,6 +38,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
 import { Button } from "./ui/Button";
 import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { getUserAvatarUrl } from "../services/avatars";
 import {
   Popover,
   PopoverContent,
@@ -198,6 +199,7 @@ const Dashboard = () => {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [toastType, setToastType] = useState("success"); // "success" or "error"
+  const [calendarRefreshTrigger, setCalendarRefreshTrigger] = useState(0);
 
   const containerRef = useRef(null);
   const contentRef = useRef(null);
@@ -208,19 +210,19 @@ const Dashboard = () => {
       primary:
         theme === "dark"
           ? "from-slate-600 via-slate-700 to-slate-800"
-          : "from-slate-200 via-slate-300 to-slate-400",
+          : "from-blue-400 via-indigo-500 to-purple-600",
       secondary:
         theme === "dark"
           ? "from-blue-600 via-indigo-600 to-purple-600"
-          : "from-blue-500 via-indigo-500 to-purple-500",
+          : "from-emerald-400 via-teal-500 to-cyan-600",
       tertiary:
         theme === "dark"
           ? "from-gray-600 via-gray-700 to-gray-800"
-          : "from-gray-400 via-gray-500 to-gray-600",
+          : "from-orange-400 via-pink-500 to-rose-600",
       accent:
         theme === "dark"
           ? "from-indigo-600 via-purple-600 to-violet-600"
-          : "from-indigo-500 via-purple-500 to-violet-500",
+          : "from-violet-400 via-purple-500 to-indigo-600",
     }),
     [theme],
   );
@@ -230,20 +232,38 @@ const Dashboard = () => {
       background:
         theme === "dark"
           ? "bg-gradient-to-br from-slate-950 via-gray-950 to-slate-950"
-          : "bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100",
+          : "bg-white bg-[radial-gradient(circle_at_20%_80%,rgba(99,102,241,0.04),transparent_50%)] bg-[radial-gradient(circle_at_80%_20%,rgba(168,85,247,0.04),transparent_50%)] bg-[radial-gradient(circle_at_40%_40%,rgba(59,130,246,0.02),transparent_50%)]",
       text: {
-        primary: theme === "dark" ? "text-slate-200" : "text-gray-900",
-        secondary: theme === "dark" ? "text-slate-400" : "text-gray-600",
-        muted: theme === "dark" ? "text-slate-500" : "text-gray-500",
+        primary: theme === "dark" ? "text-slate-200" : "text-slate-800",
+        secondary: theme === "dark" ? "text-slate-400" : "text-slate-600",
+        muted: theme === "dark" ? "text-slate-500" : "text-slate-500",
       },
       card:
         theme === "dark"
           ? "bg-slate-900/60 border-slate-800/50 backdrop-blur-xl"
-          : "bg-white/80 border-slate-200/50 backdrop-blur-xl",
+          : "bg-gradient-to-br from-slate-50/90 via-white/95 to-slate-50/80 border-slate-200/60 backdrop-blur-xl shadow-lg",
       cardHover:
         theme === "dark"
           ? "hover:bg-slate-800/70 hover:border-slate-700/60"
-          : "hover:bg-white/90 hover:border-slate-300/60",
+          : "hover:bg-gradient-to-br hover:from-white/95 hover:via-white/100 hover:to-white/95 hover:border-slate-300/70 hover:shadow-xl",
+      // Clean card variants matching calendar style
+      cardVariants: {
+        primary: theme === "dark" 
+          ? "bg-slate-900/60 border-slate-800/50 backdrop-blur-xl"
+          : "bg-gradient-to-br from-blue-50/90 via-white/95 to-indigo-50/80 border-blue-200/50 backdrop-blur-xl shadow-lg",
+        secondary: theme === "dark"
+          ? "bg-slate-900/60 border-slate-800/50 backdrop-blur-xl"
+          : "bg-gradient-to-br from-emerald-50/90 via-white/95 to-teal-50/80 border-emerald-200/50 backdrop-blur-xl shadow-lg",
+        tertiary: theme === "dark"
+          ? "bg-slate-900/60 border-slate-800/50 backdrop-blur-xl"
+          : "bg-gradient-to-br from-amber-50/90 via-white/95 to-orange-50/80 border-amber-200/50 backdrop-blur-xl shadow-lg",
+        accent: theme === "dark"
+          ? "bg-slate-900/60 border-slate-800/50 backdrop-blur-xl"
+          : "bg-gradient-to-br from-violet-50/90 via-white/95 to-purple-50/80 border-violet-200/50 backdrop-blur-xl shadow-lg",
+        neutral: theme === "dark"
+          ? "bg-slate-900/60 border-slate-800/50 backdrop-blur-xl"
+          : "bg-gradient-to-br from-slate-50/90 via-white/95 to-gray-50/80 border-slate-200/50 backdrop-blur-xl shadow-lg",
+      }
     }),
     [theme],
   );
@@ -697,12 +717,12 @@ const Dashboard = () => {
         ref={bgRef}
         className="fixed inset-0 overflow-hidden pointer-events-none z-0"
       >
-        {/* Subtle gradient orbs */}
+        {/* Subtle floating orbs for texture */}
         <div
           className={`floating-orb-1 absolute top-20 left-10 w-96 h-96 ${
             theme === "dark"
               ? "bg-gradient-to-r from-slate-800/10 to-gray-800/10"
-              : "bg-gradient-to-r from-slate-200/20 to-gray-200/20"
+              : "bg-gradient-to-r from-indigo-200/15 to-blue-200/10"
           } rounded-full blur-3xl`}
         />
 
@@ -710,7 +730,7 @@ const Dashboard = () => {
           className={`floating-orb-2 absolute top-40 right-20 w-80 h-80 ${
             theme === "dark"
               ? "bg-gradient-to-r from-indigo-800/8 to-purple-800/8"
-              : "bg-gradient-to-r from-indigo-200/15 to-purple-200/15"
+              : "bg-gradient-to-r from-violet-200/12 to-purple-200/8"
           } rounded-full blur-3xl`}
         />
 
@@ -718,7 +738,7 @@ const Dashboard = () => {
           className={`floating-orb-3 absolute bottom-20 left-1/3 w-72 h-72 ${
             theme === "dark"
               ? "bg-gradient-to-r from-gray-800/5 to-slate-800/5"
-              : "bg-gradient-to-r from-gray-200/10 to-slate-200/10"
+              : "bg-gradient-to-r from-slate-200/10 to-gray-200/8"
           } rounded-full blur-3xl`}
         />
       </div>
@@ -924,7 +944,7 @@ const Dashboard = () => {
         className={`w-96 p-0 ${themeColors.card} border shadow-xl rounded-xl overflow-hidden`}
         align="end"
       >
-        <div className="p-6 border-b border-slate-200/50 dark:border-slate-700/50">
+        <div className={`p-6 border-b ${theme === "dark" ? "border-slate-700/50" : "border-slate-200/60"}`}>
           <div className="flex items-center justify-between">
             <h3 className={`text-lg font-semibold ${themeColors.text.primary}`}>
               Notifications
@@ -960,7 +980,7 @@ const Dashboard = () => {
               <div
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
-                className={`p-4 border-b border-slate-200/30 dark:border-slate-700/30 ${themeColors.cardHover} transition-all duration-300 cursor-pointer group relative ${!notification.read ? "bg-blue-50/50 dark:bg-blue-900/20" : ""}`}
+                className={`p-4 border-b ${theme === "dark" ? "border-slate-700/30" : "border-slate-200/40"} ${themeColors.cardHover} transition-all duration-300 cursor-pointer group relative ${!notification.read ? (theme === "dark" ? "bg-blue-900/20" : "bg-slate-50/80") : ""}`}
               >
                 {!notification.read && (
                   <div className="absolute left-2 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -990,7 +1010,7 @@ const Dashboard = () => {
           )}
         </div>
 
-        <div className="p-4 border-t border-slate-200/50 dark:border-slate-700/50">
+        <div className={`p-4 border-t ${theme === "dark" ? "border-slate-700/50" : "border-slate-200/60"}`}>
           <Button
             variant="ghost"
             onClick={clearAllNotifications}
@@ -1007,24 +1027,7 @@ const Dashboard = () => {
   // Professional Profile Dropdown
   const ProfileDropdown = () => {
     const getProfileImage = () => {
-      // Check multiple possible locations for profile photo
-      const photoURL = user?.user_metadata?.avatar_url || 
-                      user?.user_metadata?.picture || 
-                      user?.photoURL || 
-                      user?.avatar_url;
-                      
-      if (!photoURL) {
-        const name =
-          userProfile?.username || user?.displayName || user?.user_metadata?.full_name || user?.email || "User";
-        const initials = name
-          .split(" ")
-          .map((n) => n[0])
-          .join("")
-          .toUpperCase()
-          .slice(0, 2);
-        return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=6366F1&color=fff&size=128&format=svg`;
-      }
-      return photoURL;
+      return getUserAvatarUrl(user, userProfile);
     };
 
     return (
@@ -1115,7 +1118,7 @@ const Dashboard = () => {
           </div>
 
           {/* Sign Out */}
-          <div className="p-2 border-t border-slate-200/50 dark:border-slate-700/50">
+          <div className={`p-2 border-t ${theme === "dark" ? "border-slate-700/50" : "border-slate-200/60"}`}>
             <Button
               variant="ghost"
               onClick={() => {
@@ -1274,6 +1277,32 @@ const Dashboard = () => {
           setRecentCheckins(checkinsResult.data);
         }
 
+        // Refresh calendar data
+        setCalendarRefreshTrigger(prev => prev + 1);
+
+        // Reload weekly chart data
+        const today = new Date();
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(today.getDate() - 6);
+
+        const weeklyCheckinsResult = await getUserCheckins(
+          user.id,
+          sevenDaysAgo.toISOString().split('T')[0],
+          today.toISOString().split('T')[0],
+          100
+        );
+
+        if (weeklyCheckinsResult.success) {
+          const uniqueDailyCheckins = weeklyCheckinsResult.data.reduce((acc, checkin) => {
+            const date = checkin.checkin_date;
+            if (!acc[date]) {
+              acc[date] = checkin;
+            }
+            return acc;
+          }, {});
+          setWeeklyChartCheckins(Object.values(uniqueDailyCheckins));
+        }
+
         // Check for new achievements
         try {
           const achievementResult = await checkAndUnlockAchievements(user.id);
@@ -1351,7 +1380,11 @@ const Dashboard = () => {
                 className={`relative flex flex-col items-center space-y-1.5 px-4 py-2.5 rounded-xl transition-all duration-500 font-medium group overflow-hidden ${
                   isActive
                     ? `bg-gradient-to-br ${tab.gradient} text-white shadow-lg scale-105 transform`
-                    : `${themeColors.text.muted} hover:${themeColors.text.primary} hover:bg-slate-700/30 hover:scale-102 transform`
+                    : `${themeColors.text.muted} hover:${themeColors.text.primary} ${
+                        theme === "dark" 
+                          ? "hover:bg-slate-700/30" 
+                          : "hover:bg-white/60 hover:shadow-md"
+                      } hover:scale-102 transform`
                 }`}
               >
                 {/* Animated background glow for active tab */}
@@ -1411,7 +1444,7 @@ const Dashboard = () => {
               {/* Main Check-in Card */}
               <div className="lg:col-span-2">
                 <Card
-                  className={`${themeColors.card} border-0 overflow-hidden relative shadow-sm h-full`}
+                  className={`${themeColors.cardVariants.primary} border-0 overflow-hidden relative h-full`}
                 >
                   <div
                     className={`absolute inset-0 bg-gradient-to-br ${premiumGradients.accent} opacity-5`}
@@ -1437,7 +1470,7 @@ const Dashboard = () => {
                           className={`${themeColors.text.secondary} text-sm leading-relaxed`}
                         >
                           Welcome back,{" "}
-                          <span className="font-medium text-blue-400">
+                          <span className={`font-medium ${theme === "dark" ? "text-blue-400" : "text-indigo-600"}`}>
                             {userProfile?.username ||
                               user?.displayName ||
                               "Explorer"}
@@ -1470,7 +1503,11 @@ const Dashboard = () => {
 
               {/* Calendar Tracker */}
               <div>
-                <CalendarTracker theme={theme} currentStreak={userProfile?.currentStreak} />
+                <CalendarTracker 
+                  theme={theme} 
+                  currentStreak={userProfile?.currentStreak} 
+                  refreshTrigger={calendarRefreshTrigger}
+                />
               </div>
             </div>
 
@@ -1499,22 +1536,22 @@ const Dashboard = () => {
 
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 <Card className={`${themeColors.card} border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 group overflow-hidden relative`}>
-                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-purple-500/5 to-fuchsia-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className={`absolute inset-0 ${theme === "dark" ? "bg-gradient-to-br from-violet-500/5 via-purple-500/5 to-fuchsia-500/5" : "bg-gradient-to-br from-violet-100/50 via-purple-100/40 to-fuchsia-100/30"} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
                   <CardContent className="p-3 sm:p-4 lg:p-6 relative z-10">
                     <div className="flex items-center justify-between mb-3 sm:mb-4">
                       <div
-                        className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${premiumGradients.primary} shadow-lg shadow-violet-500/25 group-hover:shadow-violet-500/40 transition-all duration-300`}
+                        className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${premiumGradients.primary} shadow-lg ${theme === "dark" ? "shadow-violet-500/25 group-hover:shadow-violet-500/40" : "shadow-indigo-300/30 group-hover:shadow-indigo-400/50"} transition-all duration-300`}
                       >
                         <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
                       </div>
                       <span
-                        className={`text-xs ${themeColors.text.muted} uppercase tracking-wide font-semibold bg-violet-500/10 px-2 py-1 rounded-full`}
+                        className={`text-xs ${themeColors.text.muted} uppercase tracking-wide font-semibold ${theme === "dark" ? "bg-violet-500/10" : "bg-indigo-100/80"} px-2 py-1 rounded-full`}
                       >
                         Total
                       </span>
                     </div>
                     <div
-                      className={`text-xl sm:text-2xl lg:text-3xl font-bold ${themeColors.text.primary} mb-1 sm:mb-2 group-hover:text-violet-600 transition-colors duration-300`}
+                      className={`text-xl sm:text-2xl lg:text-3xl font-bold ${themeColors.text.primary} mb-1 sm:mb-2 ${theme === "dark" ? "group-hover:text-violet-600" : "group-hover:text-indigo-700"} transition-colors duration-300`}
                     >
                       {dashboardData.totalCheckIns}
                     </div>
@@ -1525,22 +1562,22 @@ const Dashboard = () => {
                 </Card>
 
                 <Card className={`${themeColors.card} border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 group overflow-hidden relative`}>
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-teal-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className={`absolute inset-0 ${theme === "dark" ? "bg-gradient-to-br from-emerald-500/5 via-teal-500/5 to-cyan-500/5" : "bg-gradient-to-br from-emerald-100/50 via-teal-100/40 to-cyan-100/30"} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
                   <CardContent className="p-3 sm:p-4 lg:p-6 relative z-10">
                     <div className="flex items-center justify-between mb-3 sm:mb-4">
                       <div
-                        className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${premiumGradients.secondary} shadow-lg shadow-emerald-500/25 group-hover:shadow-emerald-500/40 transition-all duration-300`}
+                        className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${premiumGradients.secondary} shadow-lg ${theme === "dark" ? "shadow-emerald-500/25 group-hover:shadow-emerald-500/40" : "shadow-emerald-300/30 group-hover:shadow-emerald-400/50"} transition-all duration-300`}
                       >
                         <Calendar className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
                       </div>
                       <span
-                        className={`text-xs ${themeColors.text.muted} uppercase tracking-wide font-semibold bg-emerald-500/10 px-2 py-1 rounded-full`}
+                        className={`text-xs ${themeColors.text.muted} uppercase tracking-wide font-semibold ${theme === "dark" ? "bg-emerald-500/10" : "bg-emerald-100/80"} px-2 py-1 rounded-full`}
                       >
                         Weekly
                       </span>
                     </div>
                     <div
-                      className={`text-xl sm:text-2xl lg:text-3xl font-bold ${themeColors.text.primary} mb-1 sm:mb-2 group-hover:text-emerald-600 transition-colors duration-300`}
+                      className={`text-xl sm:text-2xl lg:text-3xl font-bold ${themeColors.text.primary} mb-1 sm:mb-2 ${theme === "dark" ? "group-hover:text-emerald-600" : "group-hover:text-emerald-700"} transition-colors duration-300`}
                     >
                       {dashboardData.weeklyScore}/7
                     </div>
@@ -1551,22 +1588,22 @@ const Dashboard = () => {
                 </Card>
 
                 <Card className={`${themeColors.card} border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 group overflow-hidden relative`}>
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-orange-500/5 to-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className={`absolute inset-0 ${theme === "dark" ? "bg-gradient-to-br from-amber-500/5 via-orange-500/5 to-red-500/5" : "bg-gradient-to-br from-amber-100/50 via-orange-100/40 to-red-100/30"} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
                   <CardContent className="p-3 sm:p-4 lg:p-6 relative z-10">
                     <div className="flex items-center justify-between mb-3 sm:mb-4">
                       <div
-                        className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${premiumGradients.accent} shadow-lg shadow-amber-500/25 group-hover:shadow-amber-500/40 transition-all duration-300`}
+                        className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${premiumGradients.accent} shadow-lg ${theme === "dark" ? "shadow-amber-500/25 group-hover:shadow-amber-500/40" : "shadow-violet-300/30 group-hover:shadow-violet-400/50"} transition-all duration-300`}
                       >
                         <Clock className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
                       </div>
                       <span
-                        className={`text-xs ${themeColors.text.muted} uppercase tracking-wide font-semibold bg-amber-500/10 px-2 py-1 rounded-full`}
+                        className={`text-xs ${themeColors.text.muted} uppercase tracking-wide font-semibold ${theme === "dark" ? "bg-amber-500/10" : "bg-violet-100/80"} px-2 py-1 rounded-full`}
                       >
                         Recent
                       </span>
                     </div>
                     <div
-                      className={`text-xl sm:text-2xl lg:text-3xl font-bold ${themeColors.text.primary} mb-1 sm:mb-2 group-hover:text-amber-600 transition-colors duration-300`}
+                      className={`text-xl sm:text-2xl lg:text-3xl font-bold ${themeColors.text.primary} mb-1 sm:mb-2 ${theme === "dark" ? "group-hover:text-amber-600" : "group-hover:text-violet-700"} transition-colors duration-300`}
                     >
                       {dashboardData.lastCheckIn}
                     </div>
@@ -1581,7 +1618,7 @@ const Dashboard = () => {
             {/* Weekly Insights Widget */}
             {weeklyInsights && (
               <div className="fade-in">
-                <Card className={`${themeColors.card} border-0 shadow-sm`}>
+                <Card className={`${themeColors.cardVariants.secondary} border-0`}>
                   <CardContent className="p-4 sm:p-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
@@ -1649,7 +1686,7 @@ const Dashboard = () => {
                 {/* Main Chart Area */}
                 <div className="lg:col-span-2">
                   <Card
-                    className={`${themeColors.card} border-0 shadow-sm h-full`}
+                    className={`${themeColors.cardVariants.secondary} border-0 h-full`}
                   >
                     <CardHeader>
                       <CardTitle
@@ -1674,7 +1711,7 @@ const Dashboard = () => {
 
                 {/* Stats Sidebar */}
                 <div className="space-y-4">
-                  <Card className={`${themeColors.card} border-0 shadow-sm`}>
+                  <Card className={`${themeColors.cardVariants.primary} border-0`}>
                     <CardContent className="p-6 text-center">
                       <div
                         className={`w-16 h-16 bg-gradient-to-br ${premiumGradients.primary} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm`}
@@ -1697,7 +1734,7 @@ const Dashboard = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className={`${themeColors.card} border-0 shadow-sm`}>
+                  <Card className={`${themeColors.cardVariants.accent} border-0`}>
                     <CardContent className="p-6 text-center">
                       <div
                         className={`w-16 h-16 bg-gradient-to-br ${premiumGradients.accent} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm`}
@@ -1725,7 +1762,7 @@ const Dashboard = () => {
               {/* Enhanced Mood Insights */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Top Moods */}
-                <Card className={`${themeColors.card} border-0 shadow-sm`}>
+                <Card className={`${themeColors.cardVariants.tertiary} border-0`}>
                   <CardHeader>
                     <CardTitle
                       className={`text-lg ${themeColors.text.primary} flex items-center gap-3`}
@@ -1743,7 +1780,7 @@ const Dashboard = () => {
                       {topMoods.map((mood, index) => (
                         <div
                           key={`${mood.emoji}-${mood.label}`}
-                          className={`p-4 ${themeColors.cardHover} rounded-xl border border-slate-200/50 dark:border-slate-700/30 transition-all duration-300 group cursor-pointer`}
+                          className={`p-4 ${themeColors.cardHover} rounded-xl border ${theme === "dark" ? "border-slate-700/30" : "border-slate-200/50"} transition-all duration-300 group cursor-pointer`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
@@ -1792,7 +1829,7 @@ const Dashboard = () => {
                 </Card>
 
                 {/* Weekly Progress */}
-                <Card className={`${themeColors.card} border-0 shadow-sm`}>
+                <Card className={`${themeColors.cardVariants.accent} border-0`}>
                   <CardHeader>
                     <CardTitle
                       className={`text-lg ${themeColors.text.primary} flex items-center gap-3`}
@@ -1836,7 +1873,7 @@ const Dashboard = () => {
                             %
                           </span>
                         </div>
-                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                        <div className={`w-full ${theme === "dark" ? "bg-slate-700" : "bg-slate-200/80"} rounded-full h-2`}>
                           <div
                             className={`h-2 bg-gradient-to-r ${premiumGradients.secondary} rounded-full transition-all duration-300`}
                             style={{
@@ -1908,7 +1945,7 @@ const Dashboard = () => {
 
               {/* Community Preview Cards */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <Card className={`${themeColors.card} border-0 shadow-sm`}>
+                <Card className={`${themeColors.cardVariants.primary} border-0`}>
                   <CardContent className="p-8">
                     <div
                       className={`w-16 h-16 bg-gradient-to-br ${premiumGradients.secondary} rounded-2xl flex items-center justify-center mb-6 shadow-sm`}
@@ -1956,7 +1993,7 @@ const Dashboard = () => {
                   </CardContent>
                 </Card>
 
-                <Card className={`${themeColors.card} border-0 shadow-sm`}>
+                <Card className={`${themeColors.cardVariants.accent} border-0`}>
                   <CardContent className="p-8">
                     <div
                       className={`w-16 h-16 bg-gradient-to-br ${premiumGradients.accent} rounded-2xl flex items-center justify-center mb-6 shadow-sm`}
@@ -2006,7 +2043,7 @@ const Dashboard = () => {
               </div>
 
               {/* Coming Soon Features */}
-              <Card className={`${themeColors.card} border-0 shadow-sm`}>
+              <Card className={`${themeColors.cardVariants.secondary} border-0`}>
                 <CardContent className="p-10 text-center">
                   <div
                     className={`w-20 h-20 bg-gradient-to-br ${premiumGradients.secondary} rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm`}
@@ -2198,7 +2235,7 @@ const Dashboard = () => {
       {/* Success Toast */}
       {showSuccessToast && (
         <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
-          <Card className={`${themeColors.card} border-0 shadow-xl max-w-sm`}>
+          <Card className={`${themeColors.cardVariants.neutral} border-0 shadow-xl max-w-sm`}>
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <div

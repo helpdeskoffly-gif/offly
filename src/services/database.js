@@ -1,4 +1,5 @@
 import { supabase, supabaseHelpers } from "../supabase";
+import { assignRandomAvatar } from "./avatars";
 
 // Validation helper
 const validateSupabase = () => {
@@ -127,6 +128,20 @@ export const createSignupUser = async (
     }
 
     console.log("Analytics record created/updated:", analyticsResult[0]);
+
+    // Assign random avatar to new user
+    try {
+      console.log("Assigning random avatar to new user:", uid);
+      const avatarResult = await assignRandomAvatar(uid);
+      if (avatarResult.success) {
+        console.log("Random avatar assigned successfully:", avatarResult.avatarUrl);
+      } else {
+        console.error("Failed to assign random avatar:", avatarResult.error);
+      }
+    } catch (avatarError) {
+      console.error("Failed to assign random avatar:", avatarError);
+      // Don't fail user creation if avatar assignment fails
+    }
 
     // Generate initial anti-todo activities for new users
     try {
@@ -291,6 +306,20 @@ export const createActiveUser = async (uid, username) => {
         throw createUserError;
       }
       console.log("User record created:", newUser[0]);
+
+      // Assign random avatar to new user
+      try {
+        console.log("Assigning random avatar to new user:", uid);
+        const avatarResult = await assignRandomAvatar(uid);
+        if (avatarResult.success) {
+          console.log("Random avatar assigned successfully:", avatarResult.avatarUrl);
+        } else {
+          console.error("Failed to assign random avatar:", avatarResult.error);
+        }
+      } catch (avatarError) {
+        console.error("Failed to assign random avatar:", avatarError);
+        // Don't fail user creation if avatar assignment fails
+      }
 
       // Generate initial anti-todo activities for new users
       try {

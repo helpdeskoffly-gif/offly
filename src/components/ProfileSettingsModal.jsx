@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../supabase";
 import { updateUserProfile } from "../services/database";
+import { getUserAvatarUrl, uploadAvatar, deleteAvatar, updateUserAvatar } from "../services/avatars";
 
 export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSave }) {
   const { theme, toggleTheme } = useTheme();
@@ -70,6 +71,12 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
     new: false,
     confirm: false,
   });
+
+  // Avatar upload states
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Theme colors
   const themeColors = {
@@ -120,22 +127,112 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
 
   // Get profile image
   const getProfileImage = () => {
-    const photoURL = user?.user_metadata?.avatar_url || 
-                    user?.user_metadata?.picture || 
-                    user?.photoURL || 
-                    user?.avatar_url;
-                    
-    if (!photoURL) {
-      const name = profileData.full_name || profileData.username || user?.email || "User";
-      const initials = name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2);
-      return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=6366F1&color=fff&size=128&format=svg`;
+    // Show preview if uploading new avatar
+    if (avatarPreview) {
+      return avatarPreview;
     }
-    return photoURL;
+    // Use avatar service to get the appropriate avatar
+    return getUserAvatarUrl(user, userProfile);
+  };
+
+  // Handle avatar file selection
+  const handleAvatarChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setAvatarFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle avatar upload
+  const handleAvatarUpload = async () => {
+    if (!avatarFile) return;
+
+    setAvatarUploading(true);
+    setErrors({});
+
+    try {
+      // Upload the file
+      const uploadResult = await uploadAvatar(avatarFile, user.id);
+      
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error);
+      }
+
+      // Update user's avatar URL in database
+      const updateResult = await updateUserAvatar(user.id, uploadResult.url);
+      
+      if (!updateResult.success) {
+        throw new Error(updateResult.error);
+      }
+
+      setSuccessMessage("Avatar updated successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
+      
+      // Clear upload states
+      setAvatarFile(null);
+      setAvatarPreview(null);
+      
+      // Notify parent to refresh user data
+      onSave?.();
+      
+    } catch (error) {
+      setErrors({ avatar: error.message || "Failed to upload avatar" });
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  // Handle avatar removal
+  const handleAvatarRemove = async () => {
+    setAvatarUploading(true);
+    setErrors({});
+
+    try {
+      // Delete from storage if it's a custom upload
+      if (userProfile?.avatar_url && userProfile.avatar_url.includes('supabase')) {
+        await deleteAvatar(userProfile.avatar_url);
+      }
+
+      // Assign a new random avatar and save it to database
+      const { getRandomAvatar } = await import('../services/avatars');
+      const newRandomAvatar = getRandomAvatar();
+      const updateResult = await updateUserAvatar(user.id, newRandomAvatar);
+      
+      if (!updateResult.success) {
+        throw new Error(updateResult.error);
+      }
+
+      setSuccessMessage("Custom avatar removed! Returned to your random avatar.");
+      setTimeout(() => setSuccessMessage(""), 3000);
+      
+      // Clear upload states
+      setAvatarFile(null);
+      setAvatarPreview(null);
+      
+      // Notify parent to refresh user data
+      onSave?.();
+      
+    } catch (error) {
+      setErrors({ avatar: error.message || "Failed to remove avatar" });
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  // Cancel avatar upload
+  const handleAvatarCancel = () => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   // Handle profile update
@@ -289,23 +386,88 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
 
                     {/* Profile Picture */}
                     <div className="flex items-center space-x-6 mb-6">
-                      <Avatar className="w-20 h-20">
-                        <AvatarImage src={getProfileImage()} />
-                        <AvatarFallback>
-                          {(profileData.full_name || profileData.username || "U").substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
+                      <div className="relative">
+                        <Avatar className="w-20 h-20">
+                          <AvatarImage src={getProfileImage()} />
+                          <AvatarFallback>
+                            {(profileData.full_name || profileData.username || "U").substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        {avatarUploading && (
+                          <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                            <Loader2 className="w-6 h-6 text-white animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
                         <h4 className={`font-medium ${themeColors.text.primary} mb-2`}>Profile Picture</h4>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" className="flex items-center gap-2">
-                            <Upload className="w-4 h-4" />
-                            Upload New
-                          </Button>
-                          <Button size="sm" variant="outline" className="text-red-500 hover:text-red-400">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
+                        <p className={`text-sm ${themeColors.text.muted} mb-4`}>
+                          Upload a custom avatar or keep your randomly assigned one
+                        </p>
+                        
+                        {!avatarFile ? (
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex items-center gap-2"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={avatarUploading}
+                            >
+                              <Upload className="w-4 h-4" />
+                              Upload New
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="text-red-500 hover:text-red-400"
+                              onClick={handleAvatarRemove}
+                              disabled={avatarUploading}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Remove
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              onClick={handleAvatarUpload}
+                              disabled={avatarUploading}
+                              className="flex items-center gap-2"
+                            >
+                              {avatarUploading ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Save className="w-4 h-4" />
+                              )}
+                              Save Avatar
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={handleAvatarCancel}
+                              disabled={avatarUploading}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {errors.avatar && (
+                          <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                            <AlertTriangle className="w-4 h-4" />
+                            {errors.avatar}
+                          </p>
+                        )}
+                        
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarChange}
+                          className="hidden"
+                        />
                       </div>
                     </div>
 
