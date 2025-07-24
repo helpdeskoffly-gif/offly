@@ -9,7 +9,10 @@ import {
   DrawerFooter,
 } from "../ui/drawer";
 import { Textarea } from "../ui/textarea";
-import { X, Sparkles, Send } from "lucide-react";
+import { X, Sparkles, Send, Heart, Clock, Lightbulb } from "lucide-react";
+import { canUserCheckin } from "../../services/database";
+import { useAuth } from "../../hooks/useAuth";
+import { useTheme } from "../../contexts/ThemeContext.jsx";
 
 const CheckinDrawer = ({
   showCheckinDrawer,
@@ -21,8 +24,13 @@ const CheckinDrawer = ({
   const [selectedMood, setSelectedMood] = useState("");
   const [notes, setNotes] = useState("");
   const [selectedSuggestion, setSelectedSuggestion] = useState("");
+  const [cooldownInfo, setCooldownInfo] = useState(null);
+  const [checkingCooldown, setCheckingCooldown] = useState(false);
 
   const contentRef = useRef(null);
+
+  const { user } = useAuth();
+  const { theme: currentTheme } = useTheme();
 
   // 10 emojis in a horizontal row
   const moods = ["😢", "😔", "😐", "🙂", "😊", "😄", "🥰", "😎", "🤗", "🥳"];
@@ -78,18 +86,18 @@ const CheckinDrawer = ({
   };
 
   const themeColors = {
-    background: theme === "dark" ? "bg-slate-900/95" : "bg-white/95",
+    background: currentTheme === "dark" ? "bg-slate-900/95" : "bg-white/95",
     text: {
-      primary: theme === "dark" ? "text-white" : "text-gray-900",
-      secondary: theme === "dark" ? "text-slate-300" : "text-gray-600",
-      muted: theme === "dark" ? "text-slate-400" : "text-gray-500",
+      primary: currentTheme === "dark" ? "text-white" : "text-gray-900",
+      secondary: currentTheme === "dark" ? "text-slate-300" : "text-gray-600",
+      muted: currentTheme === "dark" ? "text-slate-400" : "text-gray-500",
     },
-    border: theme === "dark" ? "border-slate-700" : "border-gray-200",
+    border: currentTheme === "dark" ? "border-slate-700" : "border-gray-200",
     card:
-      theme === "dark"
+      currentTheme === "dark"
         ? "bg-slate-800/50 border-slate-700/50"
         : "bg-gray-50/50 border-gray-200/50",
-    hover: theme === "dark" ? "hover:bg-slate-700/50" : "hover:bg-gray-100/50",
+    hover: currentTheme === "dark" ? "hover:bg-slate-700/50" : "hover:bg-gray-100/50",
   };
 
   // Get suggestions for selected mood
@@ -107,6 +115,27 @@ const CheckinDrawer = ({
       );
     }
   }, [showCheckinDrawer]);
+
+  // Check cooldown when drawer opens
+  useEffect(() => {
+    const checkCooldownStatus = async () => {
+      if (showCheckinDrawer && user?.id) {
+        setCheckingCooldown(true);
+        try {
+          const result = await canUserCheckin(user.id);
+          if (result.success) {
+            setCooldownInfo(result);
+          }
+        } catch (error) {
+          console.error("Error checking cooldown:", error);
+        } finally {
+          setCheckingCooldown(false);
+        }
+      }
+    };
+
+    checkCooldownStatus();
+  }, [showCheckinDrawer, user?.id]);
 
   const handleSubmit = async () => {
     if (!selectedMood && !notes.trim() && !selectedSuggestion) {
@@ -176,126 +205,138 @@ const CheckinDrawer = ({
           </DrawerHeader>
 
           <div ref={contentRef} className="px-6 pb-4 space-y-6">
-            {/* Mood Selection - More spacious layout */}
-            <div className="space-y-3">
-              <h3 className={`text-sm font-medium ${themeColors.text.primary}`}>
-                Select your mood
-              </h3>
+            <div className="text-center space-y-3">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                <Heart className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h2 className={`text-2xl font-bold ${themeColors.text.primary}`}>
+                  How are you feeling?
+                </h2>
+                <p className={`${themeColors.text.secondary} text-sm`}>
+                  Take a moment to reflect on your current mood
+                </p>
+              </div>
+            </div>
 
-              <div className="grid grid-cols-5 gap-3 sm:flex sm:justify-between sm:gap-2">
-                {moods.map((emoji) => (
+            {/* Cooldown Warning */}
+            {cooldownInfo && !cooldownInfo.canCheckin && (
+              <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-start gap-3">
+                  <Clock className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-medium text-blue-800 dark:text-blue-200 mb-1">
+                      Take a break! ⏰
+                    </h3>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      You can check in again in{" "}
+                      {cooldownInfo.waitTimeHours > 1 
+                        ? `${cooldownInfo.waitTimeHours} hours`
+                        : `${cooldownInfo.waitTimeMinutes} minutes`}.
+                      This helps maintain meaningful mood tracking.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Mood Selection */}
+            <div className="space-y-4">
+              <h3 className={`text-lg font-semibold ${themeColors.text.primary}`}>
+                Choose your mood
+              </h3>
+              <div className="grid grid-cols-5 gap-3">
+                {moods.map((emoji, index) => (
                   <button
-                    key={emoji}
+                    key={index}
                     onClick={() => setSelectedMood(emoji)}
-                    className={`
-                      w-14 h-14 sm:w-12 sm:h-12 rounded-xl text-2xl transition-all duration-200 flex items-center justify-center
-                      ${
-                        selectedMood === emoji
-                          ? "bg-purple-500 scale-105 shadow-lg transform ring-2 ring-purple-300"
-                          : `${themeColors.card} ${themeColors.hover} hover:scale-105 hover:shadow-md`
-                      }
-                    `}
+                    disabled={cooldownInfo && !cooldownInfo.canCheckin}
+                    className={`p-4 rounded-xl border-2 transition-all duration-200 text-2xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      selectedMood === emoji
+                        ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-lg"
+                        : `border-gray-200 dark:border-slate-600 ${themeColors.hover}`
+                    }`}
                   >
                     {emoji}
                   </button>
                 ))}
               </div>
+            </div>
 
-              {selectedMood && (
+            {/* Quick Suggestions */}
+            {currentSuggestions.length > 0 && (
+              <div className="space-y-3">
+                <h3
+                  className={`text-sm font-medium ${themeColors.text.primary}`}
+                >
+                  Quick suggestions for {selectedMood}
+                </h3>
+                <div className="space-y-2">
+                  {currentSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      onClick={() => selectSuggestion(suggestion)}
+                      className={`
+                        w-full p-3 text-left rounded-lg transition-all duration-200 text-sm
+                        ${
+                          selectedSuggestion === suggestion
+                            ? "bg-purple-500 text-white"
+                            : `${themeColors.card} ${themeColors.hover} ${themeColors.text.secondary}`
+                        }
+                      `}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Custom Message */}
+            <div className="space-y-3">
+              <h3
+                className={`text-sm font-medium ${themeColors.text.primary}`}
+              >
+                {selectedSuggestion
+                  ? "Or write your own message"
+                  : "Write your message"}
+              </h3>
+
+              {selectedSuggestion && (
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                  <span className="text-lg">{selectedMood}</span>
-                  <span className={`text-sm ${themeColors.text.secondary}`}>
-                    Selected mood
+                  <span
+                    className={`text-sm ${themeColors.text.primary} truncate flex-1`}
+                  >
+                    Using: "{selectedSuggestion}"
                   </span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setSelectedMood("")}
-                    className="ml-auto h-6 w-6 p-0"
+                    onClick={clearSuggestion}
+                    className="h-6 w-6 p-0 flex-shrink-0"
                   >
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
               )}
-            </div>
 
-            {/* Two Column Layout for Suggestions and Input */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Quick Suggestions */}
-              {currentSuggestions.length > 0 && (
-                <div className="space-y-3">
-                  <h3
-                    className={`text-sm font-medium ${themeColors.text.primary}`}
-                  >
-                    Quick suggestions for {selectedMood}
-                  </h3>
-                  <div className="space-y-2">
-                    {currentSuggestions.map((suggestion) => (
-                      <button
-                        key={suggestion}
-                        onClick={() => selectSuggestion(suggestion)}
-                        className={`
-                          w-full p-3 text-left rounded-lg transition-all duration-200 text-sm
-                          ${
-                            selectedSuggestion === suggestion
-                              ? "bg-purple-500 text-white"
-                              : `${themeColors.card} ${themeColors.hover} ${themeColors.text.secondary}`
-                          }
-                        `}
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="space-y-2">
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={
+                    selectedSuggestion
+                      ? "Or write your own message..."
+                      : "How are you feeling? What's on your mind?"
+                  }
+                  className={`min-h-[100px] resize-none ${themeColors.background} ${themeColors.border}`}
+                  disabled={!!selectedSuggestion}
+                  maxLength={300}
+                />
 
-              {/* Custom Message */}
-              <div className="space-y-3">
-                <h3
-                  className={`text-sm font-medium ${themeColors.text.primary}`}
-                >
-                  {selectedSuggestion
-                    ? "Or write your own message"
-                    : "Write your message"}
-                </h3>
-
-                {selectedSuggestion && (
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                    <span
-                      className={`text-sm ${themeColors.text.primary} truncate flex-1`}
-                    >
-                      Using: "{selectedSuggestion}"
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearSuggestion}
-                      className="h-6 w-6 p-0 flex-shrink-0"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder={
-                      selectedSuggestion
-                        ? "Or write your own message..."
-                        : "How are you feeling? What's on your mind?"
-                    }
-                    className={`min-h-[100px] resize-none ${themeColors.background} ${themeColors.border}`}
-                    disabled={!!selectedSuggestion}
-                    maxLength={300}
-                  />
-
-                  <p className={`text-xs ${themeColors.text.muted} text-right`}>
-                    {notes.length}/300 characters
-                  </p>
-                </div>
+                <p className={`text-xs ${themeColors.text.muted} text-right`}>
+                  {notes.length}/300 characters
+                </p>
               </div>
             </div>
           </div>
@@ -314,14 +355,20 @@ const CheckinDrawer = ({
                 onClick={handleSubmit}
                 disabled={
                   isSubmitting ||
-                  (!selectedMood && !notes.trim() && !selectedSuggestion)
+                  (!selectedMood && !notes.trim() && !selectedSuggestion) ||
+                  (cooldownInfo && !cooldownInfo.canCheckin)
                 }
-                className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Submitting...
+                  </div>
+                ) : cooldownInfo && !cooldownInfo.canCheckin ? (
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    In Cooldown
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">

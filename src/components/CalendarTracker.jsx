@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo, useState } from "react";
+import React, { useRef, useEffect, useMemo, useState, useCallback } from "react";
 import { gsap } from "gsap";
 import { Card, CardContent } from "./ui/Card";
 import { Calendar, ChevronLeft, ChevronRight, Flame, CheckCircle } from "lucide-react";
@@ -12,7 +12,7 @@ import {
   DialogDescription,
 } from "./ui/dialog";
 
-const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0 }) => {
+const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, refreshTrigger = 0 }) => {
   const { user } = useAuth();
   const containerRef = useRef(null);
   const calendarRef = useRef(null);
@@ -48,28 +48,37 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0 }) 
   ];
 
   // Load real check-ins from Supabase
-  useEffect(() => {
-    const loadCheckins = async () => {
-      if (!user) return;
+  const loadCheckins = useCallback(async () => {
+    if (!user) return;
 
-      setLoading(true);
-      try {
-        // Get checkins for the last 2 months to cover current view
-        const firstDayOfMonth = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
-        const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
-        const result = await getUserCheckins(user.id, firstDayOfMonth, lastDayOfMonth, 100);
-        if (result.success) {
-          setRealCheckins(result.data);
-          console.log('CalendarTracker: realCheckins', result.data);
-        }
-      } catch (error) {
-        // Error loading checkins
+    setLoading(true);
+    try {
+      // Get checkins for the current month
+      const firstDayOfMonth = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
+      const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
+      const result = await getUserCheckins(user.id, firstDayOfMonth, lastDayOfMonth, 100);
+      if (result.success) {
+        setRealCheckins(result.data);
+        console.log('CalendarTracker: realCheckins refreshed', result.data);
       }
-      setLoading(false);
-    };
-
-    loadCheckins();
+    } catch (error) {
+      console.error('Error loading calendar checkins:', error);
+    }
+    setLoading(false);
   }, [user, currentMonth, currentYear]);
+
+  // Load checkins on mount and when user changes
+  useEffect(() => {
+    loadCheckins();
+  }, [loadCheckins]);
+
+  // Refresh data when refreshTrigger changes (after check-ins)
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      console.log('CalendarTracker: Refreshing due to trigger change');
+      loadCheckins();
+    }
+  }, [refreshTrigger, loadCheckins]);
 
   // Convert real check-ins to calendar data
   const checkinData = useMemo(() => {

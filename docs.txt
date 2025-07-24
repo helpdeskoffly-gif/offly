@@ -259,6 +259,7 @@ execute FUNCTION update_updated_at_column ();create table public.user_analytics 
   weekly_unique_checkin_days integer null default 0,
   completedantitodos integer null default 0,
   weeklyantitodos integer null default 0,
+  weekly_score integer null default 0,
   constraint user_analytics_pkey primary key (id),
   constraint user_analytics_user_id_key unique (user_id),
   constraint user_analytics_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
@@ -305,3 +306,14 @@ execute FUNCTION update_updated_at_column ();create table public.waitlist (
 ) TABLESPACE pg_default;
 
 create index IF not exists idx_waitlist_email on public.waitlist using btree (email) TABLESPACE pg_default;
+
+CREATE OR REPLACE FUNCTION reset_weekly_scores()
+RETURNS void AS $$
+BEGIN
+  UPDATE public.user_analytics
+  SET
+    weekly_score = 0,
+    weekly_unique_checkin_days = 0,
+    weeklyantitodos = 0;
+END;
+$$ LANGUAGE plpgsql;

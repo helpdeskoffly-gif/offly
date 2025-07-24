@@ -37,11 +37,6 @@ const safeSupabaseOperation = async (operation, fallback = null) => {
 
 // Track landing page view
 export const trackLandingPageView = async (viewData = {}) => {
-  // Temporarily disabled due to RLS policy issues
-  return { success: true, data: null };
-
-  // Commented out until RLS policy issues are resolved
-  /*
   return safeSupabaseOperation(async () => {
     const data = await supabaseHelpers.insert("landing_page_views", {
       page_path: viewData.pagePath || window.location.pathname,
@@ -52,7 +47,6 @@ export const trackLandingPageView = async (viewData = {}) => {
 
     return { success: true, data };
   });
-  */
 };
 
 // Add to waitlist
@@ -114,6 +108,10 @@ export const createSignupUser = async (
       overall_average_sentiment: 0,
       average_mood_score: 0,
       current_streak: 0,
+      weekly_unique_checkin_days: 0,
+      weekly_score: 0,
+      completedantitodos: 0,
+      weeklyantitodos: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -322,6 +320,10 @@ export const createActiveUser = async (uid, username) => {
           today_average_sentiment: 0,
           overall_average_sentiment: 0,
           current_streak: 0,
+          weekly_unique_checkin_days: 0,
+          weekly_score: 0,
+          completedantitodos: 0,
+          weeklyantitodos: 0,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
@@ -339,6 +341,55 @@ export const createActiveUser = async (uid, username) => {
   });
 };
 
+// Check if user can check-in (4-hour cooldown)
+export const canUserCheckin = async (uid) => {
+  return safeSupabaseOperation(async () => {
+    if (!uid || uid === "undefined" || typeof uid !== "string") {
+      return { success: false, error: "Invalid user ID provided", canCheckin: false };
+    }
+
+    // Get the latest check-in for this user
+    const { data, error } = await supabase
+      .from("checkins")
+      .select("created_at")
+      .eq("user_id", uid)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error("Error checking last checkin:", error);
+      throw error;
+    }
+
+    // If no previous check-ins, user can check-in
+    if (!data || data.length === 0) {
+      return { 
+        success: true, 
+        canCheckin: true, 
+        lastCheckinTime: null,
+        waitTimeHours: 0 
+      };
+    }
+
+    const lastCheckinTime = new Date(data[0].created_at);
+    const now = new Date();
+    const hoursSinceLastCheckin = (now - lastCheckinTime) / (1000 * 60 * 60);
+    const cooldownHours = 4;
+
+    const canCheckin = hoursSinceLastCheckin >= cooldownHours;
+    const waitTimeHours = canCheckin ? 0 : Math.ceil(cooldownHours - hoursSinceLastCheckin);
+
+    return {
+      success: true,
+      canCheckin,
+      lastCheckinTime: lastCheckinTime.toISOString(),
+      hoursSinceLastCheckin: Math.round(hoursSinceLastCheckin * 100) / 100,
+      waitTimeHours,
+      waitTimeMinutes: canCheckin ? 0 : Math.ceil((cooldownHours - hoursSinceLastCheckin) * 60)
+    };
+  });
+};
+
 // Submit checkin
 export const submitCheckin = async (uid, checkinData) => {
   return safeSupabaseOperation(async () => {
@@ -346,6 +397,26 @@ export const submitCheckin = async (uid, checkinData) => {
     if (!uid || uid === "undefined" || typeof uid !== "string") {
       console.error("submitCheckin: Invalid uid provided:", uid);
       return { success: false, error: "Invalid user ID provided", data: null };
+    }
+
+    // Check cooldown period before proceeding
+    const cooldownResult = await canUserCheckin(uid);
+    if (!cooldownResult.success) {
+      return { success: false, error: "Error checking cooldown period", data: null };
+    }
+
+    if (!cooldownResult.canCheckin) {
+      const waitTime = cooldownResult.waitTimeHours > 1 
+        ? `${cooldownResult.waitTimeHours} hours`
+        : `${cooldownResult.waitTimeMinutes} minutes`;
+      return { 
+        success: false, 
+        error: `Please wait ${waitTime} before your next check-in. This helps maintain meaningful tracking.`,
+        data: null,
+        cooldownActive: true,
+        waitTime: cooldownResult.waitTimeHours > 1 ? cooldownResult.waitTimeHours : cooldownResult.waitTimeMinutes,
+        waitType: cooldownResult.waitTimeHours > 1 ? 'hours' : 'minutes'
+      };
     }
 
     // CRITICAL FIX: Ensure user exists in public.users before creating checkin
@@ -410,6 +481,10 @@ export const submitCheckin = async (uid, checkinData) => {
           overall_average_sentiment: 0,
           average_mood_score: 0,
           current_streak: 0,
+          weekly_unique_checkin_days: 0,
+          weekly_score: 0,
+          completedantitodos: 0,
+          weeklyantitodos: 0,
           created_at: new Date().toISOString(),
         },
         { onConflict: "user_id" },
@@ -465,7 +540,10 @@ export const submitCheckin = async (uid, checkinData) => {
     // CRITICAL: Update analytics table after successful checkin
     try {
       console.log("Updating analytics for user:", uid);
-      await updateUserAnalytics(uid);
+      const analyticsResult = await updateUserAnalytics(uid);
+      if(analyticsResult.success) {
+        console.log("Analytics updated successfully after checkin", analyticsResult.data.weekly_unique_checkin_days);
+      }
       console.log("Analytics updated successfully after checkin");
     } catch (analyticsError) {
       console.error(
@@ -1205,9 +1283,32 @@ export const getAllAchievementDefinitions = () => {
   return ACHIEVEMENT_DEFINITIONS;
 };
 
+// Upsert user analytics data
+const upsertUserAnalytics = async (uid, analyticsData) => {
+  return safeSupabaseOperation(async () => {
+    console.log("upsertUserAnalytics: Storing analytics for user:", uid, analyticsData);
+    
+    const { data, error } = await supabase
+      .from("user_analytics")
+      .upsert(analyticsData, { onConflict: "user_id" })
+      .select();
+
+    if (error) {
+      console.error("upsertUserAnalytics: Error storing analytics:", error);
+      throw error;
+    }
+
+    console.log("upsertUserAnalytics: Successfully stored analytics:", data[0]);
+    return { success: true, data: data[0] };
+  });
+};
+
 // Update user analytics after checkin (CRITICAL for dashboard integration)
 export const updateUserAnalytics = async (uid) => {
   return safeSupabaseOperation(async () => {
+    console.log("=== updateUserAnalytics DEBUG START ===");
+    console.log("Updating analytics for user:", uid);
+    
     // Get all user checkins to calculate analytics
     const { data: checkins, error: checkinsError } = await supabase
       .from("checkins")
@@ -1216,6 +1317,9 @@ export const updateUserAnalytics = async (uid) => {
       .order("created_at", { ascending: false });
 
     if (checkinsError) throw checkinsError;
+
+    console.log("updateUserAnalytics: Raw checkins data:", checkins);
+    console.log("updateUserAnalytics: Number of total checkins:", checkins?.length || 0);
 
     // Get anti-todo activity stats
     const { data: antiTodoItems, error: antiTodoError } = await supabase
@@ -1238,9 +1342,10 @@ export const updateUserAnalytics = async (uid) => {
         average_mood_score: 0,
         current_streak: 0,
         weekly_unique_checkin_days: 0,
+        weekly_score: 0,
         last_checkin_date: null,
-        completedAntiTodos: antiTodoItems?.filter(item => item.status === 'completed').length || 0,
-        weeklyAntiTodos: 0, // Will calculate this below
+        completedantitodos: antiTodoItems?.filter(item => item.status === 'completed').length || 0,
+        weeklyantitodos: 0, // Will calculate this below
         updated_at: new Date().toISOString(),
       };
 
@@ -1249,18 +1354,20 @@ export const updateUserAnalytics = async (uid) => {
         const weekAgoForAntiTodo = new Date();
         weekAgoForAntiTodo.setDate(weekAgoForAntiTodo.getDate() - 7);
         
-        basicAnalytics.weeklyAntiTodos = antiTodoItems.filter(item => 
+        basicAnalytics.weeklyantitodos = antiTodoItems.filter(item => 
           item.status === 'completed' && 
           new Date(item.completed_at) >= weekAgoForAntiTodo
         ).length;
       }
 
+      console.log("updateUserAnalytics: Creating basic analytics (no checkins):", basicAnalytics);
+      
       // Store basic analytics
       await upsertUserAnalytics(uid, basicAnalytics);
       return { success: true, message: "Basic analytics created with anti-todo stats" };
     }
 
-    console.log("updateUserAnalytics: Raw checkins for user", uid, ":", checkins);
+    console.log("updateUserAnalytics: Processing", checkins.length, "checkins");
 
     // Calculate analytics from checkins
     const totalCheckins = checkins.length;
@@ -1289,7 +1396,8 @@ export const updateUserAnalytics = async (uid) => {
     const checkinDates = [...new Set(checkins.map((c) => c.checkin_date))]
       .sort()
       .reverse();
-    console.log("updateUserAnalytics: checkinDates (unique and sorted):", checkinDates);
+    console.log("updateUserAnalytics: Unique checkin dates (sorted desc):", checkinDates);
+    console.log("updateUserAnalytics: Today's date:", today);
 
     let currentStreak = 0;
     let checkDate = new Date();
@@ -1307,35 +1415,67 @@ export const updateUserAnalytics = async (uid) => {
       }
     }
 
-    // Calculate weekly unique check-in days
+    console.log("updateUserAnalytics: Calculated streak:", currentStreak);
+
+    // Calculate weekly unique check-in days - DETAILED DEBUG
+    const now = new Date();
+    const todayStr = now.toISOString().split("T")[0];
     const weekAgoForCheckins = new Date();
-    weekAgoForCheckins.setDate(weekAgoForCheckins.getDate() - 7);
+    weekAgoForCheckins.setDate(weekAgoForCheckins.getDate() - 6); // Last 7 days including today
+    const weekAgoDateStr = weekAgoForCheckins.toISOString().split("T")[0];
+    
+    console.log("=== WEEKLY CALCULATION DEBUG ===");
+    console.log("Current date:", todayStr);
+    console.log("Week ago date (inclusive):", weekAgoDateStr);
+    console.log("Date range for weekly calculation:", weekAgoDateStr, "to", todayStr);
+    
+    console.log("All checkin dates from DB:", checkins.map(c => ({
+      id: c.id,
+      checkin_date: c.checkin_date,
+      created_at: c.created_at
+    })));
+    
     const recentCheckins = checkins.filter(
-      (c) => new Date(c.created_at) >= weekAgoForCheckins,
+      (c) => c.checkin_date >= weekAgoDateStr, // Use checkin_date instead of created_at
     );
-    const weeklyUniqueCheckinDays = [
-      ...new Set(recentCheckins.map((c) => c.checkin_date)),
-    ].length;
+    
+    console.log("Filtered recent checkins:", recentCheckins.map(c => ({
+      id: c.id,
+      checkin_date: c.checkin_date,
+      passes_filter: c.checkin_date >= weekAgoDateStr
+    })));
+    
+    const weeklyCheckinDates = recentCheckins.map((c) => c.checkin_date);
+    console.log("Weekly checkin dates (before unique):", weeklyCheckinDates);
+    
+    const uniqueWeeklyDates = [...new Set(weeklyCheckinDates)];
+    console.log("Unique weekly checkin dates:", uniqueWeeklyDates);
+    
+    const weeklyUniqueCheckinDays = uniqueWeeklyDates.length;
+    console.log("Final weekly unique checkin days count:", weeklyUniqueCheckinDays);
+    console.log("=== WEEKLY CALCULATION DEBUG END ===");
 
     const analyticsData = {
       user_id: uid,
       total_checkins: totalCheckins,
       average_mood_score: Math.round(averageMoodScore * 100) / 100,
-      average_sentiment_score: Math.round(averageSentiment * 100) / 100,
-      average_ai_score: Math.round(averageAiScore * 100) / 100,
+      overall_average_sentiment: Math.round(averageSentiment * 100) / 100,
+      current_ai_score: Math.round(averageAiScore * 100) / 100,
       current_streak: currentStreak,
       weekly_unique_checkin_days: weeklyUniqueCheckinDays,
       last_checkin_date: checkins[0]?.checkin_date || null,
-      completedAntiTodos: completedAntiTodos,
-      weeklyAntiTodos: weeklyAntiTodos,
+      completedantitodos: completedAntiTodos,
+      weeklyantitodos: weeklyAntiTodos,
+      weekly_score: weeklyUniqueCheckinDays, // Set weekly_score to the count of unique checkin days
       updated_at: new Date().toISOString(),
     };
 
-    console.log("updateUserAnalytics: calculated analytics:", analyticsData);
+    console.log("updateUserAnalytics: Final analytics data to store:", analyticsData);
 
     // Store analytics using upsert
     const result = await upsertUserAnalytics(uid, analyticsData);
-    console.log("updateUserAnalytics: stored analytics result:", result);
+    console.log("updateUserAnalytics: Analytics storage result:", result);
+    console.log("=== updateUserAnalytics DEBUG END ===");
 
     return { success: true, data: analyticsData };
   });
@@ -1380,5 +1520,73 @@ export const initializeUserAchievements = async (uid) => {
     }
 
     return { success: true, data: [] };
+  });
+};
+
+// Initialize or update user analytics for existing users
+export const initializeOrUpdateUserAnalytics = async (uid) => {
+  return safeSupabaseOperation(async () => {
+    console.log("Initializing/updating analytics for user:", uid);
+    
+    // Check if user analytics record exists
+    const { data: existingAnalytics, error: fetchError } = await supabase
+      .from("user_analytics")
+      .select("*")
+      .eq("user_id", uid)
+      .single();
+
+    if (fetchError && fetchError.code !== "PGRST116") {
+      console.error("Error fetching existing analytics:", fetchError);
+      throw fetchError;
+    }
+
+    if (!existingAnalytics) {
+      console.log("No analytics record found, creating new one");
+      // Create new analytics record with all required fields
+      const newAnalytics = {
+        user_id: uid,
+        daily_checkin_counter: 0,
+        total_checkins: 0,
+        current_ai_score: 0,
+        today_average_sentiment: 0,
+        overall_average_sentiment: 0,
+        average_mood_score: 0,
+        current_streak: 0,
+        weekly_unique_checkin_days: 0,
+        weekly_score: 0,
+        completedantitodos: 0,
+        weeklyantitodos: 0,
+        last_checkin_date: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const result = await upsertUserAnalytics(uid, newAnalytics);
+      
+      // Now update with real data
+      await updateUserAnalytics(uid);
+      
+      return result;
+    } else {
+      console.log("Analytics record exists, ensuring all fields are present");
+      
+      // Check if new fields are missing and update if needed
+      const needsUpdate = 
+        existingAnalytics.weekly_unique_checkin_days === null ||
+        existingAnalytics.weekly_unique_checkin_days === undefined ||
+        existingAnalytics.weekly_score === null ||
+        existingAnalytics.weekly_score === undefined ||
+        existingAnalytics.completedantitodos === null ||
+        existingAnalytics.completedantitodos === undefined ||
+        existingAnalytics.weeklyantitodos === null ||
+        existingAnalytics.weeklyantitodos === undefined;
+
+      if (needsUpdate) {
+        console.log("Updating analytics with missing fields");
+        await updateUserAnalytics(uid);
+      }
+      
+      return { success: true, data: existingAnalytics };
+    }
   });
 };

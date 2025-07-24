@@ -45,12 +45,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Separator } from "./components/ui/separator";
 import { WaitlistSection } from "./components/WaitlistSection";
 import { Skeleton } from "./components/ui/skeleton";
+import { trackLandingPageView } from "./services/database";
 
 export function HomeOptimized() {
   const { user } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
   const [activeFeature, setActiveFeature] = useState(0);
+
+  // Track landing page view on mount
+  useEffect(() => {
+    trackLandingPageView();
+  }, []);
 
   // Scroll progress refs for GSAP
   const scrollProgressRef = useRef(0);

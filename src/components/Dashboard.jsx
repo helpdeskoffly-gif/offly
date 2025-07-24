@@ -254,20 +254,28 @@ const Dashboard = () => {
   };
 
   // Real data from userProfile
-  const dashboardData = useMemo(() => ({
-    currentStreak: userProfile?.currentStreak || 0,
-    weeklyJoy: { current: userProfile?.dailyCheckins || 0, target: 7 },
-    lastCheckIn: userProfile?.lastCheckinDate
-      ? getTimeAgo(userProfile.lastCheckinDate)
-      : "Never",
-    moodData: userProfile?.currentAiScore
-      ? getMoodLabel(userProfile.currentAiScore)
-      : "neutral",
-    totalCheckIns: userProfile?.totalCheckins || 0,
-    weeklyProgress: userProfile?.weeklyUniqueCheckinDays || 0,
-    currentRank: Math.floor((userProfile?.totalCheckins || 0) / 10) + 1,
-    percentile: Math.min(95, (userProfile?.totalCheckins || 0) * 2),
-  }), [userProfile]);
+  const dashboardData = useMemo(() => {
+    console.log("Dashboard: Computing dashboardData from userProfile:", userProfile);
+    
+    const result = {
+      currentStreak: userProfile?.currentStreak || 0,
+      weeklyJoy: { current: userProfile?.dailyCheckins || 0, target: 7 },
+      lastCheckIn: userProfile?.lastCheckinDate
+        ? getTimeAgo(userProfile.lastCheckinDate)
+        : "Never",
+      moodData: userProfile?.currentAiScore
+        ? getMoodLabel(userProfile.currentAiScore)
+        : "neutral",
+      totalCheckIns: userProfile?.totalCheckins || 0,
+      weeklyProgress: userProfile?.weeklyUniqueCheckinDays || 0,
+      weeklyScore: userProfile?.weeklyUniqueCheckinDays || 0,
+      currentRank: Math.floor((userProfile?.totalCheckins || 0) / 10) + 1,
+      percentile: Math.min(95, (userProfile?.totalCheckins || 0) * 2),
+    };
+    
+    console.log("Dashboard: Computed dashboardData:", result);
+    return result;
+  }, [userProfile]);
 
   // Calculate top moods from recent check-ins
   const topMoods = useMemo(() => {
@@ -1500,7 +1508,7 @@ const Dashboard = () => {
                     <div
                       className={`text-xl sm:text-2xl lg:text-3xl font-bold ${themeColors.text.primary} mb-1 sm:mb-2 group-hover:text-emerald-600 transition-colors duration-300`}
                     >
-                      {dashboardData.weeklyProgress}/7
+                      {dashboardData.weeklyScore}/7
                     </div>
                     <p className={`text-xs sm:text-sm ${themeColors.text.secondary} font-medium`}>
                       This Week 🔥
@@ -1769,7 +1777,7 @@ const Dashboard = () => {
                         <div
                           className={`text-4xl font-bold ${themeColors.text.primary} mb-2`}
                         >
-                          {dashboardData.weeklyProgress}/7
+                          {dashboardData.weeklyScore}/7
                         </div>
                         <p
                           className={`${themeColors.text.secondary} font-medium`}
@@ -1789,7 +1797,7 @@ const Dashboard = () => {
                             className={`text-sm font-medium ${themeColors.text.primary}`}
                           >
                             {Math.round(
-                              (dashboardData.weeklyProgress / 7) * 100,
+                              (dashboardData.weeklyScore / 7) * 100,
                             )}
                             %
                           </span>
@@ -1798,14 +1806,14 @@ const Dashboard = () => {
                           <div
                             className={`h-2 bg-gradient-to-r ${premiumGradients.secondary} rounded-full transition-all duration-300`}
                             style={{
-                              width: `${(dashboardData.weeklyProgress / 7) * 100}%`,
+                              width: `${(dashboardData.weeklyScore / 7) * 100}%`,
                             }}
                           ></div>
                         </div>
                         <p
                           className={`text-xs ${themeColors.text.muted} text-center`}
                         >
-                          {7 - dashboardData.weeklyProgress} more check-ins to
+                          {7 - dashboardData.weeklyScore} more check-ins to
                           complete your weekly goal
                         </p>
                       </div>

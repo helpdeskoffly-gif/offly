@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
-import { getUserAnalytics, createActiveUser } from "../services/database";
+import { getUserAnalytics, createActiveUser, initializeOrUpdateUserAnalytics } from "../services/database";
 
 export const useAuth = () => {
   const [user, setUser] = useState(null);
@@ -103,25 +103,28 @@ export const useAuth = () => {
       // Set loading to false AFTER user state is set
       setLoading(false);
 
-      // Re-enabled analytics fetching with improved error handling
-      if (!analyticsLoaded) {
-        try {
-          console.log("Attempting to fetch user analytics...");
-          setAnalyticsLoaded(true); // Set this immediately to prevent repeated calls
+              // Re-enabled analytics fetching with improved error handling
+        if (!analyticsLoaded) {
+          try {
+            console.log("Attempting to initialize/fetch user analytics...");
+            setAnalyticsLoaded(true); // Set this immediately to prevent repeated calls
 
-          // Add timeout and retry limit to prevent infinite loops
-          const [analyticsResult, userProfileResult] = await Promise.all([
-            Promise.race([
-              getUserAnalytics(supabaseUser.id),
-              new Promise((_, reject) =>
-                setTimeout(
-                  () => reject(new Error("Analytics fetch timeout")),
-                  8000,
+            // First ensure analytics are properly initialized
+            await initializeOrUpdateUserAnalytics(supabaseUser.id);
+
+            // Then fetch the data
+            const [analyticsResult, userProfileResult] = await Promise.all([
+              Promise.race([
+                getUserAnalytics(supabaseUser.id),
+                new Promise((_, reject) =>
+                  setTimeout(
+                    () => reject(new Error("Analytics fetch timeout")),
+                    8000,
+                  ),
                 ),
-              ),
-            ]),
-            supabase.from('users').select('username, hobbies').eq('id', supabaseUser.id).single(),
-          ]);
+              ]),
+              supabase.from('users').select('username, hobbies').eq('id', supabaseUser.id).single(),
+            ]);
 
           let userHobbies = [];
           let userUsername = supabaseUser.user_metadata?.full_name || supabaseUser.email || "User";
@@ -156,6 +159,7 @@ export const useAuth = () => {
               currentStreak: analytics.current_streak || 0,
               lastCheckinDate: analytics.last_checkin_date,
               weeklyUniqueCheckinDays: analytics.weekly_unique_checkin_days || 0,
+              weekly_score: analytics.weekly_score || 0,
             });
             console.log("useAuth: userProfile updated with analytics:", userProfile);
           } else {
@@ -211,10 +215,19 @@ export const useAuth = () => {
   const refreshUserProfile = async () => {
     if (user && user.id) {
       try {
+        console.log("=== refreshUserProfile DEBUG START ===");
+        console.log("Refreshing profile for user:", user.id);
+        
+        // Ensure analytics are properly initialized before fetching
+        await initializeOrUpdateUserAnalytics(user.id);
+        
         const [analyticsResult, userProfileResult] = await Promise.all([
           getUserAnalytics(user.id),
           supabase.from('users').select('username, hobbies').eq('id', user.id).single(),
         ]);
+
+        console.log("refreshUserProfile: Raw analytics result:", analyticsResult);
+        console.log("refreshUserProfile: Raw user profile result:", userProfileResult);
 
         let userHobbies = [];
         let userUsername = user.user_metadata?.full_name || user.email || "User";
@@ -231,7 +244,10 @@ export const useAuth = () => {
 
         if (analyticsResult.success && analyticsResult.data) {
           const analytics = analyticsResult.data;
-          setUserProfile({
+          console.log("refreshUserProfile: Analytics data received:", analytics);
+          console.log("refreshUserProfile: weekly_unique_checkin_days from DB:", analytics.weekly_unique_checkin_days);
+          
+          const newUserProfile = {
             username: userUsername,
             hobbies: userHobbies,
             profileCompleted: profileCompleted,
@@ -246,10 +262,18 @@ export const useAuth = () => {
             currentStreak: analytics.current_streak || 0,
             lastCheckinDate: analytics.last_checkin_date,
             weeklyUniqueCheckinDays: analytics.weekly_unique_checkin_days || 0,
-          });
+            weekly_score: analytics.weekly_score || 0,
+          };
+          
+          console.log("refreshUserProfile: New userProfile object:", newUserProfile);
+          console.log("refreshUserProfile: weeklyUniqueCheckinDays mapped to:", newUserProfile.weeklyUniqueCheckinDays);
+          
+          setUserProfile(newUserProfile);
           console.log("User profile refreshed successfully");
+          console.log("=== refreshUserProfile DEBUG END ===");
         } else {
           console.log("No analytics data found during refresh");
+          console.log("Analytics result:", analyticsResult);
         }
       } catch (error) {
         console.error("Error refreshing user profile:", error);
