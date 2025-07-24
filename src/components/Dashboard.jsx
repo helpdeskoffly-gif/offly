@@ -146,7 +146,21 @@ const Dashboard = () => {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const { canCheckin, formatTimeRemaining, refreshCooldown } = useCheckinCooldown(user?.id);
-  const [activeTab, setActiveTab] = useState("Dashboard");
+  
+  // Valid tab IDs for validation
+  const validTabs = ["Dashboard", "Joy Tracker", "Anti-To-Do", "Community", "Achievements"];
+  
+  // Initialize activeTab from localStorage or default to "Dashboard"
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedTab = localStorage.getItem('dashboard-active-tab');
+      // Validate that the saved tab is still valid
+      if (savedTab && validTabs.includes(savedTab)) {
+        return savedTab;
+      }
+    }
+    return "Dashboard";
+  });
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -611,6 +625,11 @@ const Dashboard = () => {
 
   // Animate tab changes
   const animateTabChange = (newTab) => {
+    // Save to localStorage (only if it's a valid tab)
+    if (typeof window !== 'undefined' && validTabs.includes(newTab)) {
+      localStorage.setItem('dashboard-active-tab', newTab);
+    }
+    
     if (contentRef.current) {
       gsap.to(contentRef.current, {
         opacity: 0,
