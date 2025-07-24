@@ -20,6 +20,7 @@ import { gsap } from "gsap";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../contexts/ThemeContext.jsx";
 import { useNavigate } from "react-router-dom";
+import { useCheckinCooldown } from "../hooks/useCheckinCooldown";
 import {
   submitCheckin,
   getUserCheckins,
@@ -144,6 +145,7 @@ const Dashboard = () => {
   const { user, userProfile, signOut, refreshUserProfile } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const { canCheckin, formatTimeRemaining, refreshCooldown } = useCheckinCooldown(user?.id);
   const [activeTab, setActiveTab] = useState("Dashboard");
 
   const [showNotifications, setShowNotifications] = useState(false);
@@ -1275,6 +1277,9 @@ const Dashboard = () => {
 
         // Close drawer and reset form
         setShowCheckinDrawer(false);
+        
+        // Refresh cooldown status
+        refreshCooldown();
 
         // Show styled success notification
         setSuccessMessage(
@@ -1424,10 +1429,20 @@ const Dashboard = () => {
 
                       <Button
                         onClick={() => setShowCheckinDrawer(true)}
-                        className={`bg-gradient-to-r ${premiumGradients.secondary} hover:shadow-xl hover:scale-105 text-white h-11 px-6 rounded-xl font-medium transition-all duration-300 w-full max-w-xs`}
+                        disabled={!canCheckin}
+                        className={`bg-gradient-to-r ${premiumGradients.secondary} hover:shadow-xl hover:scale-105 text-white h-11 px-6 rounded-xl font-medium transition-all duration-300 w-full max-w-xs disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100`}
                       >
-                        <Heart className="w-4 h-4 mr-2" />
-                        Start Check-in
+                        {!canCheckin ? (
+                          <>
+                            <Clock className="w-4 h-4 mr-2" />
+                            Next in {formatTimeRemaining}
+                          </>
+                        ) : (
+                          <>
+                            <Heart className="w-4 h-4 mr-2" />
+                            Start Check-in
+                          </>
+                        )}
                       </Button>
                     </div>
                   </CardContent>
@@ -1820,10 +1835,20 @@ const Dashboard = () => {
 
                       <Button
                         onClick={() => setShowCheckinDrawer(true)}
-                        className={`w-full bg-gradient-to-r ${premiumGradients.secondary} text-white rounded-xl font-medium`}
+                        disabled={!canCheckin}
+                        className={`w-full bg-gradient-to-r ${premiumGradients.secondary} text-white rounded-xl font-medium disabled:opacity-60 disabled:cursor-not-allowed`}
                       >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Check-in
+                        {!canCheckin ? (
+                          <>
+                            <Clock className="w-4 h-4 mr-2" />
+                            Next in {formatTimeRemaining}
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Check-in
+                          </>
+                        )}
                       </Button>
                     </div>
                   </CardContent>

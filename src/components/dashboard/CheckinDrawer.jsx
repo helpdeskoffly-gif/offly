@@ -9,8 +9,7 @@ import {
   DrawerFooter,
 } from "../ui/drawer";
 import { Textarea } from "../ui/textarea";
-import { X, Sparkles, Send, Heart, Clock, Lightbulb } from "lucide-react";
-import { canUserCheckin } from "../../services/database";
+import { X, Sparkles, Send, Heart } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useTheme } from "../../contexts/ThemeContext.jsx";
 
@@ -24,9 +23,6 @@ const CheckinDrawer = ({
   const [selectedMood, setSelectedMood] = useState("");
   const [notes, setNotes] = useState("");
   const [selectedSuggestion, setSelectedSuggestion] = useState("");
-  const [cooldownInfo, setCooldownInfo] = useState(null);
-  const [checkingCooldown, setCheckingCooldown] = useState(false);
-
   const contentRef = useRef(null);
 
   const { user } = useAuth();
@@ -116,26 +112,7 @@ const CheckinDrawer = ({
     }
   }, [showCheckinDrawer]);
 
-  // Check cooldown when drawer opens
-  useEffect(() => {
-    const checkCooldownStatus = async () => {
-      if (showCheckinDrawer && user?.id) {
-        setCheckingCooldown(true);
-        try {
-          const result = await canUserCheckin(user.id);
-          if (result.success) {
-            setCooldownInfo(result);
-          }
-        } catch (error) {
-          console.error("Error checking cooldown:", error);
-        } finally {
-          setCheckingCooldown(false);
-        }
-      }
-    };
 
-    checkCooldownStatus();
-  }, [showCheckinDrawer, user?.id]);
 
   const handleSubmit = async () => {
     if (!selectedMood && !notes.trim() && !selectedSuggestion) {
@@ -219,26 +196,7 @@ const CheckinDrawer = ({
               </div>
             </div>
 
-            {/* Cooldown Warning */}
-            {cooldownInfo && !cooldownInfo.canCheckin && (
-              <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                <div className="flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h3 className="font-medium text-blue-800 dark:text-blue-200 mb-1">
-                      Take a break! ⏰
-                    </h3>
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
-                      You can check in again in{" "}
-                      {cooldownInfo.waitTimeHours > 1 
-                        ? `${cooldownInfo.waitTimeHours} hours`
-                        : `${cooldownInfo.waitTimeMinutes} minutes`}.
-                      This helps maintain meaningful mood tracking.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+
 
             {/* Mood Selection */}
             <div className="space-y-4">
@@ -250,8 +208,7 @@ const CheckinDrawer = ({
                   <button
                     key={index}
                     onClick={() => setSelectedMood(emoji)}
-                    disabled={cooldownInfo && !cooldownInfo.canCheckin}
-                    className={`p-4 rounded-xl border-2 transition-all duration-200 text-2xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`p-4 rounded-xl border-2 transition-all duration-200 text-2xl hover:scale-105 ${
                       selectedMood === emoji
                         ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-lg"
                         : `border-gray-200 dark:border-slate-600 ${themeColors.hover}`
@@ -355,8 +312,7 @@ const CheckinDrawer = ({
                 onClick={handleSubmit}
                 disabled={
                   isSubmitting ||
-                  (!selectedMood && !notes.trim() && !selectedSuggestion) ||
-                  (cooldownInfo && !cooldownInfo.canCheckin)
+                  (!selectedMood && !notes.trim() && !selectedSuggestion)
                 }
                 className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -364,11 +320,6 @@ const CheckinDrawer = ({
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Submitting...
-                  </div>
-                ) : cooldownInfo && !cooldownInfo.canCheckin ? (
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    In Cooldown
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
