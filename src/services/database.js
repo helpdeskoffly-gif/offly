@@ -553,14 +553,13 @@ export const submitCheckin = async (uid, checkinData) => {
       created_at: new Date().toISOString(),
     };
 
-    // TEMPORARILY DISABLED: These columns don't exist in the current database schema
-    // TODO: Add mood_emoji and hashtags columns to the checkins table in Supabase
-    // if (validMoodEmoji) {
-    //   checkinRecord.mood_emoji = validMoodEmoji;
-    // }
-    // if (validHashtags.length > 0) {
-    //   checkinRecord.hashtags = validHashtags.join(',');
-    // }
+    // Add mood_emoji and hashtags since they exist in the database schema
+    if (validMoodEmoji) {
+      checkinRecord.mood_emoji = validMoodEmoji;
+    }
+    if (validHashtags.length > 0) {
+      checkinRecord.hashtags = validHashtags.join(',');
+    }
 
     console.log("Attempting to insert checkin record:", checkinRecord);
     const result = await supabaseHelpers.insert("checkins", checkinRecord);

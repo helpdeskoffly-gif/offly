@@ -15,6 +15,7 @@ import { useProfileCompletionNotification } from "../hooks/useProfileCompletionN
 import { ProfileCompletionModal } from "./ProfileCompletionModal";
 import { ProfileSettingsModal } from "./ProfileSettingsModal";
 import { AntiTodoList } from "./AntiTodoList";
+import { Community } from "./Community";
 
 import { gsap } from "gsap";
 import { useAuth } from "../hooks/useAuth";
@@ -109,6 +110,7 @@ import {
   Send,
   Hash,
   ChevronLeft,
+  Share2,
 } from "lucide-react";
 
 // Helper function moved outside component to prevent re-creation
@@ -1229,6 +1231,42 @@ const Dashboard = () => {
     });
   };
 
+  // State for last checkin for sharing
+  const [lastCheckin, setLastCheckin] = useState(null);
+  const [showShareCheckingOption, setShowShareCheckinOption] = useState(false);
+
+  // Function to share checkin to community
+  const handleShareCheckin = async () => {
+    if (!lastCheckin) return;
+    
+    try {
+      const { shareCheckinToCommunity } = await import('../services/community');
+      const result = await shareCheckinToCommunity(user.id, lastCheckin);
+      
+      if (result.success) {
+        setSuccessMessage("✨ Check-in shared to community! Others can now see your mood update.");
+        setToastType("success");
+        setShowSuccessToast(true);
+        setShowShareCheckinOption(false);
+        
+        setTimeout(() => {
+          setShowSuccessToast(false);
+        }, 4000);
+      } else {
+        setSuccessMessage("Failed to share check-in. Please try again.");
+        setToastType("error");
+        setShowSuccessToast(true);
+        setTimeout(() => setShowSuccessToast(false), 3000);
+      }
+    } catch (error) {
+      console.error('Error sharing checkin:', error);
+      setSuccessMessage("Error sharing check-in. Please try again.");
+      setToastType("error");
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+    }
+  };
+
   // Checkin functionality
   const handleCheckinSubmit = async (checkinData) => {
     const moodEmoji = checkinData?.emoji;
@@ -1241,6 +1279,7 @@ const Dashboard = () => {
     }
 
     setIsSubmitting(true);
+    console.log('Starting checkin submission...');
 
     try {
       // Convert emoji to mood score (1-10 scale)
@@ -1261,8 +1300,17 @@ const Dashboard = () => {
       logCheckinData(checkinPayload);
       
       const result = await submitCheckin(user.id, checkinPayload);
+      console.log('Checkin submit result:', result);
 
       if (result.success) {
+        // Store the checkin data for potential sharing
+        setLastCheckin({
+          ...result.data,
+          mood_emoji: moodEmoji,
+          mood_score: moodScore,
+          mood_text: notes
+        });
+
         // Update local state
         setLastCheckinMood(moodEmoji);
 
@@ -1329,17 +1377,19 @@ const Dashboard = () => {
         // Refresh cooldown status
         refreshCooldown();
 
-        // Show styled success notification
+        // Show styled success notification with share option
         setSuccessMessage(
           `Check-in completed! Your mood has been recorded.`,
         );
         setToastType("success");
         setShowSuccessToast(true);
+        setShowShareCheckinOption(true);
 
-        // Auto-hide success message after 3 seconds
+        // Auto-hide success message after 6 seconds (longer for share option)
         setTimeout(() => {
           setShowSuccessToast(false);
-        }, 3000);
+          setShowShareCheckinOption(false);
+        }, 6000);
 
         // Show AI nudges after successful check-in (delayed)
         setTimeout(() => {
@@ -1359,6 +1409,7 @@ const Dashboard = () => {
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
     } finally {
+      console.log('Resetting isSubmitting to false');
       setIsSubmitting(false);
     }
   };
@@ -1918,219 +1969,7 @@ const Dashboard = () => {
         return <AntiTodoList userId={user.id} />;
 
       case "Community":
-        return (
-          <div className="space-y-8">
-            <div className="fade-in">
-              {/* Enhanced Header */}
-              <div className="mb-8">
-                <div className="flex items-center gap-4 mb-6">
-                  <div
-                    className={`p-3 rounded-2xl bg-gradient-to-br ${premiumGradients.secondary} shadow-sm`}
-                  >
-                    <Users className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <h1
-                      className={`text-3xl font-semibold ${themeColors.text.primary} mb-1`}
-                    >
-                      Community
-                    </h1>
-                    <p className={`${themeColors.text.secondary} text-lg`}>
-                      Connect with others on their wellness journey and share
-                      meaningful moments
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Community Preview Cards */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <Card className={`${themeColors.cardVariants.primary} border-0`}>
-                  <CardContent className="p-8">
-                    <div
-                      className={`w-16 h-16 bg-gradient-to-br ${premiumGradients.secondary} rounded-2xl flex items-center justify-center mb-6 shadow-sm`}
-                    >
-                      <UserPlus className="w-8 h-8 text-white" />
-                    </div>
-                    <h3
-                      className={`text-xl font-semibold ${themeColors.text.primary} mb-3`}
-                    >
-                      Connect & Share
-                    </h3>
-                    <p
-                      className={`${themeColors.text.secondary} mb-6 leading-relaxed`}
-                    >
-                      Join a supportive community where you can share your
-                      wellness journey, celebrate milestones, and inspire others
-                      through authentic connections.
-                    </p>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
-                        <span
-                          className={`text-sm ${themeColors.text.secondary}`}
-                        >
-                          Share daily check-ins
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
-                        <span
-                          className={`text-sm ${themeColors.text.secondary}`}
-                        >
-                          Celebrate achievements
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
-                        <span
-                          className={`text-sm ${themeColors.text.secondary}`}
-                        >
-                          Find accountability partners
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className={`${themeColors.cardVariants.accent} border-0`}>
-                  <CardContent className="p-8">
-                    <div
-                      className={`w-16 h-16 bg-gradient-to-br ${premiumGradients.accent} rounded-2xl flex items-center justify-center mb-6 shadow-sm`}
-                    >
-                      <MessageCircle className="w-8 h-8 text-white" />
-                    </div>
-                    <h3
-                      className={`text-xl font-semibold ${themeColors.text.primary} mb-3`}
-                    >
-                      Wellness Groups
-                    </h3>
-                    <p
-                      className={`${themeColors.text.secondary} mb-6 leading-relaxed`}
-                    >
-                      Join specialized groups focused on specific wellness goals
-                      like mindfulness, fitness, mental health, or personal
-                      growth with guided activities.
-                    </p>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
-                        <span
-                          className={`text-sm ${themeColors.text.secondary}`}
-                        >
-                          Join interest-based groups
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
-                        <span
-                          className={`text-sm ${themeColors.text.secondary}`}
-                        >
-                          Participate in challenges
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
-                        <span
-                          className={`text-sm ${themeColors.text.secondary}`}
-                        >
-                          Access expert guidance
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Coming Soon Features */}
-              <Card className={`${themeColors.cardVariants.secondary} border-0`}>
-                <CardContent className="p-10 text-center">
-                  <div
-                    className={`w-20 h-20 bg-gradient-to-br ${premiumGradients.secondary} rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm`}
-                  >
-                    <Sparkles className="w-10 h-10 text-white" />
-                  </div>
-                  <h3
-                    className={`text-2xl font-semibold ${themeColors.text.primary} mb-3`}
-                  >
-                    Community Features Coming Soon
-                  </h3>
-                  <p
-                    className={`${themeColors.text.secondary} mb-8 text-lg max-w-2xl mx-auto leading-relaxed`}
-                  >
-                    We're building a supportive space where you can connect with
-                    like-minded individuals, share your wellness journey, and
-                    find inspiration in others' stories.
-                  </p>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                    <div className="text-center">
-                      <div
-                        className={`w-12 h-12 bg-gradient-to-br ${premiumGradients.primary} rounded-xl flex items-center justify-center mx-auto mb-3`}
-                      >
-                        <Users className="w-6 h-6 text-white" />
-                      </div>
-                      <h4
-                        className={`font-medium ${themeColors.text.primary} mb-2`}
-                      >
-                        Community Feed
-                      </h4>
-                      <p className={`text-sm ${themeColors.text.muted}`}>
-                        Share updates and see others' progress
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <div
-                        className={`w-12 h-12 bg-gradient-to-br ${premiumGradients.secondary} rounded-xl flex items-center justify-center mx-auto mb-3`}
-                      >
-                        <Trophy className="w-6 h-6 text-white" />
-                      </div>
-                      <h4
-                        className={`font-medium ${themeColors.text.primary} mb-2`}
-                      >
-                        Group Challenges
-                      </h4>
-                      <p className={`text-sm ${themeColors.text.muted}`}>
-                        Participate in wellness challenges
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <div
-                        className={`w-12 h-12 bg-gradient-to-br ${premiumGradients.accent} rounded-xl flex items-center justify-center mx-auto mb-3`}
-                      >
-                        <Heart className="w-6 h-6 text-white" />
-                      </div>
-                      <h4
-                        className={`font-medium ${themeColors.text.primary} mb-2`}
-                      >
-                        Support Network
-                      </h4>
-                      <p className={`text-sm ${themeColors.text.muted}`}>
-                        Find and offer peer support
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Button
-                      className={`bg-gradient-to-r ${premiumGradients.secondary} text-white h-11 px-6 rounded-xl font-medium transition-all duration-300 hover:shadow-lg`}
-                    >
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Join Early Access
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="h-11 px-6 rounded-xl font-medium border-2"
-                    >
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      Share Ideas
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        );
+        return <Community />;
 
       case "Achievements":
         return <Achievements />;
@@ -2256,11 +2095,25 @@ const Dashboard = () => {
                   <p className={`text-sm ${themeColors.text.secondary}`}>
                     {successMessage}
                   </p>
+                  
+                  {/* Share to Community Button */}
+                  {showShareCheckingOption && toastType === "success" && (
+                    <Button
+                      onClick={handleShareCheckin}
+                      className={`bg-gradient-to-r ${premiumGradients.accent} text-white h-8 px-4 rounded-lg font-medium text-xs mt-3 w-full transition-all duration-300 hover:shadow-lg`}
+                    >
+                      <Share2 className="w-3 h-3 mr-2" />
+                      Share to Community
+                    </Button>
+                  )}
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowSuccessToast(false)}
+                  onClick={() => {
+                    setShowSuccessToast(false);
+                    setShowShareCheckinOption(false);
+                  }}
                   className="h-6 w-6 p-0 flex-shrink-0"
                 >
                   <X className="h-3 w-3" />

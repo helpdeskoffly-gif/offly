@@ -112,8 +112,6 @@ const CheckinDrawer = ({
     }
   }, [showCheckinDrawer]);
 
-
-
   const handleSubmit = async () => {
     if (!selectedMood && !notes.trim() && !selectedSuggestion) {
       return; // Don't submit if nothing is selected
@@ -121,16 +119,21 @@ const CheckinDrawer = ({
 
     const finalNotes = notes.trim() || selectedSuggestion;
 
-    await handleCheckinSubmit({
-      emoji: selectedMood,
-      notes: finalNotes,
-      hashtags: [],
-    });
+    try {
+      await handleCheckinSubmit({
+        emoji: selectedMood,
+        notes: finalNotes,
+        hashtags: [],
+      });
 
-    // Reset form
-    setSelectedMood("");
-    setNotes("");
-    setSelectedSuggestion("");
+      // Reset form only after successful submission
+      setSelectedMood("");
+      setNotes("");
+      setSelectedSuggestion("");
+    } catch (error) {
+      console.error('Error in CheckinDrawer handleSubmit:', error);
+      // Don't reset form on error so user doesn't lose their input
+    }
   };
 
   const handleClose = () => {
@@ -152,10 +155,11 @@ const CheckinDrawer = ({
   return (
     <Drawer open={showCheckinDrawer} onOpenChange={setShowCheckinDrawer}>
       <DrawerContent
-        className={`${themeColors.background} ${themeColors.border} border-t-2 max-h-[90vh]`}
+        className={`${themeColors.background} ${themeColors.border} border-t-2 max-h-[95vh] flex flex-col`}
       >
-        <div className="max-w-2xl mx-auto w-full">
-          <DrawerHeader className="text-center pb-4">
+        <div className="max-w-2xl mx-auto w-full flex flex-col min-h-0">
+          {/* Fixed Header */}
+          <DrawerHeader className="text-center pb-4 flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
@@ -181,124 +185,126 @@ const CheckinDrawer = ({
             </p>
           </DrawerHeader>
 
-          <div ref={contentRef} className="px-6 pb-4 space-y-6">
-            <div className="text-center space-y-3">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center mx-auto shadow-lg">
-                <Heart className="w-8 h-8 text-white" />
+          {/* Scrollable Content Area */}
+          <div className="flex-1 overflow-y-auto px-6">
+            <div ref={contentRef} className="space-y-6 pb-4">
+              <div className="text-center space-y-3">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                  <Heart className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h2 className={`text-2xl font-bold ${themeColors.text.primary}`}>
+                    How are you feeling?
+                  </h2>
+                  <p className={`${themeColors.text.secondary} text-sm`}>
+                    Take a moment to reflect on your current mood
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className={`text-2xl font-bold ${themeColors.text.primary}`}>
-                  How are you feeling?
-                </h2>
-                <p className={`${themeColors.text.secondary} text-sm`}>
-                  Take a moment to reflect on your current mood
-                </p>
-              </div>
-            </div>
 
-
-
-            {/* Mood Selection */}
-            <div className="space-y-4">
-              <h3 className={`text-lg font-semibold ${themeColors.text.primary}`}>
-                Choose your mood
-              </h3>
-              <div className="grid grid-cols-5 gap-3">
-                {moods.map((emoji, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedMood(emoji)}
-                    className={`p-4 rounded-xl border-2 transition-all duration-200 text-2xl hover:scale-105 ${
-                      selectedMood === emoji
-                        ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-lg"
-                        : `border-gray-200 dark:border-slate-600 ${themeColors.hover}`
-                    }`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Quick Suggestions */}
-            {currentSuggestions.length > 0 && (
-              <div className="space-y-3">
-                <h3
-                  className={`text-sm font-medium ${themeColors.text.primary}`}
-                >
-                  Quick suggestions for {selectedMood}
+              {/* Mood Selection */}
+              <div className="space-y-4">
+                <h3 className={`text-lg font-semibold ${themeColors.text.primary}`}>
+                  Choose your mood
                 </h3>
-                <div className="space-y-2">
-                  {currentSuggestions.map((suggestion) => (
+                <div className="grid grid-cols-5 gap-3">
+                  {moods.map((emoji, index) => (
                     <button
-                      key={suggestion}
-                      onClick={() => selectSuggestion(suggestion)}
-                      className={`
-                        w-full p-3 text-left rounded-lg transition-all duration-200 text-sm
-                        ${
-                          selectedSuggestion === suggestion
-                            ? "bg-purple-500 text-white"
-                            : `${themeColors.card} ${themeColors.hover} ${themeColors.text.secondary}`
-                        }
-                      `}
+                      key={index}
+                      onClick={() => setSelectedMood(emoji)}
+                      className={`p-4 rounded-xl border-2 transition-all duration-200 text-2xl hover:scale-105 ${
+                        selectedMood === emoji
+                          ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-lg"
+                          : `border-gray-200 dark:border-slate-600 ${themeColors.hover}`
+                      }`}
                     >
-                      {suggestion}
+                      {emoji}
                     </button>
                   ))}
                 </div>
               </div>
-            )}
 
-            {/* Custom Message */}
-            <div className="space-y-3">
-              <h3
-                className={`text-sm font-medium ${themeColors.text.primary}`}
-              >
-                {selectedSuggestion
-                  ? "Or write your own message"
-                  : "Write your message"}
-              </h3>
-
-              {selectedSuggestion && (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                  <span
-                    className={`text-sm ${themeColors.text.primary} truncate flex-1`}
+              {/* Quick Suggestions */}
+              {currentSuggestions.length > 0 && (
+                <div className="space-y-3">
+                  <h3
+                    className={`text-sm font-medium ${themeColors.text.primary}`}
                   >
-                    Using: "{selectedSuggestion}"
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearSuggestion}
-                    className="h-6 w-6 p-0 flex-shrink-0"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
+                    Quick suggestions for {selectedMood}
+                  </h3>
+                  <div className="space-y-2">
+                    {currentSuggestions.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        onClick={() => selectSuggestion(suggestion)}
+                        className={`
+                          w-full p-3 text-left rounded-lg transition-all duration-200 text-sm
+                          ${
+                            selectedSuggestion === suggestion
+                              ? "bg-purple-500 text-white"
+                              : `${themeColors.card} ${themeColors.hover} ${themeColors.text.secondary}`
+                          }
+                        `}
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder={
-                    selectedSuggestion
-                      ? "Or write your own message..."
-                      : "How are you feeling? What's on your mind?"
-                  }
-                  className={`min-h-[100px] resize-none ${themeColors.background} ${themeColors.border}`}
-                  disabled={!!selectedSuggestion}
-                  maxLength={300}
-                />
+              {/* Custom Message */}
+              <div className="space-y-3">
+                <h3
+                  className={`text-sm font-medium ${themeColors.text.primary}`}
+                >
+                  {selectedSuggestion
+                    ? "Or write your own message"
+                    : "Write your message"}
+                </h3>
 
-                <p className={`text-xs ${themeColors.text.muted} text-right`}>
-                  {notes.length}/300 characters
-                </p>
+                {selectedSuggestion && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                    <span
+                      className={`text-sm ${themeColors.text.primary} truncate flex-1`}
+                    >
+                      Using: "{selectedSuggestion}"
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearSuggestion}
+                      className="h-6 w-6 p-0 flex-shrink-0"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder={
+                      selectedSuggestion
+                        ? "Or write your own message..."
+                        : "How are you feeling? What's on your mind?"
+                    }
+                    className={`min-h-[100px] resize-none ${themeColors.background} ${themeColors.border}`}
+                    disabled={!!selectedSuggestion}
+                    maxLength={300}
+                  />
+
+                  <p className={`text-xs ${themeColors.text.muted} text-right`}>
+                    {notes.length}/300 characters
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          <DrawerFooter className="pt-4 pb-6">
+          {/* Fixed Footer */}
+          <DrawerFooter className="pt-4 pb-6 flex-shrink-0 border-t border-slate-200/10">
             <div className="flex gap-3">
               <Button
                 variant="outline"

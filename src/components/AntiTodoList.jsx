@@ -23,8 +23,12 @@ import {
   BookOpen,
   Mountain,
   Coffee,
-  MoreHorizontal
+  MoreHorizontal,
+  Users,
+  MessageCircle,
+  ThumbsUp
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { getAntiTodoList, updateAntiTodoItemStatus, regenerateAntiTodoList, generateInitialAntiTodos } from '../services/antiTodo';
 
 export const AntiTodoList = ({ userId }) => {
@@ -32,6 +36,8 @@ export const AntiTodoList = ({ userId }) => {
   const [antiTodoList, setAntiTodoList] = useState([]);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [loadingItems, setLoadingItems] = useState(new Set());
+  const [shareDialog, setShareDialog] = useState({ open: false, item: null });
+  const [isSharing, setIsSharing] = useState(false);
   
   const containerRef = useRef(null);
   const headerRef = useRef(null);
@@ -67,6 +73,20 @@ export const AntiTodoList = ({ userId }) => {
     cardHover: theme === "dark"
       ? "hover:bg-slate-800/70 hover:border-slate-700/60"
       : "hover:bg-white/90 hover:border-slate-300/60",
+    cardVariants: {
+      muted: theme === "dark"
+        ? "bg-slate-800/40 border-slate-700/40"
+        : "bg-slate-50/80 border-slate-200/40",
+      success: theme === "dark"
+        ? "bg-emerald-900/20 border-emerald-700/40"
+        : "bg-emerald-50/80 border-emerald-200/40",
+      destructive: theme === "dark"
+        ? "bg-red-900/20 border-red-700/40"
+        : "bg-red-50/80 border-red-200/40",
+      secondary: theme === "dark"
+        ? "bg-slate-800/60 border-slate-700/50"
+        : "bg-slate-100/80 border-slate-300/50",
+    }
   };
 
   // Premium activity categories with unique gradients
@@ -293,25 +313,106 @@ export const AntiTodoList = ({ userId }) => {
     }
   };
 
-  const handleShare = async (item) => {
-    const shareText = `${item.content}\n\nFrom my wellness journey with Offly`;
+  const handleShare = (item) => {
+    console.log('Opening share dialog for item:', item);
+    setShareDialog({ open: true, item });
+  };
+
+  const confirmShare = async () => {
+    if (!shareDialog.item) return;
     
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Wellness Activity',
-          text: shareText,
+    setIsSharing(true);
+    
+    try {
+      // Import the community service
+      const { shareAntiTodoToCommunity } = await import('../services/community');
+      
+      console.log('Calling shareAntiTodoToCommunity with userId:', userId);
+      const result = await shareAntiTodoToCommunity(userId, shareDialog.item);
+      console.log('Share result:', result);
+      
+      if (result.success) {
+        // Close dialog
+        setShareDialog({ open: false, item: null });
+        
+        // Show success notification with GSAP animation
+        const successElement = document.createElement('div');
+        successElement.className = `fixed top-4 right-4 z-50 ${themeColors.cardVariants.success} border rounded-2xl p-4 shadow-xl backdrop-blur-xl opacity-0 scale-75`;
+        successElement.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="${themeColors.text.primary} font-semibold">Shared to Community! 🌟</p>
+              <p class="${themeColors.text.secondary} text-sm">Your wellness activity is now visible to others</p>
+            </div>
+          </div>
+        `;
+        
+        document.body.appendChild(successElement);
+        
+        // Animate in with GSAP
+        gsap.to(successElement, {
+          opacity: 1,
+          scale: 1,
+          duration: 0.5,
+          ease: "back.out(1.7)"
         });
-      } catch (err) {
-        console.error('Error sharing:', err);
+        
+        // Animate out and remove after 4 seconds
+        setTimeout(() => {
+          gsap.to(successElement, {
+            opacity: 0,
+            scale: 0.8,
+            y: -20,
+            duration: 0.3,
+            onComplete: () => successElement.remove()
+          });
+        }, 4000);
+        
+        // Update item to show it has been shared
+        setAntiTodoList(prev => 
+          prev.map(listItem => 
+            listItem.id === shareDialog.item.id 
+              ? { ...listItem, shared_to_community: true }
+              : listItem
+          )
+        );
+      } else {
+        // Show error
+        const errorElement = document.createElement('div');
+        errorElement.className = `fixed top-4 right-4 z-50 ${themeColors.cardVariants.destructive} border rounded-2xl p-4 shadow-xl backdrop-blur-xl opacity-0 scale-75`;
+        errorElement.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="${themeColors.text.primary} font-semibold">Failed to Share</p>
+              <p class="${themeColors.text.secondary} text-sm">Please try again later</p>
+            </div>
+          </div>
+        `;
+        
+        document.body.appendChild(errorElement);
+        gsap.to(errorElement, { opacity: 1, scale: 1, duration: 0.3 });
+        setTimeout(() => {
+          gsap.to(errorElement, {
+            opacity: 0,
+            onComplete: () => errorElement.remove()
+          });
+        }, 3000);
       }
-    } else {
-      try {
-        await navigator.clipboard.writeText(shareText);
-        alert('Copied to clipboard');
-      } catch (err) {
-        console.error('Error copying to clipboard:', err);
-      }
+    } catch (error) {
+      console.error('Error sharing to community:', error);
+      // Show similar error notification
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -450,14 +551,18 @@ export const AntiTodoList = ({ userId }) => {
                               {config.label}
                             </Badge>
                             
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleShare(item)}
-                              className={`${themeColors.text.muted} hover:${themeColors.text.primary} opacity-0 group-hover:opacity-100 transition-all duration-300 h-10 w-10 rounded-xl backdrop-blur-sm hover:bg-white/10`}
-                            >
-                              <Share2 className="w-5 h-5" />
-                            </Button>
+                            {/* Show share button only for completed items */}
+                            {item.status === 'completed' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleShare(item)}
+                                className={`${themeColors.text.muted} hover:${themeColors.text.primary} transition-all duration-300 h-10 w-10 rounded-xl backdrop-blur-sm hover:bg-white/10 hover:scale-110`}
+                                title="Share to Community"
+                              >
+                                <Share2 className="w-5 h-5" />
+                              </Button>
+                            )}
                           </div>
 
                           {/* Activity Content */}
@@ -487,16 +592,16 @@ export const AntiTodoList = ({ userId }) => {
                         <Button
                           onClick={() => handleItemAction(item.id, 'ongoing')}
                           disabled={loadingItems.has(item.id)}
-                          className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-sm hover:scale-102 text-white flex-1 lg:w-full h-6 px-3 rounded-md font-medium text-xs transition-all duration-300`}
+                          className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white flex-1 lg:w-full h-10 rounded-lg font-medium transition-all duration-300`}
                         >
                           {loadingItems.has(item.id) ? (
                             <>
-                              <Zap className="w-2 h-2 mr-1 animate-pulse" />
+                              <Zap className="w-4 h-4 mr-2 animate-pulse" />
                               Starting...
                             </>
                           ) : (
                             <>
-                              <Play className="w-2 h-2 mr-1" />
+                              <Play className="w-4 h-4 mr-2" />
                               Start
                             </>
                           )}
@@ -569,6 +674,86 @@ export const AntiTodoList = ({ userId }) => {
           })}
         </div>
       )}
+
+      {/* Custom Share Dialog */}
+      <Dialog open={shareDialog.open} onOpenChange={(open) => setShareDialog({ open, item: null })}>
+        <DialogContent className={`${themeColors.card} border-0 shadow-2xl max-w-md backdrop-blur-xl`}>
+          <div className={`absolute inset-0 bg-gradient-to-br ${premiumGradients.accent} opacity-5 rounded-lg`} />
+          <div className="relative">
+            <DialogHeader className="space-y-4">
+              <DialogTitle className={`${themeColors.text.primary} text-xl font-bold flex items-center gap-3`}>
+                <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${premiumGradients.primary} flex items-center justify-center`}>
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+                Share to Community
+              </DialogTitle>
+              <DialogDescription className={`${themeColors.text.secondary} text-sm leading-relaxed`}>
+                Your wellness activity will be visible to other community members who can like and comment on your post.
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* Activity Preview */}
+            {shareDialog.item && (
+              <div className={`my-6 p-4 rounded-2xl ${themeColors.cardVariants.muted} border backdrop-blur-sm`}>
+                <div className="flex items-start gap-3">
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${premiumGradients.secondary} flex items-center justify-center flex-shrink-0`}>
+                    <Target className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className={`${themeColors.text.primary} font-semibold mb-1`}>
+                      Wellness Activity Completed! 🌟
+                    </h4>
+                    <p className={`${themeColors.text.secondary} text-sm leading-relaxed`}>
+                      🎯 {shareDialog.item.content}
+                    </p>
+                    <div className="flex items-center gap-4 mt-3 text-xs">
+                      <div className={`flex items-center gap-1 ${themeColors.text.muted}`}>
+                        <ThumbsUp className="w-3 h-3" />
+                        <span>Likes</span>
+                      </div>
+                      <div className={`flex items-center gap-1 ${themeColors.text.muted}`}>
+                        <MessageCircle className="w-3 h-3" />
+                        <span>Comments</span>
+                      </div>
+                      <div className={`flex items-center gap-1 ${themeColors.text.muted}`}>
+                        <Users className="w-3 h-3" />
+                        <span>Community</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter className="gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShareDialog({ open: false, item: null })}
+                className={`flex-1 h-11 rounded-xl ${themeColors.text.secondary} border-2 hover:${themeColors.text.primary} transition-all duration-300`}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmShare}
+                disabled={isSharing}
+                className={`flex-1 h-11 rounded-xl bg-gradient-to-r ${premiumGradients.primary} hover:shadow-lg hover:scale-105 text-white font-medium transition-all duration-300 disabled:opacity-50 disabled:scale-100`}
+              >
+                {isSharing ? (
+                  <>
+                    <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin mr-2" />
+                    Sharing...
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Share Now
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

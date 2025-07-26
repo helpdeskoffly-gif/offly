@@ -1,0 +1,744 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { gsap } from 'gsap';
+import { useTheme } from '../contexts/ThemeContext.jsx';
+import { useAuth } from '../hooks/useAuth';
+import { Button } from './ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
+import { Badge } from './ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Textarea } from './ui/textarea';
+import { Input } from './ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { 
+  Heart, 
+  MessageCircle, 
+  Share2, 
+  Send, 
+  Plus,
+  Search,
+  Filter,
+  TrendingUp,
+  Users,
+  Sparkles,
+  Hash,
+  Clock,
+  MoreVertical,
+  Edit3,
+  Trash2,
+  UserPlus,
+  UserCheck,
+  Globe,
+  User
+} from 'lucide-react';
+import {
+  getCommunityFeed,
+  createCommunityPost,
+  togglePostLike,
+  addComment,
+  getPostComments,
+  getTrendingHashtags,
+  searchPosts,
+  deletePost,
+  getSuggestedFriends,
+  toggleUserFollow,
+  isUserFollowing
+} from '../services/community';
+import { getUserAvatarUrl } from '../services/avatars';
+
+export const Community = () => {
+  const { theme } = useTheme();
+  const { user, userProfile } = useAuth();
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [offset, setOffset] = useState(0);
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'friends', 'my_posts'
+  const [searchQuery, setSearchQuery] = useState('');
+  const [trendingHashtags, setTrendingHashtags] = useState([]);
+  const [expandedComments, setExpandedComments] = useState(new Set());
+  const [commentInputs, setCommentInputs] = useState({});
+  const [submittingComments, setSubmittingComments] = useState(new Set());
+  
+  // Friends suggestions state
+  const [suggestedFriends, setSuggestedFriends] = useState([]);
+  const [followingUsers, setFollowingUsers] = useState(new Set());
+  const [loadingFollow, setLoadingFollow] = useState(new Set());
+  
+  const containerRef = useRef(null);
+  const headerRef = useRef(null);
+  const loadingRef = useRef(null);
+
+  // Premium gradients matching the app
+  const premiumGradients = {
+    primary: theme === "dark"
+      ? "from-violet-500 via-purple-500 to-fuchsia-500"
+      : "from-violet-600 via-purple-600 to-fuchsia-600",
+    secondary: theme === "dark"
+      ? "from-blue-500 via-indigo-500 to-purple-500"
+      : "from-blue-600 via-indigo-600 to-purple-600",
+    accent: theme === "dark"
+      ? "from-emerald-400 via-teal-400 to-cyan-400"
+      : "from-emerald-500 via-teal-500 to-cyan-500",
+    tertiary: theme === "dark"
+      ? "from-orange-400 via-pink-400 to-red-400"
+      : "from-orange-500 via-pink-500 to-red-500",
+  };
+
+  const themeColors = {
+    background: theme === "dark"
+      ? "bg-gradient-to-br from-slate-950 via-gray-950 to-slate-950"
+      : "bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100",
+    text: {
+      primary: theme === "dark" ? "text-slate-200" : "text-gray-900",
+      secondary: theme === "dark" ? "text-slate-400" : "text-gray-600",
+      muted: theme === "dark" ? "text-slate-500" : "text-gray-500",
+    },
+    card: theme === "dark"
+      ? "bg-slate-900/60 border-slate-800/50 backdrop-blur-xl"
+      : "bg-white/80 border-slate-200/50 backdrop-blur-xl",
+    cardHover: theme === "dark"
+      ? "hover:bg-slate-800/70 hover:border-slate-700/60"
+      : "hover:bg-white/90 hover:border-slate-300/60",
+    cardVariants: {
+      neutral: theme === "dark"
+        ? "bg-slate-800/40 border-slate-700/40"
+        : "bg-slate-50/80 border-slate-200/40",
+      success: theme === "dark"
+        ? "bg-emerald-900/20 border-emerald-700/40"
+        : "bg-emerald-50/80 border-emerald-200/40",
+    }
+  };
+
+  // Load initial feed and suggestions
+  useEffect(() => {
+    loadFeed(true);
+    loadTrendingHashtags();
+    if (user?.id) {
+      loadSuggestedFriends();
+    }
+  }, [activeTab, user?.id]);
+
+  // Enhanced animations on mount
+  useEffect(() => {
+    if (containerRef.current && headerRef.current) {
+      gsap.fromTo(
+        containerRef.current,
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, duration: 1, ease: "power3.out" }
+      );
+
+      gsap.fromTo(
+        headerRef.current.querySelectorAll('.animate-stagger'),
+        { opacity: 0, y: 20, scale: 0.95 },
+        { 
+          opacity: 1, 
+          y: 0, 
+          scale: 1,
+          duration: 0.8, 
+          stagger: 0.15,
+          ease: "back.out(1.7)",
+          delay: 0.3
+        }
+      );
+    }
+  }, []);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!loadingRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          loadFeed(false);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(loadingRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loading, offset]);
+
+  const loadFeed = async (reset = false) => {
+    if (loading && !reset) return;
+    
+    setLoading(true);
+    console.log('Loading feed with tab:', activeTab);
+    
+    try {
+      const currentOffset = reset ? 0 : offset;
+      
+      let algorithm = 'all_posts';
+      if (activeTab === 'friends') algorithm = 'friends';
+      if (activeTab === 'my_posts') algorithm = 'my_posts';
+      
+      const result = await getCommunityFeed(user.id, {
+        limit: 20,
+        offset: currentOffset,
+        algorithm: algorithm
+      });
+      
+      if (result && result.success) {
+        if (reset) {
+          setPosts(result.data || []);
+          setOffset(20);
+        } else {
+          setPosts(prev => [...prev, ...(result.data || [])]);
+          setOffset(prev => prev + 20);
+        }
+        setHasMore(result.hasMore);
+      } else {
+        console.error('Feed result not successful:', result);
+        setPosts([]);
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Error loading feed:', error);
+      setPosts([]);
+      setHasMore(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadTrendingHashtags = async () => {
+    try {
+      const result = await getTrendingHashtags(8);
+      if (result.success) {
+        setTrendingHashtags(result.data);
+      }
+    } catch (error) {
+      console.error('Error loading trending hashtags:', error);
+    }
+  };
+
+  const loadSuggestedFriends = async () => {
+    console.log('🚀 Loading suggested friends for user:', user.id);
+    try {
+      const result = await getSuggestedFriends(user.id, 8);
+      console.log('📊 Suggested friends result:', result);
+      
+      if (result.success) {
+        console.log('✅ Friends data received:', result.data);
+        setSuggestedFriends(result.data || []);
+        
+        // Check which users the current user is already following
+        const followingStatuses = await Promise.all(
+          (result.data || []).map(async (friend) => {
+            const followResult = await isUserFollowing(user.id, friend.user_id);
+            return { userId: friend.user_id, following: followResult.following };
+          })
+        );
+        
+        const followingSet = new Set(
+          followingStatuses
+            .filter(status => status.following)
+            .map(status => status.userId)
+        );
+        setFollowingUsers(followingSet);
+      } else {
+        console.log('❌ Friends request failed:', result);
+      }
+    } catch (error) {
+      console.error('💥 Error loading suggested friends:', error);
+    }
+  };
+
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    setOffset(0);
+    setPosts([]);
+    setHasMore(true);
+  };
+
+  const handleFollowUser = async (userId) => {
+    setLoadingFollow(prev => new Set([...prev, userId]));
+    
+    try {
+      const result = await toggleUserFollow(user.id, userId);
+      
+      if (result.success) {
+        setFollowingUsers(prev => {
+          const newSet = new Set(prev);
+          if (result.following) {
+            newSet.add(userId);
+          } else {
+            newSet.delete(userId);
+          }
+          return newSet;
+        });
+        
+        // Show success feedback
+        const action = result.following ? 'followed' : 'unfollowed';
+        console.log(`Successfully ${action} user`);
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+    } finally {
+      setLoadingFollow(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(userId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleLikePost = async (postId, currentlyLiked) => {
+    try {
+      const result = await togglePostLike(user.id, postId);
+      
+      if (result.success) {
+        setPosts(prev => prev.map(post => {
+          if (post.post_id === postId) {
+            return {
+              ...post,
+              user_has_liked: result.liked,
+              like_count: result.liked 
+                ? parseInt(post.like_count) + 1 
+                : parseInt(post.like_count) - 1
+            };
+          }
+          return post;
+        }));
+        
+        // Heart animation
+        const heartElement = document.querySelector(`[data-like-btn="${postId}"]`);
+        if (heartElement) {
+          gsap.to(heartElement, {
+            scale: result.liked ? 1.2 : 1,
+            duration: 0.2,
+            yoyo: true,
+            repeat: 1,
+            ease: "power2.inOut"
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
+  };
+
+  const handleAddComment = async (postId) => {
+    const content = commentInputs[postId]?.trim();
+    if (!content) return;
+    
+    setSubmittingComments(prev => new Set([...prev, postId]));
+    
+    try {
+      const result = await addComment(user.id, postId, content);
+      
+      if (result.success) {
+        setPosts(prev => prev.map(post => {
+          if (post.post_id === postId) {
+            return {
+              ...post,
+              comment_count: parseInt(post.comment_count) + 1
+            };
+          }
+          return post;
+        }));
+        
+        setCommentInputs(prev => ({ ...prev, [postId]: '' }));
+      }
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    } finally {
+      setSubmittingComments(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(postId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleHashtagClick = (hashtag) => {
+    setSearchQuery(`#${hashtag}`);
+    setOffset(0);
+    loadFeed(true);
+  };
+
+  const formatTimeAgo = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  const getPostTypeIcon = (contentType, sourceType) => {
+    if (sourceType === 'anti_todo') return '🎯';
+    if (sourceType === 'checkin') return '💭';
+    return '✨';
+  };
+
+    return (
+    <div ref={containerRef} className="min-h-screen">
+      {/* Header */}
+      <div ref={headerRef} className={`${themeColors.card} rounded-2xl border shadow-lg mb-8`}>
+        <div className="p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="animate-stagger">
+              <h2 className={`text-3xl font-bold ${themeColors.text.primary} mb-2`}>
+                Community
+              </h2>
+              <p className={`${themeColors.text.secondary}`}>
+                Share your wellness journey with others
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Instagram-style Layout: Main Content + Sidebar */}
+      <div className="flex gap-8 justify-center max-w-6xl mx-auto">
+        {/* Main Content Area - Posts Feed */}
+        <div className="flex-1 max-w-2xl">
+          {/* Community Tabs */}
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        <TabsList className={`grid w-full grid-cols-3 ${themeColors.cardVariants.neutral} rounded-xl p-1`}>
+          <TabsTrigger 
+            value="all" 
+            className={`flex items-center gap-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+              activeTab === 'all' 
+                ? `bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md` 
+                : `${themeColors.text.secondary} hover:${themeColors.text.primary}`
+            }`}
+          >
+            <Globe className="w-4 h-4" />
+            All Offly Posts
+          </TabsTrigger>
+          <TabsTrigger 
+            value="friends"
+            className={`flex items-center gap-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+              activeTab === 'friends' 
+                ? `bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md` 
+                : `${themeColors.text.secondary} hover:${themeColors.text.primary}`
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            Friends
+          </TabsTrigger>
+                     <TabsTrigger 
+             value="my_posts"
+             className={`flex items-center gap-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+               activeTab === 'my_posts' 
+                 ? `bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md` 
+                 : `${themeColors.text.secondary} hover:${themeColors.text.primary}`
+             }`}
+           >
+             <User className="w-4 h-4" />
+             My Posts
+           </TabsTrigger>
+        </TabsList>
+
+        {/* Tab Content */}
+        <TabsContent value={activeTab} className="mt-6">
+          {/* Posts Feed */}
+          <div className="space-y-6">
+            {posts.map((post, index) => (
+              <Card
+                key={post.post_id}
+                className={`community-post ${themeColors.card} ${themeColors.cardHover} rounded-2xl border-0 shadow-xl transition-all duration-300 transform hover:scale-[1.01] overflow-hidden`}
+              >
+                <CardContent className="p-8">
+                  {/* Post Header */}
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-12 h-12 border-2 border-white/20">
+                        <AvatarImage 
+                          src={getUserAvatarUrl({ id: post.user_id }, { avatar_url: post.avatar_url })} 
+                          alt={post.username || post.full_name} 
+                        />
+                        <AvatarFallback className={`bg-gradient-to-br ${premiumGradients.secondary} text-white font-semibold`}>
+                          {(post.username || post.full_name || 'U').charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className={`font-semibold ${themeColors.text.primary}`}>
+                            {post.username || post.full_name || 'Anonymous'}
+                          </h4>
+                          <span className="text-2xl">
+                            {getPostTypeIcon(post.content_type, post.source_type)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Clock className={`w-3 h-3 ${themeColors.text.muted}`} />
+                          <span className={themeColors.text.muted}>
+                            {formatTimeAgo(post.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {post.user_id === user.id && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`${themeColors.text.muted} hover:${themeColors.text.primary} h-8 w-8 rounded-lg`}
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Post Title */}
+                  {post.title && (
+                    <h3 className={`text-xl font-semibold ${themeColors.text.primary} mb-4`}>
+                      {post.title}
+                    </h3>
+                  )}
+
+                  {/* Post Content */}
+                  <div className={`text-lg ${themeColors.text.primary} mb-6 leading-relaxed`}>
+                    {post.content}
+                  </div>
+
+                  {/* Hashtags */}
+                  {post.hashtags && post.hashtags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {post.hashtags.map((hashtag, idx) => (
+                        <Button
+                          key={idx}
+                          onClick={() => handleHashtagClick(hashtag)}
+                          variant="outline"
+                          size="sm"
+                          className={`rounded-full text-xs border-2 ${theme === 'dark' ? 'hover:bg-slate-700/50' : 'hover:bg-slate-100/50'}`}
+                        >
+                          #{hashtag}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Post Actions */}
+                  <div className="flex items-center justify-between pt-6 border-t border-slate-200/10">
+                    <div className="flex items-center gap-6">
+                      <Button
+                        onClick={() => handleLikePost(post.post_id, post.user_has_liked)}
+                        variant="ghost"
+                        size="sm"
+                        data-like-btn={post.post_id}
+                        className={`flex items-center gap-2 h-10 px-4 rounded-xl transition-all duration-300 ${
+                          post.user_has_liked
+                            ? `text-red-500 bg-red-500/10 hover:bg-red-500/20`
+                            : `${themeColors.text.muted} hover:${themeColors.text.primary} hover:bg-red-500/10`
+                        }`}
+                      >
+                        <Heart 
+                          className={`w-4 h-4 ${post.user_has_liked ? 'fill-current' : ''}`} 
+                        />
+                        <span className="font-medium">{post.like_count || 0}</span>
+                      </Button>
+                      
+                      <Button
+                        onClick={() => setExpandedComments(prev => 
+                          prev.has(post.post_id) 
+                            ? new Set([...prev].filter(id => id !== post.post_id))
+                            : new Set([...prev, post.post_id])
+                        )}
+                        variant="ghost"
+                        size="sm"
+                        className={`flex items-center gap-2 h-10 px-4 rounded-xl ${themeColors.text.muted} hover:${themeColors.text.primary} hover:bg-blue-500/10 transition-all duration-300`}
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        <span className="font-medium">{post.comment_count || 0}</span>
+                      </Button>
+                      
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`flex items-center gap-2 h-10 px-4 rounded-xl ${themeColors.text.muted} hover:${themeColors.text.primary} hover:bg-emerald-500/10 transition-all duration-300`}
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Comment Input */}
+                  {expandedComments.has(post.post_id) && (
+                    <div className="mt-6 pt-6 border-t border-slate-200/10">
+                      <div className="flex gap-3">
+                        <Avatar className="w-8 h-8 flex-shrink-0">
+                          <AvatarImage 
+                            src={getUserAvatarUrl(user, userProfile)} 
+                            alt={userProfile?.username || userProfile?.full_name} 
+                          />
+                          <AvatarFallback className={`bg-gradient-to-br ${premiumGradients.secondary} text-white text-sm`}>
+                            {(userProfile?.username || userProfile?.full_name || 'You').charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="flex-1 flex gap-2">
+                          <Input
+                            placeholder="Add a comment..."
+                            value={commentInputs[post.post_id] || ''}
+                            onChange={(e) => setCommentInputs(prev => ({
+                              ...prev,
+                              [post.post_id]: e.target.value
+                            }))}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleAddComment(post.post_id);
+                              }
+                            }}
+                            className={`flex-1 h-10 rounded-xl border-2 ${theme === 'dark' ? 'bg-slate-800/50 border-slate-600' : 'bg-white/70 border-slate-300'}`}
+                          />
+                          <Button
+                            onClick={() => handleAddComment(post.post_id)}
+                            disabled={!commentInputs[post.post_id]?.trim() || submittingComments.has(post.post_id)}
+                            className={`bg-gradient-to-r ${premiumGradients.secondary} text-white h-10 px-4 rounded-xl`}
+                          >
+                            {submittingComments.has(post.post_id) ? (
+                              <Sparkles className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Send className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Loading Indicator */}
+          {hasMore && (
+            <div ref={loadingRef} className="flex justify-center py-8">
+              <div className={`flex items-center gap-3 ${themeColors.text.secondary}`}>
+                <Sparkles className="w-5 h-5 animate-spin" />
+                Loading more posts...
+              </div>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!loading && posts.length === 0 && (
+            <Card className={`${themeColors.cardVariants.neutral} rounded-2xl border-0 shadow-lg`}>
+              <CardContent className="p-12 text-center">
+                <Users className={`w-16 h-16 ${themeColors.text.muted} mx-auto mb-4`} />
+                <h3 className={`text-xl font-semibold ${themeColors.text.primary} mb-2`}>
+                  {activeTab === 'friends' && 'No posts from friends yet'}
+                  {activeTab === 'my_posts' && 'You haven\'t posted anything yet'}
+                  {activeTab === 'all' && 'No posts yet'}
+                </h3>
+                <p className={`${themeColors.text.secondary} mb-6`}>
+                  {activeTab === 'friends' && 'Follow some friends to see their posts here!'}
+                  {activeTab === 'my_posts' && 'Complete activities or check-ins to share with the community!'}
+                  {activeTab === 'all' && 'Be the first to share something with the community!'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
+        </div>
+
+        {/* Sidebar - Friends Suggestions (Instagram-style) */}
+        <div className="w-80 hidden lg:block">
+          <div className="sticky top-8">
+            <Card className={`${themeColors.card} rounded-2xl border shadow-lg`}>
+              <CardHeader className="pb-4">
+                <CardTitle className={`flex items-center gap-3 ${themeColors.text.primary}`}>
+                  <div className={`w-6 h-6 rounded-lg bg-gradient-to-br ${premiumGradients.secondary} flex items-center justify-center`}>
+                    <Heart className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="text-lg">Suggested Friends</span>
+                </CardTitle>
+                <p className={`text-sm ${themeColors.text.secondary}`}>
+                  People you may know
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {suggestedFriends.length > 0 ? (
+                  <>
+                    {suggestedFriends.slice(0, 5).map((friend) => (
+                      <div key={friend.user_id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors">
+                        <Avatar className="w-10 h-10 flex-shrink-0">
+                          <AvatarImage 
+                            src={getUserAvatarUrl({ id: friend.user_id }, { avatar_url: friend.avatar_url })} 
+                            alt={friend.username || friend.full_name} 
+                          />
+                          <AvatarFallback className={`bg-gradient-to-br ${premiumGradients.accent} text-white text-sm`}>
+                            {(friend.username || friend.full_name || 'U').charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="flex-1 min-w-0">
+                          <h4 className={`font-medium ${themeColors.text.primary} text-sm truncate`}>
+                            {friend.username || friend.full_name || 'Anonymous'}
+                          </h4>
+                          {friend.hobby_match_count > 0 && (
+                            <p className={`text-xs ${themeColors.text.muted}`}>
+                              {friend.hobby_match_count} shared hobby{friend.hobby_match_count !== 1 ? 's' : ''}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <Button
+                          onClick={() => handleFollowUser(friend.user_id)}
+                          disabled={loadingFollow.has(friend.user_id)}
+                          size="sm"
+                          className={`h-7 px-3 text-xs ${
+                            followingUsers.has(friend.user_id)
+                              ? `bg-gradient-to-r ${premiumGradients.tertiary} text-white`
+                              : `bg-gradient-to-r ${premiumGradients.secondary} text-white`
+                          }`}
+                        >
+                          {loadingFollow.has(friend.user_id) ? (
+                            <Sparkles className="w-3 h-3 animate-spin" />
+                          ) : followingUsers.has(friend.user_id) ? (
+                            'Following'
+                          ) : (
+                            'Follow'
+                          )}
+                        </Button>
+                      </div>
+                    ))}
+                    {suggestedFriends.length > 5 && (
+                      <Button variant="ghost" className="w-full text-sm text-blue-500 hover:text-blue-600">
+                        See all suggestions
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-6">
+                    <Users className={`w-8 h-8 ${themeColors.text.muted} mx-auto mb-2`} />
+                    <p className={`text-sm ${themeColors.text.muted} mb-2`}>
+                      🔍 Looking for friends...
+                    </p>
+                    <p className={`text-xs ${themeColors.text.muted}`}>
+                      Debug: {user?.id ? 'User logged in' : 'No user'} 
+                    </p>
+                    <Button 
+                      onClick={loadSuggestedFriends}
+                      size="sm"
+                      variant="outline"
+                      className="mt-2"
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}; 
