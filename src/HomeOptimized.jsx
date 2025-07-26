@@ -213,10 +213,10 @@ const HeroSection = React.memo(
     const { ref, inView } = useOptimizedInView();
 
     return (
-      <div
-        className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 relative pt-16 pb-8"
-        ref={ref}
-      >
+              <div
+          className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 relative pt-20 sm:pt-16 pb-8"
+          ref={ref}
+        >
         <div className="max-w-7xl mx-auto w-full">
           <OptimizedMotionDiv
             className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center"
@@ -261,7 +261,7 @@ const HeroSection = React.memo(
                     animateItem(el, { delay: 0.3 });
                   }
                 }}
-                className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight ${themeColors.text.primary} mb-4 lg:mb-6 leading-tight`}
+                className={`text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight ${themeColors.text.primary} mb-4 lg:mb-6 leading-tight`}
               >
                 Your{" "}
                 <span
@@ -284,7 +284,7 @@ const HeroSection = React.memo(
                     animateItem(el, { delay: 0.4 });
                   }
                 }}
-                className={`text-lg sm:text-xl ${themeColors.text.secondary} mb-6 lg:mb-8 max-w-lg mx-auto lg:mx-0 leading-relaxed`}
+                className={`text-base sm:text-lg md:text-xl ${themeColors.text.secondary} mb-6 lg:mb-8 max-w-lg mx-auto lg:mx-0 leading-relaxed`}
               >
                 Track your joy, not just your tasks. Build intentional habits
                 that actually matter.
@@ -361,11 +361,11 @@ const MobileWireframe = React.memo(
   ({ theme, themeColors, premiumGradients }) => (
     <div className="relative">
       <div
-        className={`relative w-64 sm:w-72 md:w-80 h-[520px] sm:h-[580px] md:h-[640px] ${
+        className={`relative w-56 sm:w-64 md:w-72 lg:w-80 h-[480px] sm:h-[520px] md:h-[580px] lg:h-[640px] ${
           theme === "dark"
             ? "bg-gradient-to-b from-slate-800/90 to-gray-800/90 border-slate-700/50"
             : "bg-gradient-to-b from-white/90 to-gray-100/90 border-orange-200/50"
-        } rounded-[2.5rem] md:rounded-[3rem] p-3 md:p-4 shadow-2xl border-4 backdrop-blur-xl`}
+        } rounded-[2rem] sm:rounded-[2.5rem] md:rounded-[3rem] p-2 sm:p-3 md:p-4 shadow-2xl border-2 sm:border-4 backdrop-blur-xl`}
       >
         {/* Screen Content */}
         <div

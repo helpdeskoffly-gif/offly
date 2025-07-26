@@ -130,6 +130,7 @@ class NotificationService {
           .select("*")
           .eq("user_id", userId)
           .eq("dismissed", false)
+          .or("expires_at.is.null,expires_at.gt." + new Date().toISOString())
           .order("created_at", { ascending: false })
           .limit(limitCount);
 
@@ -471,7 +472,8 @@ class NotificationService {
           .select("id", { count: "exact" })
           .eq("user_id", userId)
           .eq("read", false)
-          .eq("dismissed", false);
+          .eq("dismissed", false)
+          .or("expires_at.is.null,expires_at.gt." + new Date().toISOString());
 
         if (error) {
           if (error.code === "42P01") {
@@ -589,6 +591,65 @@ class NotificationService {
       },
       { success: false, error: "Failed to cleanup expired notifications" },
     );
+  }
+
+  // Manual trigger for daily notifications (for testing)
+  async triggerDailyNotifications() {
+    return safeSupabaseOperation(
+      async () => {
+        const { data, error } = await supabase.rpc('create_daily_notifications');
+        
+        if (error) throw error;
+        
+        console.log(`Created ${data} daily notifications`);
+        return { success: true, count: data };
+      },
+      {
+        success: false,
+        error: "Failed to trigger daily notifications",
+        count: 0
+      }
+    );
+  }
+
+  // Manual trigger for weekly notifications (for testing)
+  async triggerWeeklyNotifications() {
+    return safeSupabaseOperation(
+      async () => {
+        const { data, error } = await supabase.rpc('create_weekly_progress_notifications');
+        
+        if (error) throw error;
+        
+        console.log(`Created ${data} weekly notifications`);
+        return { success: true, count: data };
+      },
+      {
+        success: false,
+        error: "Failed to trigger weekly notifications",
+        count: 0
+      }
+    );
+  }
+
+  // Create a test notification for debugging
+  async createTestNotification(userId) {
+    const testMessages = [
+      "🌟 Good morning! Ready to make today amazing? Your wellness journey continues with every small step.",
+      "☀️ Time for your daily check-in! How are you feeling today? Every moment of self-reflection matters.",
+      "🚀 You're building incredible habits! Take a moment to check in and celebrate your progress.",
+      "💫 Your future self will thank you for the wellness habits you're building today. How's your mood?",
+      "🌈 A new day, a fresh opportunity to nurture your well-being. Ready for your check-in?"
+    ];
+
+    const randomMessage = testMessages[Math.floor(Math.random() * testMessages.length)];
+
+    return this.createNotification(userId, {
+      title: "🌅 Daily Wellness Check-in",
+      message: randomMessage,
+      type: "daily_nudge",
+      priority: "normal",
+      data: { isTest: true, createdAt: new Date().toISOString() }
+    });
   }
 }
 

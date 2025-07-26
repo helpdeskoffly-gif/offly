@@ -600,10 +600,11 @@ export const submitCheckin = async (uid, checkinData) => {
         console.log(`Awarded ${totalPoints} points for checkin`);
         
         // Update plant growth with earned points (convert points to XP)
+        let plantXp = 0;
         try {
           const plantResult = await getUserPlant(uid);
           if (plantResult.success && plantResult.data) {
-            const plantXp = Math.floor(totalPoints / 2); // 1 XP per 2 points
+            plantXp = Math.floor(totalPoints / 2); // 1 XP per 2 points
             await updatePlantGrowth(plantResult.data.id, plantXp);
             console.log(`Added ${plantXp} XP to user's plant`);
           }
@@ -611,6 +612,21 @@ export const submitCheckin = async (uid, checkinData) => {
           console.error("Failed to update plant growth:", plantError);
           // Don't fail checkin if plant update fails
         }
+        
+        // Return checkin data with points information for toast
+        return { 
+          success: true, 
+          data: {
+            ...result[0],
+            pointsEarned: {
+              total: totalPoints,
+              base: basePoints,
+              moodBonus: moodBonus,
+              textBonus: textBonus,
+              plantXp: plantXp
+            }
+          }
+        };
       }
     } catch (pointsError) {
       console.error("Failed to award points for checkin:", pointsError);

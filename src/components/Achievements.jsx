@@ -213,69 +213,95 @@ export function PlantGarden() {
   }
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-4 sm:space-y-8 p-3 sm:p-6">
       
-      {/* Floating Stats HUD */}
+      {/* Mobile-Optimized Stats HUD */}
       <div className="relative">
-        {/* Points Display - Floating Badge */}
-        <div className="absolute top-0 left-0 z-10">
-          <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full ${theme === 'dark' ? 'bg-slate-800/80 border border-slate-700/50' : 'bg-white/80 border border-slate-200/50'} backdrop-blur-sm`}>
-            <div className="w-8 h-8 bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full flex items-center justify-center">
-              <Coins className="w-5 h-5 text-white" />
+        {/* Mobile: Compact horizontal stats */}
+        <div className="flex justify-between items-center gap-2 sm:hidden">
+          {/* Points Display - Mobile */}
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl ${theme === 'dark' ? 'bg-slate-800/80 border border-slate-700/50' : 'bg-white/80 border border-slate-200/50'} backdrop-blur-sm`}>
+            <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full flex items-center justify-center">
+              <Coins className="w-3 h-3 text-white" />
             </div>
-            <span className={`text-2xl font-bold ${themeColors.text.primary}`}>{userPoints}</span>
-            <span className={`text-sm ${themeColors.text.muted}`}>points</span>
+            <span className={`text-lg font-bold ${themeColors.text.primary}`}>{userPoints}</span>
+            <span className={`text-xs ${themeColors.text.muted}`}>pts</span>
+          </div>
+
+          {/* Level Display - Mobile */}
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl ${theme === 'dark' ? 'bg-slate-800/80 border border-slate-700/50' : 'bg-white/80 border border-slate-200/50'} backdrop-blur-sm`}>
+            <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">{userPlant?.growth_level || 1}</span>
+            </div>
+            <span className={`text-sm font-semibold ${themeColors.text.primary}`}>Lv.{userPlant?.growth_level || 1}</span>
           </div>
         </div>
 
-        {/* Level Display - Floating Badge */}
-        <div className="absolute top-0 right-0 z-10">
-          <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full ${theme === 'dark' ? 'bg-slate-800/80 border border-slate-700/50' : 'bg-white/80 border border-slate-200/50'} backdrop-blur-sm`}>
-            <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-              <Sprout className="w-5 h-5 text-white" />
+        {/* Desktop: Original floating badges */}
+        <div className="hidden sm:block">
+          {/* Points Display - Desktop */}
+          <div className="absolute top-0 left-0 z-10">
+            <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full ${theme === 'dark' ? 'bg-slate-800/80 border border-slate-700/50' : 'bg-white/80 border border-slate-200/50'} backdrop-blur-sm`}>
+              <div className="w-8 h-8 bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full flex items-center justify-center">
+                <Coins className="w-5 h-5 text-white" />
+              </div>
+              <span className={`text-2xl font-bold ${themeColors.text.primary}`}>{userPoints}</span>
+              <span className={`text-sm ${themeColors.text.muted}`}>points</span>
             </div>
-            <span className={`text-lg font-semibold ${themeColors.text.primary}`}>Level {userPlant?.growth_level || 1}</span>
-            <span className={`text-sm ${themeColors.text.muted}`}>({currentStage.name})</span>
+          </div>
+
+          {/* Level Display - Desktop */}
+          <div className="absolute top-0 right-0 z-10">
+            <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full ${theme === 'dark' ? 'bg-slate-800/80 border border-slate-700/50' : 'bg-white/80 border border-slate-200/50'} backdrop-blur-sm`}>
+              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                <Sprout className="w-5 h-5 text-white" />
+              </div>
+              <span className={`text-lg font-semibold ${themeColors.text.primary}`}>Level {userPlant?.growth_level || 1}</span>
+              <span className={`text-sm ${themeColors.text.muted}`}>({currentStage.name})</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content - Left to Right Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-20">
+      {/* Main Content - Responsive Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-12 mt-4 sm:mt-20">
         
-        {/* Left Side - Plant Display */}
-        <div className="flex flex-col items-center">
-          <div className="mb-8">
-            <h1 className={`text-4xl font-bold ${themeColors.text.primary} mb-3 text-center tracking-wide`}>
+        {/* Plant Display Section */}
+        <div className="flex flex-col items-center order-1 lg:order-1">
+          {/* Title - Responsive */}
+          <div className="mb-4 sm:mb-8">
+            <h1 className={`text-2xl sm:text-4xl font-bold ${themeColors.text.primary} mb-2 sm:mb-3 text-center tracking-wide`}>
               {userPlant?.plant_name || 'My Wellness Plant'}
             </h1>
-            <div className={`text-center mb-6`}>
-              <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full ${theme === 'dark' ? 'bg-slate-800/50 border border-slate-700/50' : 'bg-white/70 border border-slate-200/60'} backdrop-blur-sm shadow-lg`}>
-                <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+            
+            {/* Stage indicator - More compact on mobile */}
+            <div className={`text-center mb-3 sm:mb-6`}>
+              <div className={`inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-full ${theme === 'dark' ? 'bg-slate-800/50 border border-slate-700/50' : 'bg-white/70 border border-slate-200/60'} backdrop-blur-sm shadow-lg`}>
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
                   <span className="text-white text-xs font-bold">{userPlant?.growth_level || 1}</span>
                 </div>
-                <span className={`text-xl font-semibold ${themeColors.text.primary}`}>
+                <span className={`text-base sm:text-xl font-semibold ${themeColors.text.primary}`}>
                   {currentStage.name}
                 </span>
               </div>
             </div>
           </div>
           
-          {/* Plant Visualization */}
-          <div className="mb-8">
-            <div className="relative w-64 h-64 mx-auto">
-              {/* Plant Container with beautiful styling */}
+          {/* Plant Visualization - Mobile Optimized */}
+          <div className="mb-6 sm:mb-8">
+            <div className="relative w-48 h-48 sm:w-64 sm:h-64 mx-auto">
+              {/* Plant Container - Scaled for mobile */}
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-100/30 via-emerald-200/20 to-blue-100/10 animate-pulse"></div>
-              <div className="absolute inset-4 rounded-full bg-gradient-to-br from-green-50/50 via-emerald-100/30 to-teal-50/20"></div>
-              <div className="absolute inset-8 rounded-full bg-gradient-to-br from-white/70 via-green-50/50 to-emerald-50/40 backdrop-blur-sm border-2 border-white/40"></div>
+              <div className="absolute inset-3 sm:inset-4 rounded-full bg-gradient-to-br from-green-50/50 via-emerald-100/30 to-teal-50/20"></div>
+              <div className="absolute inset-6 sm:inset-8 rounded-full bg-gradient-to-br from-white/70 via-green-50/50 to-emerald-50/40 backdrop-blur-sm border-2 border-white/40"></div>
               
-              {/* Plant Emoji - scales with level */}
+              {/* Plant Emoji - Mobile responsive sizes */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="relative">
                   <div className={`drop-shadow-2xl filter hover:scale-110 transition-transform duration-500 cursor-pointer ${
-                    userPlant?.growth_level >= 8 ? 'text-8xl' : 
-                    userPlant?.growth_level >= 5 ? 'text-7xl' : 
-                    userPlant?.growth_level >= 3 ? 'text-6xl' : 'text-5xl'
+                    userPlant?.growth_level >= 8 ? 'text-5xl sm:text-8xl' : 
+                    userPlant?.growth_level >= 5 ? 'text-4xl sm:text-7xl' : 
+                    userPlant?.growth_level >= 3 ? 'text-3xl sm:text-6xl' : 'text-2xl sm:text-5xl'
                   }`}>
                     {currentStage.icon}
                   </div>
@@ -283,9 +309,9 @@ export function PlantGarden() {
                   {/* Glow effect for higher levels */}
                   {userPlant?.growth_level >= 7 && (
                     <div className={`absolute inset-0 blur-sm opacity-30 -z-10 ${
-                      userPlant?.growth_level >= 8 ? 'text-8xl' : 
-                      userPlant?.growth_level >= 5 ? 'text-7xl' : 
-                      userPlant?.growth_level >= 3 ? 'text-6xl' : 'text-5xl'
+                      userPlant?.growth_level >= 8 ? 'text-5xl sm:text-8xl' : 
+                      userPlant?.growth_level >= 5 ? 'text-4xl sm:text-7xl' : 
+                      userPlant?.growth_level >= 3 ? 'text-3xl sm:text-6xl' : 'text-2xl sm:text-5xl'
                     }`}>
                       {currentStage.icon}
                     </div>
@@ -293,35 +319,35 @@ export function PlantGarden() {
                 </div>
               </div>
               
-              {/* Floating particles */}
-              <div className="absolute -top-2 left-1/4 w-2 h-2 bg-yellow-400 rounded-full animate-ping"></div>
-              <div className="absolute top-1/4 -right-2 w-1.5 h-1.5 bg-green-400 rounded-full animate-bounce delay-300"></div>
-              <div className="absolute bottom-1/4 -left-1 w-1 h-1 bg-blue-400 rounded-full animate-pulse delay-700"></div>
-              <div className="absolute -bottom-1 right-1/3 w-1.5 h-1.5 bg-purple-400 rounded-full animate-ping delay-1000"></div>
+              {/* Floating particles - Smaller on mobile */}
+              <div className="absolute -top-1 sm:-top-2 left-1/4 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-yellow-400 rounded-full animate-ping"></div>
+              <div className="absolute top-1/4 -right-1 sm:-right-2 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-green-400 rounded-full animate-bounce delay-300"></div>
+              <div className="absolute bottom-1/4 -left-0.5 sm:-left-1 w-0.5 h-0.5 sm:w-1 sm:h-1 bg-blue-400 rounded-full animate-pulse delay-700"></div>
+              <div className="absolute -bottom-0.5 sm:-bottom-1 right-1/3 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-purple-400 rounded-full animate-ping delay-1000"></div>
               
-              {/* Special orbiting effect for max level */}
+              {/* Special orbiting effect for max level - Responsive */}
               {userPlant?.growth_level === 10 && (
                 <div className="absolute inset-0 animate-spin" style={{ animationDuration: '20s' }}>
-                  <div className="absolute top-4 left-1/2 transform -translate-x-1/2 text-xl opacity-70">✨</div>
-                  <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-lg opacity-60">💫</div>
-                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-xl opacity-70">⭐</div>
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-lg opacity-60">🌟</div>
+                  <div className="absolute top-2 sm:top-4 left-1/2 transform -translate-x-1/2 text-sm sm:text-xl opacity-70">✨</div>
+                  <div className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 text-xs sm:text-lg opacity-60">💫</div>
+                  <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 text-sm sm:text-xl opacity-70">⭐</div>
+                  <div className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 text-xs sm:text-lg opacity-60">🌟</div>
                 </div>
               )}
             </div>
           </div>
           
-          {/* XP Progress */}
-          <div className="w-full max-w-md">
-            <div className="flex justify-between items-center mb-3">
-              <span className={`text-sm font-medium ${themeColors.text.secondary}`}>Growth Journey</span>
-              <span className={`text-sm font-bold ${themeColors.text.primary}`}>
+          {/* XP Progress - Mobile Optimized */}
+          <div className="w-full max-w-xs sm:max-w-md">
+            <div className="flex justify-between items-center mb-2 sm:mb-3">
+              <span className={`text-xs sm:text-sm font-medium ${themeColors.text.secondary}`}>Growth Journey</span>
+              <span className={`text-xs sm:text-sm font-bold ${themeColors.text.primary}`}>
                 {userPlant?.growth_xp || 0} / {userPlant?.growth_xp_required || 100} XP
               </span>
             </div>
             
             <div className="relative">
-              <div className={`w-full h-4 rounded-full ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-gray-200/70'} shadow-inner overflow-hidden`}>
+              <div className={`w-full h-3 sm:h-4 rounded-full ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-gray-200/70'} shadow-inner overflow-hidden`}>
                 <div 
                   className="h-full bg-gradient-to-r from-green-400 via-emerald-500 via-teal-500 to-blue-500 rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
                   style={{ width: `${Math.min(100, xpPercentage)}%` }}
@@ -331,15 +357,15 @@ export function PlantGarden() {
                 </div>
               </div>
               
-              <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
-                <div className={`px-3 py-1 rounded-full text-xs font-bold ${theme === 'dark' ? 'bg-slate-800 text-slate-200' : 'bg-white text-slate-700'} shadow-lg border border-white/20`}>
+              <div className="absolute -top-6 sm:-top-8 left-1/2 transform -translate-x-1/2">
+                <div className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-bold ${theme === 'dark' ? 'bg-slate-800 text-slate-200' : 'bg-white text-slate-700'} shadow-lg border border-white/20`}>
                   {Math.round(xpPercentage)}%
                 </div>
               </div>
             </div>
             
             {userPlant?.growth_level < 10 && (
-              <div className="mt-4 text-center">
+              <div className="mt-2 sm:mt-4 text-center">
                 <span className={`text-xs ${themeColors.text.muted}`}>
                   Next: {plantStages[userPlant?.growth_level + 1]?.name}
                 </span>
@@ -348,83 +374,83 @@ export function PlantGarden() {
           </div>
         </div>
 
-        {/* Right Side - Care Actions */}
-        <div className="flex flex-col justify-center">
-          <h2 className={`text-2xl font-bold ${themeColors.text.primary} mb-8 text-center`}>
+        {/* Care Actions Section - Mobile Optimized */}
+        <div className="flex flex-col justify-center order-2 lg:order-2">
+          <h2 className={`text-xl sm:text-2xl font-bold ${themeColors.text.primary} mb-4 sm:mb-8 text-center`}>
             Plant Care
           </h2>
           
-          <div className="space-y-6">
-            {/* Water */}
+          <div className="space-y-3 sm:space-y-6">
+            {/* Water - Mobile Optimized */}
             <button
               onClick={handleWaterPlant}
               disabled={userPoints < 5}
-              className={`w-full p-6 rounded-xl transition-all duration-300 ${
+              className={`w-full p-4 sm:p-6 rounded-xl transition-all duration-300 ${
                 userPoints >= 5 
                   ? `${theme === 'dark' ? 'bg-slate-800/40 hover:bg-slate-700/60 border border-blue-500/30 hover:border-blue-400/60' : 'bg-white/40 hover:bg-white/80 border border-blue-300/50 hover:border-blue-400/80'} hover:scale-105 hover:shadow-xl cursor-pointer` 
                   : `${theme === 'dark' ? 'bg-slate-800/20 border border-gray-600/30' : 'bg-gray-100/20 border border-gray-300/30'} opacity-60 cursor-not-allowed`
               } backdrop-blur-sm`}
             >
-              <div className="flex items-center gap-4">
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center ${userPoints >= 5 ? 'bg-gradient-to-br from-blue-400 to-cyan-500' : 'bg-gray-400'}`}>
-                  <Droplets className="w-8 h-8 text-white" />
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${userPoints >= 5 ? 'bg-gradient-to-br from-blue-400 to-cyan-500' : 'bg-gray-400'}`}>
+                  <Droplets className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
                 <div className="flex-1 text-left">
-                  <h3 className={`text-lg font-semibold ${themeColors.text.primary}`}>Water Plant</h3>
-                  <p className={`text-sm ${themeColors.text.muted}`}>Gives +5 XP to your plant</p>
-                  <div className="flex items-center gap-1 mt-2">
-                    <Coins className="w-4 h-4 text-yellow-500" />
-                    <span className={`font-bold ${themeColors.text.primary}`}>5 points</span>
+                  <h3 className={`text-base sm:text-lg font-semibold ${themeColors.text.primary}`}>Water Plant</h3>
+                  <p className={`text-xs sm:text-sm ${themeColors.text.muted}`}>Gives +5 XP to your plant</p>
+                  <div className="flex items-center gap-1 mt-1 sm:mt-2">
+                    <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500" />
+                    <span className={`text-sm font-bold ${themeColors.text.primary}`}>5 points</span>
                   </div>
                 </div>
               </div>
             </button>
 
-            {/* Fertilize */}
+            {/* Fertilize - Mobile Optimized */}
             <button
               onClick={handleFertilizePlant}
               disabled={userPoints < 15}
-              className={`w-full p-6 rounded-xl transition-all duration-300 ${
+              className={`w-full p-4 sm:p-6 rounded-xl transition-all duration-300 ${
                 userPoints >= 15 
                   ? `${theme === 'dark' ? 'bg-slate-800/40 hover:bg-slate-700/60 border border-green-500/30 hover:border-green-400/60' : 'bg-white/40 hover:bg-white/80 border border-green-300/50 hover:border-green-400/80'} hover:scale-105 hover:shadow-xl cursor-pointer` 
                   : `${theme === 'dark' ? 'bg-slate-800/20 border border-gray-600/30' : 'bg-gray-100/20 border border-gray-300/30'} opacity-60 cursor-not-allowed`
               } backdrop-blur-sm`}
             >
-              <div className="flex items-center gap-4">
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center ${userPoints >= 15 ? 'bg-gradient-to-br from-green-400 to-emerald-500' : 'bg-gray-400'}`}>
-                  <Sprout className="w-8 h-8 text-white" />
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${userPoints >= 15 ? 'bg-gradient-to-br from-green-400 to-emerald-500' : 'bg-gray-400'}`}>
+                  <Sprout className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
                 <div className="flex-1 text-left">
-                  <h3 className={`text-lg font-semibold ${themeColors.text.primary}`}>Fertilize Plant</h3>
-                  <p className={`text-sm ${themeColors.text.muted}`}>Gives +25 XP to your plant</p>
-                  <div className="flex items-center gap-1 mt-2">
-                    <Coins className="w-4 h-4 text-yellow-500" />
-                    <span className={`font-bold ${themeColors.text.primary}`}>15 points</span>
+                  <h3 className={`text-base sm:text-lg font-semibold ${themeColors.text.primary}`}>Fertilize Plant</h3>
+                  <p className={`text-xs sm:text-sm ${themeColors.text.muted}`}>Gives +25 XP to your plant</p>
+                  <div className="flex items-center gap-1 mt-1 sm:mt-2">
+                    <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500" />
+                    <span className={`text-sm font-bold ${themeColors.text.primary}`}>15 points</span>
                   </div>
                 </div>
               </div>
             </button>
 
-            {/* Super Fertilize */}
+            {/* Super Fertilize - Mobile Optimized */}
             <button
               onClick={handleSuperFertilize}
               disabled={userPoints < 50}
-              className={`w-full p-6 rounded-xl transition-all duration-300 ${
+              className={`w-full p-4 sm:p-6 rounded-xl transition-all duration-300 ${
                 userPoints >= 50 
                   ? `${theme === 'dark' ? 'bg-slate-800/40 hover:bg-slate-700/60 border border-purple-500/30 hover:border-purple-400/60' : 'bg-white/40 hover:bg-white/80 border border-purple-300/50 hover:border-purple-400/80'} hover:scale-105 hover:shadow-xl cursor-pointer` 
                   : `${theme === 'dark' ? 'bg-slate-800/20 border border-gray-600/30' : 'bg-gray-100/20 border border-gray-300/30'} opacity-60 cursor-not-allowed`
               } backdrop-blur-sm`}
             >
-              <div className="flex items-center gap-4">
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center ${userPoints >= 50 ? 'bg-gradient-to-br from-purple-400 to-pink-500' : 'bg-gray-400'}`}>
-                  <Zap className="w-8 h-8 text-white" />
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${userPoints >= 50 ? 'bg-gradient-to-br from-purple-400 to-pink-500' : 'bg-gray-400'}`}>
+                  <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
                 <div className="flex-1 text-left">
-                  <h3 className={`text-lg font-semibold ${themeColors.text.primary}`}>Super Boost</h3>
-                  <p className={`text-sm ${themeColors.text.muted}`}>Gives +100 XP to your plant</p>
-                  <div className="flex items-center gap-1 mt-2">
-                    <Coins className="w-4 h-4 text-yellow-500" />
-                    <span className={`font-bold ${themeColors.text.primary}`}>50 points</span>
+                  <h3 className={`text-base sm:text-lg font-semibold ${themeColors.text.primary}`}>Super Boost</h3>
+                  <p className={`text-xs sm:text-sm ${themeColors.text.muted}`}>Gives +100 XP to your plant</p>
+                  <div className="flex items-center gap-1 mt-1 sm:mt-2">
+                    <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500" />
+                    <span className={`text-sm font-bold ${themeColors.text.primary}`}>50 points</span>
                   </div>
                 </div>
               </div>
@@ -433,20 +459,20 @@ export function PlantGarden() {
         </div>
       </div>
 
-      {/* Success Toast */}
+      {/* Success Toast - Mobile Positioned */}
       {showSuccessToast && (
-        <div className="fixed top-6 right-6 z-50">
-          <div className={`${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} border rounded-xl shadow-xl p-4 max-w-sm backdrop-blur-sm`}>
+        <div className="fixed top-4 sm:top-6 right-3 sm:right-6 left-3 sm:left-auto z-50">
+          <div className={`${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} border rounded-xl shadow-xl p-3 sm:p-4 max-w-sm sm:max-w-none backdrop-blur-sm`}>
             <div className="flex items-start gap-3">
-              <Sparkles className="w-6 h-6 text-green-500 mt-0.5" />
-              <div className="flex-1">
-                <p className={`text-sm font-medium ${themeColors.text.primary}`}>{successMessage}</p>
+              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-medium ${themeColors.text.primary} break-words`}>{successMessage}</p>
               </div>
               <button
                 onClick={() => setShowSuccessToast(false)}
-                className={`${themeColors.text.muted} hover:${themeColors.text.primary} transition-colors`}
+                className={`${themeColors.text.muted} hover:${themeColors.text.primary} transition-colors flex-shrink-0`}
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
           </div>

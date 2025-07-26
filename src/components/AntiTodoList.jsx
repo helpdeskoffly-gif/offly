@@ -38,6 +38,8 @@ export const AntiTodoList = ({ userId }) => {
   const [loadingItems, setLoadingItems] = useState(new Set());
   const [shareDialog, setShareDialog] = useState({ open: false, item: null });
   const [isSharing, setIsSharing] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   
   const containerRef = useRef(null);
   const headerRef = useRef(null);
@@ -241,6 +243,16 @@ export const AntiTodoList = ({ userId }) => {
               : item
           )
         );
+        
+        // Show points toast for completed anti-todos
+        if (action === 'completed' && result.pointsEarned) {
+          const { total, base, contentBonus, plantXp } = result.pointsEarned;
+          let bonusText = contentBonus > 0 ? ` (+${contentBonus} detail bonus)` : '';
+          const message = `🎉 Anti-todo completed! +${total} points${bonusText}${plantXp > 0 ? ` & +${plantXp} plant XP` : ''}`;
+          setToastMessage(message);
+          setShowToast(true);
+          setTimeout(() => setShowToast(false), 4000);
+        }
         
         // Elegant feedback animation
         gsap.to(`[data-card-id="${itemId}"]`, {
@@ -466,7 +478,7 @@ export const AntiTodoList = ({ userId }) => {
             <Button
               onClick={handleRegenerate}
               disabled={isRegenerating}
-              className={`bg-gradient-to-r ${premiumGradients.secondary} hover:shadow-xl hover:scale-105 text-white h-12 px-8 rounded-2xl font-semibold transition-all duration-300`}
+              className={`bg-gradient-to-r ${premiumGradients.secondary} hover:shadow-xl hover:scale-105 text-white h-10 px-8 rounded-2xl font-semibold transition-all duration-300`}
             >
               {isRegenerating ? (
                 <>
@@ -483,7 +495,7 @@ export const AntiTodoList = ({ userId }) => {
 
             <Button
               onClick={handleClearAll}
-              className={`bg-gradient-to-r ${premiumGradients.tertiary} hover:shadow-xl hover:scale-105 text-white h-12 px-8 rounded-2xl font-semibold transition-all duration-300`}
+              className={`bg-gradient-to-r ${premiumGradients.tertiary} hover:shadow-xl hover:scale-105 text-white h-10 px-8 rounded-2xl font-semibold transition-all duration-300`}
             >
               <Zap className="w-5 h-5 mr-3" />
               Clear Completed
@@ -510,7 +522,7 @@ export const AntiTodoList = ({ userId }) => {
             <Button
               onClick={handleRegenerate}
               disabled={isRegenerating}
-              className={`bg-gradient-to-r ${premiumGradients.primary} hover:shadow-xl hover:scale-105 text-white h-14 px-8 rounded-2xl font-semibold text-lg transition-all duration-300`}
+              className={`bg-gradient-to-r ${premiumGradients.primary} hover:shadow-xl hover:scale-105 text-white h-10 px-8 rounded-2xl font-semibold transition-all duration-300`}
             >
               <Sparkles className="w-6 h-6 mr-3" />
               Generate Activities
@@ -754,6 +766,28 @@ export const AntiTodoList = ({ userId }) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Points Toast */}
+      {showToast && (
+        <div className="fixed top-4 right-3 left-3 sm:left-auto sm:right-6 z-50 animate-in slide-in-from-top-2 duration-300">
+          <div className={`${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} border rounded-xl shadow-xl p-3 sm:p-4 max-w-sm backdrop-blur-sm`}>
+            <div className="flex items-start gap-3">
+              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'} break-words`}>
+                  {toastMessage}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowToast(false)}
+                className={`${theme === 'dark' ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800'} transition-colors flex-shrink-0`}
+              >
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

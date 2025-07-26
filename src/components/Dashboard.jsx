@@ -418,7 +418,7 @@ const Dashboard = () => {
     },
     {
       id: "Achievements",
-      label: "Achievements",
+      label: "Plant Garden",
       icon: Trophy,
       color: "text-gray-600",
       bgColor: "bg-gray-500/10",
@@ -438,7 +438,7 @@ const Dashboard = () => {
       );
 
       if (result.success) {
-        setNotifications(result.notifications);
+        setNotifications(result.data || []);
       } else {
         // Fallback to empty notifications if service fails
         setNotifications([]);
@@ -1377,10 +1377,23 @@ const Dashboard = () => {
         // Refresh cooldown status
         refreshCooldown();
 
-        // Show styled success notification with share option
-        setSuccessMessage(
-          `Check-in completed! Your mood has been recorded.`,
-        );
+        // Show styled success notification with points info
+        let successMsg = `Check-in completed! Your mood has been recorded.`;
+        
+        // Add points information if available
+        if (result.data?.pointsEarned) {
+          const { total, moodBonus, textBonus, plantXp } = result.data.pointsEarned;
+          let bonusText = '';
+          if (moodBonus > 0 || textBonus > 0) {
+            const bonuses = [];
+            if (moodBonus > 0) bonuses.push(`+${moodBonus} mood bonus`);
+            if (textBonus > 0) bonuses.push(`+${textBonus} detail bonus`);
+            bonusText = ` (${bonuses.join(', ')})`;
+          }
+          successMsg = `🎉 Check-in complete! +${total} points${bonusText}${plantXp > 0 ? ` & +${plantXp} plant XP` : ''}`;
+        }
+        
+        setSuccessMessage(successMsg);
         setToastType("success");
         setShowSuccessToast(true);
         setShowShareCheckinOption(true);

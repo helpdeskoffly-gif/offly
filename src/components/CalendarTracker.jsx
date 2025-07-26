@@ -234,21 +234,21 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
       ref={containerRef}
       className={`${themeColors.background} border-0 shadow-xl overflow-hidden ${className}`}
     >
-      <CardContent className="p-6">
+      <CardContent className="p-3 sm:p-6">
         {/* Premium Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 shadow-lg shadow-purple-500/25">
-              <Calendar className="w-5 h-5 text-white" />
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 shadow-lg shadow-purple-500/25">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
             <div>
               <h3
-                className={`text-lg font-bold ${themeColors.text.primary} tracking-tight`}
+                className={`text-base sm:text-lg font-bold ${themeColors.text.primary} tracking-tight`}
               >
                 {monthNames[currentMonth]} {currentYear}
               </h3>
               <p
-                className={`text-sm ${themeColors.text.secondary} font-medium`}
+                className={`text-xs sm:text-sm ${themeColors.text.secondary} font-medium`}
               >
                 {loading
                   ? "Loading..."
@@ -257,24 +257,24 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <button
-              className={`p-2 rounded-xl ${themeColors.hover} ${themeColors.text.secondary} transition-colors`}
+              className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl ${themeColors.hover} ${themeColors.text.secondary} transition-colors`}
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
             <button
-              className={`p-2 rounded-xl ${themeColors.hover} ${themeColors.text.secondary} transition-colors`}
+              className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl ${themeColors.hover} ${themeColors.text.secondary} transition-colors`}
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
           </div>
         </div>
 
         {/* Days of week header */}
-        <div className="grid grid-cols-7 gap-2 mb-3">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 sm:mb-3">
           {daysOfWeek.map((day, index) => (
-            <div key={`day-${index}`} className="text-center py-2">
+            <div key={`day-${index}`} className="text-center py-1 sm:py-2">
               <span
                 className={`text-xs font-semibold ${themeColors.text.muted} uppercase tracking-wider`}
               >
@@ -285,7 +285,7 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
         </div>
 
         {/* Premium Calendar Grid */}
-        <div ref={calendarRef} className="grid grid-cols-7 gap-2">
+        <div ref={calendarRef} className="grid grid-cols-7 gap-1 sm:gap-2">
           {calendarDays.map((day, index) => {
             const status = getDayStatus(day);
 
@@ -301,7 +301,7 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
                 {day && (
                   <div
                     className={`
-                      w-9 h-9 rounded-xl flex items-center justify-center text-sm font-semibold
+                      w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center text-xs sm:text-sm font-semibold
                       transition-all duration-300 cursor-pointer transform hover:scale-105
                       ${
                         status?.isToday && !status?.hasCheckin
@@ -334,15 +334,15 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
                         title={`${status.emoji || "✓"} Score: ${status.score || "N/A"}`}
                       >
                         {status.emoji ? (
-                          <span className="text-lg">{status.emoji}</span>
+                          <span className="text-sm sm:text-lg">{status.emoji}</span>
                         ) : (
-                          <div className="w-6 h-6 bg-green-500 rounded-md flex items-center justify-center">
-                            <CheckCircle className="w-4 h-4 text-white" />
+                          <div className="w-4 h-4 sm:w-6 sm:h-6 bg-green-500 rounded-md flex items-center justify-center">
+                            <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                           </div>
                         )}
                       </div>
                     ) : (
-                      <span className="text-sm font-medium">{day}</span>
+                      <span className="text-xs sm:text-sm font-medium">{day}</span>
                     )}
                   </div>
                 )}
