@@ -309,7 +309,7 @@ const HeroSection = React.memo(
                       );
                     }
                   }}
-                  className={`bg-gradient-to-r ${premiumGradients.secondary} hover:shadow-2xl hover:shadow-emerald-500/25 text-gray-900 font-semibold px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg transition-all duration-300 w-full sm:w-auto rounded-md inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50`}
+                  className={`bg-gradient-to-r ${premiumGradients.secondary} hover:shadow-2xl hover:shadow-emerald-500/25 text-gray-900 font-semibold px-4 py-2 text-sm transition-all duration-300 w-full sm:w-auto rounded-md inline-flex items-center justify-center whitespace-nowrap font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50`}
                   onClick={handleJoinWaitlist}
                 >
                   {user ? "Go to Dashboard" : "Try Offly Free"}
