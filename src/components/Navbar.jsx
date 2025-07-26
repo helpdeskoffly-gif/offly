@@ -90,6 +90,12 @@ export function Navbar() {
       await signOut();
       console.log("Navbar: Sign out completed, navigating to home");
       navigate("/");
+      
+      // Force a page reload after a short delay to ensure all caches are cleared
+      setTimeout(() => {
+        console.log("Navbar: Force reloading page to clear all caches");
+        window.location.reload();
+      }, 500);
     } catch (error) {
       console.error("Error during sign out:", error);
       // Still navigate to home even if there's an error

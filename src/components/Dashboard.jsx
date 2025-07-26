@@ -1128,6 +1128,12 @@ const Dashboard = () => {
                   setShowProfile(false);
                   await signOut();
                   navigate("/");
+                  
+                  // Force a page reload after a short delay to ensure all caches are cleared
+                  setTimeout(() => {
+                    console.log("Dashboard: Force reloading page to clear all caches");
+                    window.location.reload();
+                  }, 500);
                 } catch (error) {
                   console.error("Error signing out:", error);
                 }

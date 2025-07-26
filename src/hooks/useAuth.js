@@ -230,6 +230,36 @@ export const useAuth = () => {
       // Clear states immediately to provide immediate feedback
       setLoading(true);
       
+      // Clear all browser storage and caches
+      console.log("Clearing all browser storage...");
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Clear any cached data
+      if ('caches' in window) {
+        caches.keys().then(names => {
+          names.forEach(name => {
+            caches.delete(name);
+          });
+        });
+      }
+      
+      // Clear any app-specific storage items
+      const keysToRemove = [
+        'dashboard-active-tab',
+        'supabase.auth.token',
+        'supabase.auth.expires_at',
+        'supabase.auth.refresh_token',
+        'supabase.auth.provider_token',
+        'supabase.auth.provider_refresh_token'
+      ];
+      
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+      });
+      
+      // Clear Supabase session and all related data
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error("Supabase signOut error:", error);
@@ -254,8 +284,35 @@ export const useAuth = () => {
     } catch (error) {
       console.error("Error signing out:", error);
       setLoading(false);
-      // Even if there's an error, clear the local state
+      // Even if there's an error, clear the local state and storage
       console.log("Clearing user state after signOut error");
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Clear any cached data
+      if ('caches' in window) {
+        caches.keys().then(names => {
+          names.forEach(name => {
+            caches.delete(name);
+          });
+        });
+      }
+      
+      // Clear any app-specific storage items
+      const keysToRemove = [
+        'dashboard-active-tab',
+        'supabase.auth.token',
+        'supabase.auth.expires_at',
+        'supabase.auth.refresh_token',
+        'supabase.auth.provider_token',
+        'supabase.auth.provider_refresh_token'
+      ];
+      
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+      });
+      
       setUser(null);
       setUserProfile(null);
       setAnalyticsLoaded(false);
