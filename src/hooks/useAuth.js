@@ -81,12 +81,6 @@ export const useAuth = () => {
     try {
       console.log("Handling user session for:", supabaseUser.id);
 
-      // Add a timeout to prevent infinite loading
-      const sessionTimeout = setTimeout(() => {
-        console.warn("Session handling timed out, setting loading to false");
-        setLoading(false);
-      }, 15000); // 15 second timeout
-
       // Create a basic user profile first
       const basicProfile = {
         username:
@@ -101,185 +95,25 @@ export const useAuth = () => {
         overallAverage: 0,
         currentStreak: 0,
         lastCheckinDate: null,
+        weeklyUniqueCheckinDays: 0,
+        weekly_score: 0,
       };
 
-      // Set user and basic profile first
+      // Set user and basic profile immediately - NO TIMEOUTS
       setUser(supabaseUser);
       setUserProfile(basicProfile);
+      setLoading(false); // Set loading false immediately
 
-              // Re-enabled analytics fetching with improved error handling
-        if (!analyticsLoaded) {
-          try {
-            console.log("Attempting to initialize/fetch user analytics...");
-            setAnalyticsLoaded(true); // Set this immediately to prevent repeated calls
-
-            // First ensure analytics are properly initialized with a shorter timeout
-            const initTimeout = Promise.race([
-              initializeOrUpdateUserAnalytics(supabaseUser.id),
-              new Promise((_, reject) =>
-                setTimeout(() => reject(new Error("Analytics init timeout")), 5000)
-              ),
-            ]);
-
-            await initTimeout;
-
-            // Then fetch the data with a shorter timeout
-            const [analyticsResult, userProfileResult] = await Promise.all([
-              Promise.race([
-                getUserAnalytics(supabaseUser.id),
-                new Promise((_, reject) =>
-                  setTimeout(
-                    () => reject(new Error("Analytics fetch timeout")),
-                    5000, // Reduced from 8000
-                  ),
-                ),
-              ]),
-              Promise.race([
-                supabase.from('users').select('username, hobbies, avatar_url, full_name, bio').eq('id', supabaseUser.id).single(),
-                new Promise((_, reject) =>
-                  setTimeout(() => reject(new Error("Profile fetch timeout")), 3000)
-                ),
-              ]),
-            ]);
-
-          let userHobbies = [];
-          let userUsername = supabaseUser.user_metadata?.full_name || supabaseUser.email || "User";
-          let userFullName = supabaseUser.user_metadata?.full_name || "";
-          let userBio = "";
-          let userAvatarUrl = "";
-
-          if (userProfileResult.data) {
-            userHobbies = userProfileResult.data.hobbies || [];
-            userUsername = userProfileResult.data.username || userUsername;
-            userFullName = userProfileResult.data.full_name || userFullName;
-            userBio = userProfileResult.data.bio || "";
-            userAvatarUrl = userProfileResult.data.avatar_url || "";
-            
-            // If user doesn't have an avatar assigned, assign one now and save it
-            if (!userAvatarUrl) {
-              try {
-                console.log("User has no avatar, assigning random avatar...");
-                const { assignRandomAvatar } = await import('../services/avatars');
-                const avatarResult = await assignRandomAvatar(supabaseUser.id);
-                if (avatarResult.success) {
-                  userAvatarUrl = avatarResult.avatarUrl;
-                  console.log("✅ Successfully assigned random avatar to existing user:", userAvatarUrl);
-                } else {
-                  console.error("❌ Failed to assign avatar:", avatarResult.error);
-                }
-              } catch (avatarError) {
-                console.error("❌ Error assigning avatar to existing user:", avatarError);
-              }
-            } else {
-              console.log("✅ User already has avatar:", userAvatarUrl);
-            }
-          } else if (userProfileResult.error && userProfileResult.error.code !== 'PGRST116') {
-            console.error('Error fetching user profile from "users" table:', userProfileResult.error);
-          }
-          
-          // Determine if profile is completed based on hobbies
-          const profileCompleted = userHobbies && userHobbies.length > 0;
-
-          if (analyticsResult.success && analyticsResult.data) {
-            console.log("Analytics data found, updating profile");
-            const analytics = analyticsResult.data;
-            console.log("useAuth: Analytics data received:", analytics);
-            setUserProfile({
-              username: userUsername,
-              full_name: userFullName,
-              bio: userBio,
-              avatar_url: userAvatarUrl,
-              hobbies: userHobbies,
-              profileCompleted: profileCompleted,
-              level: Math.floor(analytics.total_checkins / 10) + 1,
-              xp: analytics.total_checkins * 10,
-              nextLevelXp:
-                (Math.floor(analytics.total_checkins / 10) + 1) * 100,
-              dailyCheckins: analytics.daily_checkin_counter || 0,
-              totalCheckins: analytics.total_checkins || 0,
-              currentAiScore: analytics.current_ai_score || 0,
-              todayAverage: analytics.today_average_sentiment || 0,
-              overallAverage: analytics.overall_average_sentiment || 0,
-              currentStreak: analytics.current_streak || 0,
-              lastCheckinDate: analytics.last_checkin_date,
-              weeklyUniqueCheckinDays: analytics.weekly_unique_checkin_days || 0,
-              weekly_score: analytics.weekly_score || 0,
-            });
-            console.log("useAuth: userProfile updated with analytics:", userProfile);
-          } else {
-            console.log(
-              "No analytics data found, will create on first checkin",
-            );
-            // Don't try to create user records here to avoid infinite loops
-            // The fixed submitCheckin function will handle user creation
-          }
-        } catch (analyticsError) {
-          console.warn("Failed to fetch analytics:", analyticsError.message);
-          // Reset analytics loaded flag on error so it can be retried
-          setAnalyticsLoaded(false);
-          
-          // Set a fallback profile with user metadata to enable navigation
-          try {
-            const fallbackProfileResult = await supabase
-              .from('users')
-              .select('username, hobbies, avatar_url, full_name, bio')
-              .eq('id', supabaseUser.id)
-              .single();
-              
-            let userHobbies = [];
-            let userUsername = supabaseUser.user_metadata?.full_name || supabaseUser.email || "User";
-            let userFullName = supabaseUser.user_metadata?.full_name || "";
-            let userBio = "";
-            let userAvatarUrl = "";
-
-            if (fallbackProfileResult.data) {
-              userHobbies = fallbackProfileResult.data.hobbies || [];
-              userUsername = fallbackProfileResult.data.username || userUsername;
-              userFullName = fallbackProfileResult.data.full_name || userFullName;
-              userBio = fallbackProfileResult.data.bio || "";
-              userAvatarUrl = fallbackProfileResult.data.avatar_url || "";
-            }
-
-            const profileCompleted = userHobbies && userHobbies.length > 0;
-
-            setUserProfile({
-              username: userUsername,
-              full_name: userFullName,
-              bio: userBio,
-              avatar_url: userAvatarUrl,
-              hobbies: userHobbies,
-              profileCompleted: profileCompleted,
-              level: 1,
-              xp: 0,
-              nextLevelXp: 100,
-              dailyCheckins: 0,
-              totalCheckins: 0,
-              currentAiScore: 0,
-              todayAverage: 0,
-              overallAverage: 0,
-              currentStreak: 0,
-              lastCheckinDate: null,
-              weeklyUniqueCheckinDays: 0,
-              weekly_score: 0,
-            });
-            
-            console.log("Set fallback profile after analytics failure");
-          } catch (fallbackError) {
-            console.warn("Failed to fetch fallback profile:", fallbackError.message);
-            // Keep the basic profile that was already set
-          }
-        }
-      } else {
-        console.log("Analytics already loaded, skipping");
+      // Load analytics in the background WITHOUT blocking auth
+      if (!analyticsLoaded) {
+        console.log("Loading analytics in background...");
+        setAnalyticsLoaded(true);
+        
+        // Fire and forget - don't await this
+        loadAnalyticsInBackground(supabaseUser.id);
       }
-
-      // Clear the timeout and set loading to false at the end
-      clearTimeout(sessionTimeout);
-      setLoading(false);
     } catch (error) {
       console.error("Critical error handling user session:", error);
-      // Clear timeout on error
-      clearTimeout(sessionTimeout);
       // Always set a basic user profile to prevent infinite loading
       setUser(supabaseUser);
       setUserProfile({
@@ -295,9 +129,96 @@ export const useAuth = () => {
         overallAverage: 0,
         currentStreak: 0,
         lastCheckinDate: null,
+        weeklyUniqueCheckinDays: 0,
+        weekly_score: 0,
       });
-      // Always set loading to false even on errors
       setLoading(false);
+    }
+  };
+
+  // Separate function to load analytics in background
+  const loadAnalyticsInBackground = async (userId) => {
+    try {
+      console.log("Background: Initializing analytics for user:", userId);
+      
+      // Initialize analytics
+      await initializeOrUpdateUserAnalytics(userId);
+      
+      // Fetch analytics and profile data
+      const [analyticsResult, userProfileResult] = await Promise.all([
+        getUserAnalytics(userId),
+        supabase.from('users').select('username, hobbies, avatar_url, full_name, bio').eq('id', userId).single(),
+      ]);
+
+      let userHobbies = [];
+      let userUsername = user?.user_metadata?.full_name || user?.email || "User";
+      let userFullName = user?.user_metadata?.full_name || "";
+      let userBio = "";
+      let userAvatarUrl = "";
+
+      if (userProfileResult.data) {
+        userHobbies = userProfileResult.data.hobbies || [];
+        userUsername = userProfileResult.data.username || userUsername;
+        userFullName = userProfileResult.data.full_name || userFullName;
+        userBio = userProfileResult.data.bio || "";
+        userAvatarUrl = userProfileResult.data.avatar_url || "";
+        
+        // If user doesn't have an avatar assigned, assign one now and save it
+        if (!userAvatarUrl) {
+          try {
+            console.log("User has no avatar, assigning random avatar...");
+            const { assignRandomAvatar } = await import('../services/avatars');
+            const avatarResult = await assignRandomAvatar(userId);
+            if (avatarResult.success) {
+              userAvatarUrl = avatarResult.avatarUrl;
+              console.log("✅ Successfully assigned random avatar to existing user:", userAvatarUrl);
+            } else {
+              console.error("❌ Failed to assign avatar:", avatarResult.error);
+            }
+          } catch (avatarError) {
+            console.error("❌ Error assigning avatar to existing user:", avatarError);
+          }
+        } else {
+          console.log("✅ User already has avatar:", userAvatarUrl);
+        }
+      } else if (userProfileResult.error && userProfileResult.error.code !== 'PGRST116') {
+        console.error('Error fetching user profile from "users" table:', userProfileResult.error);
+      }
+      
+      // Determine if profile is completed based on hobbies
+      const profileCompleted = userHobbies && userHobbies.length > 0;
+
+      if (analyticsResult.success && analyticsResult.data) {
+        console.log("Background: Analytics data found, updating profile");
+        const analytics = analyticsResult.data;
+        console.log("Background: Analytics data received:", analytics);
+        setUserProfile({
+          username: userUsername,
+          full_name: userFullName,
+          bio: userBio,
+          avatar_url: userAvatarUrl,
+          hobbies: userHobbies,
+          profileCompleted: profileCompleted,
+          level: Math.floor(analytics.total_checkins / 10) + 1,
+          xp: analytics.total_checkins * 10,
+          nextLevelXp: (Math.floor(analytics.total_checkins / 10) + 1) * 100,
+          dailyCheckins: analytics.daily_checkin_counter || 0,
+          totalCheckins: analytics.total_checkins || 0,
+          currentAiScore: analytics.current_ai_score || 0,
+          todayAverage: analytics.today_average_sentiment || 0,
+          overallAverage: analytics.overall_average_sentiment || 0,
+          currentStreak: analytics.current_streak || 0,
+          lastCheckinDate: analytics.last_checkin_date,
+          weeklyUniqueCheckinDays: analytics.weekly_unique_checkin_days || 0,
+          weekly_score: analytics.weekly_score || 0,
+        });
+        console.log("Background: userProfile updated with analytics");
+      } else {
+        console.log("Background: No analytics data found, keeping basic profile");
+      }
+    } catch (error) {
+      console.warn("Background: Failed to load analytics:", error.message);
+      // Don't fail the auth process - just log the error
     }
   };
 

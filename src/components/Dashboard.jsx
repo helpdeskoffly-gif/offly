@@ -145,7 +145,7 @@ const getMoodLabelFromEmoji = (emoji) => {
 };
 
 const Dashboard = () => {
-  const { user, userProfile, signOut, refreshUserProfile } = useAuth();
+  const { user, userProfile, signOut, refreshUserProfile, loading: authLoading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const { canCheckin, formatTimeRemaining, refreshCooldown } = useCheckinCooldown(user?.id);
@@ -2000,13 +2000,15 @@ const Dashboard = () => {
   // Authentication guard - redirect to auth if not logged in
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (!user) {
+      // Only redirect if we're not loading and definitely don't have a user
+      if (!authLoading && !user) {
+        console.log("Dashboard: No user found, redirecting to auth");
         navigate("/auth");
       }
-    }, 200); // Small delay to prevent race condition
+    }, 2000); // Increased delay to allow auth to complete
     
     return () => clearTimeout(timer);
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   // Show loading briefly while user state is being set
   if (!user) {
