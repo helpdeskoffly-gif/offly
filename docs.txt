@@ -183,7 +183,112 @@ execute FUNCTION update_user_analytics_after_checkin ();
 
 create trigger update_checkins_updated_at BEFORE
 update on checkins for EACH row
-execute FUNCTION update_updated_at_column ();create table public.landing_page_views (
+execute FUNCTION update_updated_at_column ();
+
+-- Community Posts Table - Stores all community posts (anti-todo shares, check-ins, manual posts)
+create table public.community_posts (
+  id uuid not null default extensions.uuid_generate_v4(),
+  user_id uuid not null,
+  content text not null,
+  title text,
+  content_type text default 'text'::text,
+  source_type text default 'manual'::text,
+  source_id uuid,
+  hashtags text[] default '{}',
+  is_public boolean default true,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now(),
+  constraint community_posts_pkey primary key (id),
+  constraint community_posts_user_id_fkey foreign key (user_id) references users (id) on delete cascade,
+  constraint community_posts_content_type_check check (content_type = any (array['text'::text, 'anti_todo'::text, 'checkin'::text, 'image'::text])),
+  constraint community_posts_source_type_check check (source_type = any (array['manual'::text, 'anti_todo'::text, 'checkin'::text]))
+) tablespace pg_default;
+
+create index if not exists idx_community_posts_user_id on public.community_posts using btree (user_id) tablespace pg_default;
+create index if not exists idx_community_posts_created_at on public.community_posts using btree (created_at desc) tablespace pg_default;
+create index if not exists idx_community_posts_public on public.community_posts using btree (is_public) tablespace pg_default;
+create index if not exists idx_community_posts_hashtags on public.community_posts using gin (hashtags) tablespace pg_default;
+
+create trigger update_community_posts_updated_at before update on community_posts for each row execute function update_updated_at_column();
+
+-- Community Likes Table - Tracks likes on posts
+create table public.community_likes (
+  id uuid not null default extensions.uuid_generate_v4(),
+  user_id uuid not null,
+  post_id uuid not null,
+  created_at timestamp with time zone default now(),
+  constraint community_likes_pkey primary key (id),
+  constraint community_likes_user_post_unique unique (user_id, post_id),
+  constraint community_likes_user_id_fkey foreign key (user_id) references users (id) on delete cascade,
+  constraint community_likes_post_id_fkey foreign key (post_id) references community_posts (id) on delete cascade
+) tablespace pg_default;
+
+create index if not exists idx_community_likes_user_id on public.community_likes using btree (user_id) tablespace pg_default;
+create index if not exists idx_community_likes_post_id on public.community_likes using btree (post_id) tablespace pg_default;
+
+-- Community Comments Table - Stores comments on posts
+create table public.community_comments (
+  id uuid not null default extensions.uuid_generate_v4(),
+  user_id uuid not null,
+  post_id uuid not null,
+  parent_comment_id uuid,
+  content text not null,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now(),
+  constraint community_comments_pkey primary key (id),
+  constraint community_comments_user_id_fkey foreign key (user_id) references users (id) on delete cascade,
+  constraint community_comments_post_id_fkey foreign key (post_id) references community_posts (id) on delete cascade,
+  constraint community_comments_parent_fkey foreign key (parent_comment_id) references community_comments (id) on delete cascade
+) tablespace pg_default;
+
+create index if not exists idx_community_comments_user_id on public.community_comments using btree (user_id) tablespace pg_default;
+create index if not exists idx_community_comments_post_id on public.community_comments using btree (post_id) tablespace pg_default;
+create index if not exists idx_community_comments_parent_id on public.community_comments using btree (parent_comment_id) tablespace pg_default;
+
+create trigger update_community_comments_updated_at before update on community_comments for each row execute function update_updated_at_column();
+
+-- User Preferences Table - Stores user feed preferences and content settings
+create table public.user_preferences (
+  id uuid not null default extensions.uuid_generate_v4(),
+  user_id uuid not null,
+  preferred_content_types text[] default array['text', 'anti_todo', 'checkin'],
+  preferred_hashtags text[] default array['wellness', 'mindfulness'],
+  feed_algorithm text default 'personalized'::text,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now(),
+  constraint user_preferences_pkey primary key (id),
+  constraint user_preferences_user_id_unique unique (user_id),
+  constraint user_preferences_user_id_fkey foreign key (user_id) references users (id) on delete cascade,
+  constraint user_preferences_feed_algorithm_check check (feed_algorithm = any (array['recent'::text, 'popular'::text, 'personalized'::text]))
+) tablespace pg_default;
+
+create index if not exists idx_user_preferences_user_id on public.user_preferences using btree (user_id) tablespace pg_default;
+
+create trigger update_user_preferences_updated_at before update on user_preferences for each row execute function update_updated_at_column();
+
+-- User Relationships Table - Friends/Following system
+create table public.user_relationships (
+  id uuid not null default extensions.uuid_generate_v4(),
+  follower_id uuid not null,
+  following_id uuid not null,
+  status text default 'pending'::text,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now(),
+  constraint user_relationships_pkey primary key (id),
+  constraint user_relationships_unique unique (follower_id, following_id),
+  constraint user_relationships_follower_id_fkey foreign key (follower_id) references users (id) on delete cascade,
+  constraint user_relationships_following_id_fkey foreign key (following_id) references users (id) on delete cascade,
+  constraint user_relationships_status_check check (status = any (array['pending'::text, 'accepted'::text, 'blocked'::text])),
+  constraint user_relationships_no_self_follow check (follower_id != following_id)
+) tablespace pg_default;
+
+create index if not exists idx_user_relationships_follower_id on public.user_relationships using btree (follower_id) tablespace pg_default;
+create index if not exists idx_user_relationships_following_id on public.user_relationships using btree (following_id) tablespace pg_default;
+create index if not exists idx_user_relationships_status on public.user_relationships using btree (status) tablespace pg_default;
+
+create trigger update_user_relationships_updated_at before update on user_relationships for each row execute function update_updated_at_column();
+
+create table public.landing_page_views (
   id uuid not null default extensions.uuid_generate_v4 (),
   page_path text null,
   user_agent text null,
@@ -306,6 +411,268 @@ execute FUNCTION update_updated_at_column ();create table public.waitlist (
 ) TABLESPACE pg_default;
 
 create index IF not exists idx_waitlist_email on public.waitlist using btree (email) TABLESPACE pg_default;
+
+-- Community Post Stats View - Optimized view for displaying posts with like/comment counts
+create or replace view community_post_stats as
+select 
+    cp.id as post_id,
+    cp.user_id,
+    u.username,
+    u.full_name,
+    u.avatar_url,
+    cp.content,
+    cp.title,
+    cp.content_type,
+    cp.source_type,
+    cp.source_id,
+    cp.hashtags,
+    cp.is_public,
+    cp.created_at,
+    cp.updated_at,
+    coalesce(like_counts.like_count, 0) as like_count,
+    coalesce(comment_counts.comment_count, 0) as comment_count
+from community_posts cp
+join users u on cp.user_id = u.id
+left join (
+    select post_id, count(*) as like_count
+    from community_likes
+    group by post_id
+) like_counts on cp.id = like_counts.post_id
+left join (
+    select post_id, count(*) as comment_count
+    from community_comments
+    group by post_id
+) comment_counts on cp.id = comment_counts.post_id;
+
+-- Function to get personalized feed based on user preferences and hobbies
+create or replace function get_personalized_feed(
+    p_user_id uuid,
+    p_limit integer default 20,
+    p_offset integer default 0
+)
+returns table (
+    post_id uuid,
+    user_id uuid,
+    username text,
+    full_name text,
+    avatar_url text,
+    content text,
+    title text,
+    content_type text,
+    source_type text,
+    source_id uuid,
+    hashtags text[],
+    is_public boolean,
+    created_at timestamptz,
+    updated_at timestamptz,
+    like_count bigint,
+    comment_count bigint,
+    preference_score integer
+) as $$
+begin
+    return query
+    select distinct
+        cp.id as post_id,
+        cp.user_id,
+        u.username,
+        u.full_name,
+        u.avatar_url,
+        cp.content,
+        cp.title,
+        cp.content_type,
+        cp.source_type,
+        cp.source_id,
+        cp.hashtags,
+        cp.is_public,
+        cp.created_at,
+        cp.updated_at,
+        coalesce(stats.like_count, 0) as like_count,
+        coalesce(stats.comment_count, 0) as comment_count,
+        case 
+            -- calculate preference match score based on multiple factors
+            when current_user_prefs.preferred_hashtags is null then 0
+            else (
+                -- score based on hashtag overlap (0-50 points)
+                (
+                    select count(*) * 10
+                    from unnest(cp.hashtags) as post_tag
+                    where post_tag = any(current_user_prefs.preferred_hashtags)
+                    limit 5
+                ) +
+                -- score based on content type match (0-30 points)
+                case 
+                    when cp.content_type = any(current_user_prefs.preferred_content_types) then 30
+                    else 0
+                end +
+                -- score based on post author's hobbies matching current user's hobbies (0-20 points)
+                (
+                    select count(*) * 5
+                    from unnest(post_author.hobbies) as author_hobby
+                    join unnest(current_user.hobbies) as user_hobby on author_hobby = user_hobby
+                    limit 4
+                )
+            )
+        end as preference_score
+    from community_posts cp
+    join users u on cp.user_id = u.id
+    left join users post_author on cp.user_id = post_author.id
+    left join users current_user on current_user.id = p_user_id
+    left join user_preferences current_user_prefs on current_user_prefs.user_id = p_user_id
+    left join (
+        select 
+            cp2.id as post_id,
+            count(distinct cl.id) as like_count,
+            count(distinct cc.id) as comment_count
+        from community_posts cp2
+        left join community_likes cl on cp2.id = cl.post_id
+        left join community_comments cc on cp2.id = cc.post_id
+        group by cp2.id
+    ) stats on cp.id = stats.post_id
+    where 
+        cp.is_public = true
+        and cp.user_id != p_user_id  -- don't show user's own posts
+        and cp.created_at >= now() - interval '30 days'  -- only recent posts (last 30 days)
+    order by 
+        preference_score desc,  -- first by preference match
+        cp.created_at desc      -- then by recency
+    limit p_limit
+    offset p_offset;
+end;
+$$ language plpgsql;
+
+-- Function to get friends feed - posts from users you follow
+create or replace function get_friends_feed(
+    p_user_id uuid,
+    p_limit integer default 20,
+    p_offset integer default 0
+)
+returns table (
+    post_id uuid,
+    user_id uuid,
+    username text,
+    full_name text,
+    avatar_url text,
+    content text,
+    title text,
+    content_type text,
+    source_type text,
+    source_id uuid,
+    hashtags text[],
+    is_public boolean,
+    created_at timestamptz,
+    updated_at timestamptz,
+    like_count bigint,
+    comment_count bigint
+) as $$
+begin
+    return query
+    select 
+        cp.id as post_id,
+        cp.user_id,
+        u.username,
+        u.full_name,
+        u.avatar_url,
+        cp.content,
+        cp.title,
+        cp.content_type,
+        cp.source_type,
+        cp.source_id,
+        cp.hashtags,
+        cp.is_public,
+        cp.created_at,
+        cp.updated_at,
+        coalesce(stats.like_count, 0) as like_count,
+        coalesce(stats.comment_count, 0) as comment_count
+    from community_posts cp
+    join users u on cp.user_id = u.id
+    join user_relationships ur on (ur.following_id = cp.user_id and ur.follower_id = p_user_id)
+    left join (
+        select 
+            cp2.id as post_id,
+            count(distinct cl.id) as like_count,
+            count(distinct cc.id) as comment_count
+        from community_posts cp2
+        left join community_likes cl on cp2.id = cl.post_id
+        left join community_comments cc on cp2.id = cc.post_id
+        group by cp2.id
+    ) stats on cp.id = stats.post_id
+    where 
+        cp.is_public = true
+        and ur.status = 'accepted'
+        and cp.created_at >= now() - interval '30 days'  -- only recent posts (last 30 days)
+    order by 
+        cp.created_at desc
+    limit p_limit
+    offset p_offset;
+end;
+$$ language plpgsql;
+
+-- Function to get suggested friends - shows all users but ordered by preference
+create or replace function get_suggested_friends(
+    p_user_id uuid,
+    p_limit integer default 10
+)
+returns table (
+    user_id uuid,
+    username text,
+    full_name text,
+    avatar_url text,
+    bio text,
+    shared_hobbies text[],
+    hobby_match_count integer
+) as $$
+declare
+    current_user_hobbies text[];
+begin
+    -- get the current user's hobbies first
+    select hobbies into current_user_hobbies 
+    from users 
+    where id = p_user_id;
+    
+    -- return all users but ordered by preference (hobby matches first)
+    return query
+    select 
+        u.id as user_id,
+        u.username,
+        u.full_name,
+        u.avatar_url,
+        u.bio,
+        case 
+            when current_user_hobbies is not null and u.hobbies is not null then
+                (
+                    select array_agg(shared_hobby)
+                    from unnest(u.hobbies) as shared_hobby
+                    where shared_hobby = any(current_user_hobbies)
+                )
+            else null
+        end as shared_hobbies,
+        case 
+            when current_user_hobbies is not null and u.hobbies is not null then
+                (
+                    select count(*)::integer
+                    from unnest(u.hobbies) as user_hobby
+                    where user_hobby = any(current_user_hobbies)
+                )
+            else 0
+        end as hobby_match_count
+    from users u
+    left join user_relationships ur on (
+        (ur.follower_id = p_user_id and ur.following_id = u.id) or
+        (ur.follower_id = u.id and ur.following_id = p_user_id)
+    )
+    where 
+        u.id != p_user_id  -- don't show yourself
+        and ur.id is null  -- not already connected
+    order by 
+        -- first: users with hobby matches (highest count first)
+        hobby_match_count desc,
+        -- then: users with any hobbies (even if no match)
+        case when u.hobbies is not null and array_length(u.hobbies, 1) > 0 then 1 else 0 end desc,
+        -- finally: all other users by creation date (newest first)
+        u.created_at desc
+    limit p_limit;
+end;
+$$ language plpgsql;
 
 CREATE OR REPLACE FUNCTION reset_weekly_scores()
 RETURNS void AS $$

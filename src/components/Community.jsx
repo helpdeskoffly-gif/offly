@@ -9,6 +9,11 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from './ui/popover';
 import { 
   Heart, 
   MessageCircle, 
@@ -63,6 +68,14 @@ export const Community = () => {
   const [suggestedFriends, setSuggestedFriends] = useState([]);
   const [followingUsers, setFollowingUsers] = useState(new Set());
   const [loadingFollow, setLoadingFollow] = useState(new Set());
+  
+  // Post management state
+  const [deletingPosts, setDeletingPosts] = useState(new Set());
+  const [openMenus, setOpenMenus] = useState(new Set());
+  
+  // Comments state
+  const [postComments, setPostComments] = useState({});
+  const [loadingComments, setLoadingComments] = useState(new Set());
   
   const containerRef = useRef(null);
   const headerRef = useRef(null);
@@ -319,6 +332,33 @@ export const Community = () => {
     }
   };
 
+  const loadPostComments = async (postId) => {
+    if (postComments[postId] || loadingComments.has(postId)) {
+      return; // Already loaded or loading
+    }
+
+    setLoadingComments(prev => new Set([...prev, postId]));
+    
+    try {
+      const result = await getPostComments(postId);
+      
+      if (result.success) {
+        setPostComments(prev => ({
+          ...prev,
+          [postId]: result.data || []
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading comments:', error);
+    } finally {
+      setLoadingComments(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(postId);
+        return newSet;
+      });
+    }
+  };
+
   const handleAddComment = async (postId) => {
     const content = commentInputs[postId]?.trim();
     if (!content) return;
@@ -329,6 +369,7 @@ export const Community = () => {
       const result = await addComment(user.id, postId, content);
       
       if (result.success) {
+        // Update post comment count
         setPosts(prev => prev.map(post => {
           if (post.post_id === postId) {
             return {
@@ -337,6 +378,12 @@ export const Community = () => {
             };
           }
           return post;
+        }));
+        
+        // Add comment to local state
+        setPostComments(prev => ({
+          ...prev,
+          [postId]: [...(prev[postId] || []), result.data]
         }));
         
         setCommentInputs(prev => ({ ...prev, [postId]: '' }));
@@ -356,6 +403,92 @@ export const Community = () => {
     setSearchQuery(`#${hashtag}`);
     setOffset(0);
     loadFeed(true);
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!confirm('Are you sure you want to delete this post?')) {
+      return;
+    }
+
+    // Close the menu
+    setOpenMenus(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(postId);
+      return newSet;
+    });
+
+    setDeletingPosts(prev => new Set([...prev, postId]));
+    
+    try {
+      const result = await deletePost(user.id, postId);
+      
+      if (result.success) {
+        // Remove post from local state
+        setPosts(prev => prev.filter(post => post.post_id !== postId));
+        
+        // Show success feedback with GSAP animation
+        const successElement = document.createElement('div');
+        successElement.className = `fixed top-4 right-4 z-50 ${themeColors.cardVariants.success} border rounded-2xl p-4 shadow-xl backdrop-blur-xl opacity-0 scale-75`;
+        successElement.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="${themeColors.text.primary} font-semibold">Post Deleted! 🗑️</p>
+              <p class="${themeColors.text.secondary} text-sm">Your post has been removed</p>
+            </div>
+          </div>
+        `;
+        
+        document.body.appendChild(successElement);
+        
+        // Animate in with GSAP
+        gsap.to(successElement, {
+          opacity: 1,
+          scale: 1,
+          duration: 0.5,
+          ease: "back.out(1.7)"
+        });
+        
+        // Animate out and remove after 3 seconds
+        setTimeout(() => {
+          gsap.to(successElement, {
+            opacity: 0,
+            scale: 0.8,
+            y: -20,
+            duration: 0.3,
+            onComplete: () => successElement.remove()
+          });
+        }, 3000);
+      } else {
+        console.error('Failed to delete post:', result.error);
+        alert('Failed to delete post. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('Failed to delete post. Please try again.');
+    } finally {
+      setDeletingPosts(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(postId);
+        return newSet;
+      });
+    }
+  };
+
+  const toggleMenu = (postId) => {
+    setOpenMenus(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(postId)) {
+        newSet.delete(postId);
+      } else {
+        newSet.add(postId);
+      }
+      return newSet;
+    });
   };
 
   const formatTimeAgo = (dateString) => {
@@ -481,13 +614,50 @@ export const Community = () => {
                     </div>
                     
                     {post.user_id === user.id && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`${themeColors.text.muted} hover:${themeColors.text.primary} h-8 w-8 rounded-lg`}
+                      <Popover 
+                        open={openMenus.has(post.post_id)}
+                        onOpenChange={(open) => {
+                          if (open) {
+                            toggleMenu(post.post_id);
+                          } else {
+                            setOpenMenus(prev => {
+                              const newSet = new Set(prev);
+                              newSet.delete(post.post_id);
+                              return newSet;
+                            });
+                          }
+                        }}
                       >
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`${themeColors.text.muted} hover:${themeColors.text.primary} h-8 w-8 rounded-lg`}
+                            disabled={deletingPosts.has(post.post_id)}
+                          >
+                            {deletingPosts.has(post.post_id) ? (
+                              <Sparkles className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <MoreVertical className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent 
+                          align="end" 
+                          className={`${themeColors.card} border shadow-lg p-1 w-40`}
+                          side="bottom"
+                        >
+                          <Button
+                            onClick={() => handleDeletePost(post.post_id)}
+                            disabled={deletingPosts.has(post.post_id)}
+                            variant="ghost"
+                            className={`w-full flex items-center gap-2 px-3 py-2 text-sm justify-start hover:bg-red-500/10 text-red-600 dark:text-red-400 focus:bg-red-500/10 rounded-md`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete Post
+                          </Button>
+                        </PopoverContent>
+                      </Popover>
                     )}
                   </div>
 
@@ -541,11 +711,15 @@ export const Community = () => {
                       </Button>
                       
                       <Button
-                        onClick={() => setExpandedComments(prev => 
-                          prev.has(post.post_id) 
-                            ? new Set([...prev].filter(id => id !== post.post_id))
-                            : new Set([...prev, post.post_id])
-                        )}
+                        onClick={() => {
+                          const isExpanded = expandedComments.has(post.post_id);
+                          if (isExpanded) {
+                            setExpandedComments(prev => new Set([...prev].filter(id => id !== post.post_id)));
+                          } else {
+                            setExpandedComments(prev => new Set([...prev, post.post_id]));
+                            loadPostComments(post.post_id);
+                          }
+                        }}
                         variant="ghost"
                         size="sm"
                         className={`flex items-center gap-2 h-10 px-4 rounded-xl ${themeColors.text.muted} hover:${themeColors.text.primary} hover:bg-blue-500/10 transition-all duration-300`}
@@ -564,10 +738,61 @@ export const Community = () => {
                     </div>
                   </div>
 
-                  {/* Comment Input */}
+                  {/* Comments Section */}
                   {expandedComments.has(post.post_id) && (
-                    <div className="mt-6 pt-6 border-t border-slate-200/10">
-                      <div className="flex gap-3">
+                    <div className="mt-6 pt-6 border-t border-slate-200/10 space-y-4">
+                      
+                      {/* Existing Comments */}
+                      {loadingComments.has(post.post_id) ? (
+                        <div className="flex items-center justify-center py-4">
+                          <Sparkles className={`w-5 h-5 animate-spin ${themeColors.text.muted}`} />
+                          <span className={`ml-2 ${themeColors.text.muted}`}>Loading comments...</span>
+                        </div>
+                      ) : postComments[post.post_id] && postComments[post.post_id].length > 0 ? (
+                        <div className="space-y-3">
+                          {postComments[post.post_id].map((comment) => (
+                            <div key={comment.id} className="flex gap-3">
+                              <Avatar className="w-8 h-8 flex-shrink-0">
+                                <AvatarImage 
+                                  src={getUserAvatarUrl({ id: comment.user_id }, { avatar_url: comment.users?.avatar_url })} 
+                                  alt={comment.users?.username || comment.users?.full_name} 
+                                />
+                                <AvatarFallback className={`bg-gradient-to-br ${premiumGradients.accent} text-white text-sm`}>
+                                  {(comment.users?.username || comment.users?.full_name || 'U').charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              
+                              <div className="flex-1">
+                                <div className={`${themeColors.cardVariants.neutral} rounded-lg px-4 py-3`}>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h4 className={`font-medium text-sm ${themeColors.text.primary}`}>
+                                      {comment.users?.username || comment.users?.full_name || 'Anonymous'}
+                                    </h4>
+                                    <span className={`text-xs ${themeColors.text.muted}`}>
+                                      {formatTimeAgo(comment.created_at)}
+                                    </span>
+                                  </div>
+                                  <p className={`text-sm ${themeColors.text.primary} leading-relaxed`}>
+                                    {comment.content}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        postComments[post.post_id] && (
+                          <div className="text-center py-4">
+                            <MessageCircle className={`w-8 h-8 ${themeColors.text.muted} mx-auto mb-2`} />
+                            <p className={`text-sm ${themeColors.text.muted}`}>
+                              No comments yet. Be the first to comment!
+                            </p>
+                          </div>
+                        )
+                      )}
+
+                      {/* Comment Input */}
+                      <div className="flex gap-3 pt-2">
                         <Avatar className="w-8 h-8 flex-shrink-0">
                           <AvatarImage 
                             src={getUserAvatarUrl(user, userProfile)} 
