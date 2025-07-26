@@ -82,24 +82,86 @@ export const shareAntiTodoToCommunity = async (userId, antiTodoItem, additionalT
   });
 };
 
-// Share a checkin to community
-export const shareCheckinToCommunity = async (userId, checkin, additionalText = '') => {
+// Share plant completion or other gamification content to community
+export const shareTooCommunity = async (userId, shareData) => {
+  console.log('shareTooCommunity called with:', { userId, shareData });
+  
   return safeCommunityOperation(async () => {
-    const moodEmoji = checkin.mood_emoji || '😊';
-    const content = additionalText 
-      ? `${additionalText}\n\n${moodEmoji} Mood: ${checkin.mood_score}/10\n${checkin.mood_text || ''}` 
-      : `${moodEmoji} Mood check-in: ${checkin.mood_score}/10${checkin.mood_text ? `\n${checkin.mood_text}` : ''}`;
+    const { type, plantData, content, hashtags = [] } = shareData;
     
-    const hashtags = ['mood', 'checkin', 'wellness', 'mindfulness'];
+    let postContent = content;
+    let postTitle = '';
+    let contentType = 'text';
+    let sourceType = 'manual';
+    let sourceId = null;
+    let postHashtags = [...hashtags, 'wellness', 'plantgarden'];
     
-    return await createCommunityPost(userId, {
-      content: content,
-      title: 'Daily Mood Check-in 💭',
-      contentType: 'checkin',
-      sourceType: 'checkin',
-      sourceId: checkin.id,
-      hashtags: hashtags
-    });
+    // Handle different sharing types
+    switch (type) {
+      case 'plant_completion':
+        postTitle = `🌟 Plant Completed - Level ${plantData.final_growth_level}!`;
+        postContent = content || `Just completed growing my ${plantData.plant_name}! Reached level ${plantData.final_growth_level} after ${Math.round((new Date(plantData.completion_date) - new Date(plantData.created_at)) / (1000 * 60 * 60 * 24))} days of care. 🌱✨`;
+        contentType = 'plant_completion';
+        sourceType = 'plant_completion';
+        sourceId = plantData.id;
+        postHashtags.push('achievement', 'growth', 'completed');
+        break;
+      case 'checkin_share':
+        postTitle = '💭 Wellness Check-in';
+        contentType = 'checkin';
+        sourceType = 'checkin';
+        sourceId = shareData.checkinId;
+        postHashtags.push('checkin', 'mood', 'wellness');
+        break;
+      case 'anti_todo_share':
+        postTitle = '✅ Anti-Todo Completed';
+        contentType = 'anti_todo';
+        sourceType = 'anti_todo';
+        sourceId = shareData.antiTodoId;
+        postHashtags.push('antitodo', 'productivity', 'wellness');
+        break;
+      default:
+        postTitle = 'Wellness Update';
+        postHashtags.push('general');
+    }
+    
+    const insertData = {
+      user_id: userId,
+      content: postContent,
+      title: postTitle,
+      content_type: contentType,
+      source_type: sourceType,
+      source_id: sourceId,
+      hashtags: postHashtags,
+      is_public: true,
+      created_at: new Date().toISOString()
+    };
+    
+    console.log('Inserting community share:', insertData);
+    
+    const { data, error } = await supabase
+      .from('community_posts')
+      .insert([insertData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Database insert error:', error);
+      throw error;
+    }
+    
+    console.log('Successfully shared to community:', data);
+    return { data };
+  });
+};
+
+// Share checkin to community (specific function for checkins)
+export const shareCheckinToCommunity = async (userId, checkinData) => {
+  return shareTooCommunity(userId, {
+    type: 'checkin_share',
+    checkinId: checkinData.id,
+    content: `Feeling ${checkinData.mood_emoji} today! ${checkinData.mood_text ? `"${checkinData.mood_text}"` : ''}`,
+    hashtags: ['mood', 'checkin']
   });
 };
 

@@ -75,7 +75,7 @@ export const updateAntiTodoItemStatus = async (itemId, status) => {
     // If activity was completed, update analytics and check achievements
     if (status === 'completed' && updatedItem) {
       try {
-        const { updateUserAnalytics, checkAndUnlockAchievements } = await import('./database');
+        const { updateUserAnalytics, checkAndUnlockAchievements, awardPoints, getUserPlant, updatePlantGrowth } = await import('./database');
         
         // Update user analytics (includes anti-todo stats)
         await updateUserAnalytics(updatedItem.user_id);
@@ -83,7 +83,40 @@ export const updateAntiTodoItemStatus = async (itemId, status) => {
         // Check for new achievements
         await checkAndUnlockAchievements(updatedItem.user_id);
         
-        console.log('✅ Analytics and achievements updated after anti-todo completion');
+        // Award points for anti-todo completion
+        try {
+          const basePoints = 15; // Base points for completing an anti-todo
+          const contentBonus = updatedItem.content.length > 30 ? 5 : 0; // Bonus for detailed activities
+          const totalPoints = basePoints + contentBonus;
+
+          const pointsResult = await awardPoints(
+            updatedItem.user_id, 
+            totalPoints, 
+            'anti_todo', 
+            updatedItem.id, 
+            `Completed "${updatedItem.content.substring(0, 30)}..."`
+          );
+          
+          if (pointsResult.success) {
+            console.log(`Awarded ${totalPoints} points for anti-todo completion`);
+            
+            // Update plant growth with earned points
+            try {
+              const plantResult = await getUserPlant(updatedItem.user_id);
+              if (plantResult.success && plantResult.data) {
+                const plantXp = Math.floor(totalPoints * 0.8); // More XP for anti-todos (0.8x multiplier)
+                await updatePlantGrowth(plantResult.data.id, plantXp);
+                console.log(`Added ${plantXp} XP to user's plant`);
+              }
+            } catch (plantError) {
+              console.error("Failed to update plant growth:", plantError);
+            }
+          }
+        } catch (pointsError) {
+          console.error("Failed to award points for anti-todo completion:", pointsError);
+        }
+        
+        console.log('✅ Analytics, achievements, and gamification updated after anti-todo completion');
       } catch (achievementError) {
         console.error('Error updating analytics/achievements after anti-todo completion:', achievementError);
         // Don't fail the status update if achievement check fails

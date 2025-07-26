@@ -444,6 +444,208 @@ left join (
     group by post_id
 ) comment_counts on cp.id = comment_counts.post_id;
 
+-- GAMIFICATION SYSTEM TABLES
+
+-- User Points Table - Tracks user wellness points
+create table public.user_points (
+  id uuid not null default extensions.uuid_generate_v4(),
+  user_id uuid not null,
+  total_points integer not null default 0,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint user_points_pkey primary key (id),
+  constraint user_points_user_id_key unique (user_id),
+  constraint user_points_user_id_fkey foreign key (user_id) references users (id) on delete cascade
+) tablespace pg_default;
+
+create index if not exists idx_user_points_user_id on public.user_points using btree (user_id) tablespace pg_default;
+
+-- Point Transactions Table - Tracks all point earning/spending
+create table public.point_transactions (
+  id uuid not null default extensions.uuid_generate_v4(),
+  user_id uuid not null,
+  amount integer not null,
+  transaction_type text not null,
+  source_type text not null,
+  source_id uuid null,
+  description text null,
+  created_at timestamp with time zone null default now(),
+  constraint point_transactions_pkey primary key (id),
+  constraint point_transactions_user_id_fkey foreign key (user_id) references users (id) on delete cascade,
+  constraint point_transactions_type_check check (
+    transaction_type = any (array['earned'::text, 'spent'::text])
+  ),
+  constraint point_transactions_source_check check (
+    source_type = any (array['checkin'::text, 'anti_todo'::text, 'plant_care'::text, 'store_purchase'::text, 'bonus'::text])
+  )
+) tablespace pg_default;
+
+create index if not exists idx_point_transactions_user_id on public.point_transactions using btree (user_id) tablespace pg_default;
+create index if not exists idx_point_transactions_type on public.point_transactions using btree (transaction_type) tablespace pg_default;
+create index if not exists idx_point_transactions_source on public.point_transactions using btree (source_type) tablespace pg_default;
+
+-- Plant Store Items Table - Available items in the plant store
+create table public.plant_store_items (
+  id uuid not null default extensions.uuid_generate_v4(),
+  name text not null,
+  description text null,
+  price integer not null,
+  category text not null,
+  icon text null,
+  effect_type text null,
+  effect_value integer null default 0,
+  rarity text null default 'common'::text,
+  created_at timestamp with time zone null default now(),
+  constraint plant_store_items_pkey primary key (id),
+  constraint plant_store_items_category_check check (
+    category = any (array['water'::text, 'fertilizer'::text, 'decoration'::text, 'seed'::text])
+  ),
+  constraint plant_store_items_rarity_check check (
+    rarity = any (array['common'::text, 'rare'::text, 'epic'::text, 'legendary'::text])
+  )
+) tablespace pg_default;
+
+create index if not exists idx_plant_store_items_category on public.plant_store_items using btree (category) tablespace pg_default;
+create index if not exists idx_plant_store_items_price on public.plant_store_items using btree (price) tablespace pg_default;
+
+-- User Plants Table - User's virtual plants
+create table public.user_plants (
+  id uuid not null default extensions.uuid_generate_v4(),
+  user_id uuid not null,
+  plant_name text not null default 'My Plant'::text,
+  growth_level integer not null default 1,
+  growth_xp integer not null default 0,
+  growth_xp_required integer not null default 100,
+  health integer not null default 100,
+  decorations text[] null default '{}',
+  is_active boolean not null default true,
+  completed_at timestamp with time zone null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint user_plants_pkey primary key (id),
+  constraint user_plants_user_id_fkey foreign key (user_id) references users (id) on delete cascade,
+  constraint user_plants_growth_level_check check (
+    (growth_level >= 1) and (growth_level <= 10)
+  ),
+  constraint user_plants_health_check check (
+    (health >= 0) and (health <= 100)
+  )
+) tablespace pg_default;
+
+create index if not exists idx_user_plants_user_id on public.user_plants using btree (user_id) tablespace pg_default;
+create index if not exists idx_user_plants_active on public.user_plants using btree (user_id, is_active) tablespace pg_default;
+
+-- User Store Purchases Table - Tracks store purchases
+create table public.user_store_purchases (
+  id uuid not null default extensions.uuid_generate_v4(),
+  user_id uuid not null,
+  item_id uuid not null,
+  quantity integer not null default 1,
+  total_cost integer not null,
+  used_quantity integer not null default 0,
+  purchased_at timestamp with time zone null default now(),
+  constraint user_store_purchases_pkey primary key (id),
+  constraint user_store_purchases_user_id_fkey foreign key (user_id) references users (id) on delete cascade,
+  constraint user_store_purchases_item_id_fkey foreign key (item_id) references plant_store_items (id) on delete cascade,
+  constraint user_store_purchases_quantity_check check (quantity > 0),
+  constraint user_store_purchases_used_check check (used_quantity >= 0 and used_quantity <= quantity)
+) tablespace pg_default;
+
+create index if not exists idx_user_store_purchases_user_id on public.user_store_purchases using btree (user_id) tablespace pg_default;
+create index if not exists idx_user_store_purchases_item_id on public.user_store_purchases using btree (item_id) tablespace pg_default;
+
+-- Plant History Table - Completed plants gallery
+create table public.plant_history (
+  id uuid not null default extensions.uuid_generate_v4(),
+  user_id uuid not null,
+  plant_name text not null,
+  final_level integer not null,
+  decorations text[] null default '{}',
+  completion_date timestamp with time zone not null,
+  image_data text null,
+  created_at timestamp with time zone null default now(),
+  constraint plant_history_pkey primary key (id),
+  constraint plant_history_user_id_fkey foreign key (user_id) references users (id) on delete cascade
+) tablespace pg_default;
+
+create index if not exists idx_plant_history_user_id on public.plant_history using btree (user_id) tablespace pg_default;
+create index if not exists idx_plant_history_completion on public.plant_history using btree (completion_date desc) tablespace pg_default;
+
+-- GAMIFICATION FUNCTIONS
+
+-- Function to award points to a user
+create or replace function award_user_points(
+  p_user_id uuid,
+  p_amount integer,
+  p_source_type text,
+  p_source_id uuid default null,
+  p_description text default null
+)
+returns jsonb as $$
+declare
+  v_new_total integer;
+begin
+  -- Insert or update user points
+  insert into user_points (user_id, total_points)
+  values (p_user_id, p_amount)
+  on conflict (user_id)
+  do update set 
+    total_points = user_points.total_points + p_amount,
+    updated_at = now()
+  returning total_points into v_new_total;
+
+  -- Record transaction
+  insert into point_transactions (user_id, amount, transaction_type, source_type, source_id, description)
+  values (p_user_id, p_amount, 'earned', p_source_type, p_source_id, p_description);
+
+  return jsonb_build_object('success', true, 'new_total', v_new_total, 'amount_awarded', p_amount);
+exception
+  when others then
+    return jsonb_build_object('success', false, 'error', sqlerrm);
+end;
+$$ language plpgsql;
+
+-- Function to spend user points
+create or replace function spend_user_points(
+  p_user_id uuid,
+  p_amount integer,
+  p_source_type text,
+  p_source_id uuid default null,
+  p_description text default null
+)
+returns jsonb as $$
+declare
+  v_current_points integer;
+  v_new_total integer;
+begin
+  -- Check current points
+  select total_points into v_current_points
+  from user_points
+  where user_id = p_user_id;
+
+  if v_current_points is null or v_current_points < p_amount then
+    return jsonb_build_object('success', false, 'error', 'Insufficient points');
+  end if;
+
+  -- Spend points
+  update user_points
+  set 
+    total_points = total_points - p_amount,
+    updated_at = now()
+  where user_id = p_user_id
+  returning total_points into v_new_total;
+
+  -- Record transaction
+  insert into point_transactions (user_id, amount, transaction_type, source_type, source_id, description)
+  values (p_user_id, p_amount, 'spent', p_source_type, p_source_id, p_description);
+
+  return jsonb_build_object('success', true, 'new_total', v_new_total, 'amount_spent', p_amount);
+exception
+  when others then
+    return jsonb_build_object('success', false, 'error', sqlerrm);
+end;
+$$ language plpgsql;
+
 -- Function to get personalized feed based on user preferences and hobbies
 create or replace function get_personalized_feed(
     p_user_id uuid,

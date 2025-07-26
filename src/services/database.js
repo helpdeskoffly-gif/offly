@@ -581,6 +581,42 @@ export const submitCheckin = async (uid, checkinData) => {
       // Don't fail the checkin if analytics update fails
     }
 
+    // Award points for checkin completion
+    try {
+      const basePoints = 10; // Base points for any checkin
+      const moodBonus = validMoodScore >= 7 ? 5 : 0; // Bonus for positive mood
+      const textBonus = validMoodText.length > 50 ? 5 : 0; // Bonus for detailed reflection
+      const totalPoints = basePoints + moodBonus + textBonus;
+
+      const pointsResult = await awardPoints(
+        uid, 
+        totalPoints, 
+        'checkin', 
+        result[0].id, 
+        `Daily check-in (+${moodBonus} mood bonus, +${textBonus} detail bonus)`
+      );
+      
+      if (pointsResult.success) {
+        console.log(`Awarded ${totalPoints} points for checkin`);
+        
+        // Update plant growth with earned points (convert points to XP)
+        try {
+          const plantResult = await getUserPlant(uid);
+          if (plantResult.success && plantResult.data) {
+            const plantXp = Math.floor(totalPoints / 2); // 1 XP per 2 points
+            await updatePlantGrowth(plantResult.data.id, plantXp);
+            console.log(`Added ${plantXp} XP to user's plant`);
+          }
+        } catch (plantError) {
+          console.error("Failed to update plant growth:", plantError);
+          // Don't fail checkin if plant update fails
+        }
+      }
+    } catch (pointsError) {
+      console.error("Failed to award points for checkin:", pointsError);
+      // Don't fail the checkin if points award fails
+    }
+
     return { success: true, data: result[0] };
   });
 };
@@ -1616,5 +1652,444 @@ export const initializeOrUpdateUserAnalytics = async (uid) => {
       
       return { success: true, data: existingAnalytics };
     }
+  });
+};
+
+// =================
+// GAMIFICATION SYSTEM
+// =================
+
+// Point System Functions
+export const getUserPoints = async (userId) => {
+  return safeSupabaseOperation(async () => {
+    const { data, error } = await supabase
+      .from("user_points")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      throw error;
+    }
+
+    // Return default points if no record exists
+    if (!data) {
+      return { 
+        success: true, 
+        data: { 
+          total_points: 0, 
+          total_earned: 0, 
+          total_spent: 0 
+        } 
+      };
+    }
+
+    return { success: true, data };
+  });
+};
+
+export const awardPoints = async (userId, points, sourceType, sourceId = null, description = null) => {
+  return safeSupabaseOperation(async () => {
+    const { data, error } = await supabase.rpc('award_user_points', {
+      p_user_id: userId,
+      p_points: points,
+      p_source_type: sourceType,
+      p_source_id: sourceId,
+      p_description: description
+    });
+
+    if (error) throw error;
+    return { success: true, data };
+  });
+};
+
+export const spendPoints = async (userId, points, sourceType, sourceId = null, description = null) => {
+  return safeSupabaseOperation(async () => {
+    const { data, error } = await supabase.rpc('spend_user_points', {
+      p_user_id: userId,
+      p_points: points,
+      p_source_type: sourceType,
+      p_source_id: sourceId,
+      p_description: description
+    });
+
+    if (error) throw error;
+    return { success: true, data };
+  });
+};
+
+export const getPointTransactions = async (userId, limit = 20) => {
+  return safeSupabaseOperation(async () => {
+    const { data, error } = await supabase
+      .from("point_transactions")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return { success: true, data };
+  });
+};
+
+// Plant System Functions
+export const getUserPlant = async (userId) => {
+  return safeSupabaseOperation(async () => {
+    const { data, error } = await supabase
+      .from("user_plants")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("is_active", true)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      throw error;
+    }
+
+    // Create a new plant if none exists
+    if (!data) {
+      const newPlant = await createNewPlant(userId);
+      return newPlant;
+    }
+
+    return { success: true, data };
+  });
+};
+
+export const createNewPlant = async (userId, plantName = "My Plant", plantType = "basic_seed") => {
+  return safeSupabaseOperation(async () => {
+    // First, deactivate any existing active plants
+    await supabase
+      .from("user_plants")
+      .update({ is_active: false })
+      .eq("user_id", userId)
+      .eq("is_active", true);
+
+    // Create new plant
+    const { data, error } = await supabase
+      .from("user_plants")
+      .insert({
+        user_id: userId,
+        plant_name: plantName,
+        plant_type: plantType,
+        growth_level: 1,
+        growth_xp: 0,
+        growth_xp_required: 100,
+        health: 100,
+        is_active: true
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { success: true, data };
+  });
+};
+
+export const updatePlantGrowth = async (plantId, xpGain) => {
+  return safeSupabaseOperation(async () => {
+    // Get current plant data
+    const { data: plant, error: fetchError } = await supabase
+      .from("user_plants")
+      .select("*")
+      .eq("id", plantId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    let newXp = plant.growth_xp + xpGain;
+    let newLevel = plant.growth_level;
+    let newXpRequired = plant.growth_xp_required;
+
+    // Check for level ups
+    while (newXp >= newXpRequired && newLevel < 10) {
+      newXp -= newXpRequired;
+      newLevel++;
+      newXpRequired = Math.floor(newXpRequired * 1.5); // Increase XP requirement by 50% each level
+    }
+
+    // Update plant
+    const { data, error } = await supabase
+      .from("user_plants")
+      .update({
+        growth_xp: newXp,
+        growth_level: newLevel,
+        growth_xp_required: newXpRequired,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", plantId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Check if plant is fully grown (level 10)
+    let completedPlant = null;
+    if (newLevel === 10 && plant.growth_level < 10) {
+      // Move to history and create new plant
+      completedPlant = await completePlant(plant.user_id, data);
+    }
+
+    return { 
+      success: true, 
+      data,
+      leveledUp: newLevel > plant.growth_level,
+      oldLevel: plant.growth_level,
+      newLevel,
+      completedPlant
+    };
+  });
+};
+
+export const completePlant = async (userId, plantData) => {
+  return safeSupabaseOperation(async () => {
+    // Calculate growth duration
+    const growthDuration = new Date() - new Date(plantData.created_at);
+    
+    // Move to history
+    const { data: historyEntry, error: historyError } = await supabase
+      .from("plant_history")
+      .insert({
+        user_id: userId,
+        plant_name: plantData.plant_name,
+        plant_type: plantData.plant_type,
+        final_growth_level: plantData.growth_level,
+        final_decorations: plantData.decorations,
+        growth_duration: growthDuration,
+        total_care_actions: 0 // TODO: Track this
+      })
+      .select()
+      .single();
+
+    if (historyError) throw historyError;
+
+    // Create new plant
+    const newPlantResult = await createNewPlant(userId, "My New Plant", "basic_seed");
+    
+    return { 
+      success: true, 
+      completedPlant: historyEntry,
+      newPlant: newPlantResult.data
+    };
+  });
+};
+
+export const waterPlant = async (plantId, userId) => {
+  return safeSupabaseOperation(async () => {
+    // Update last watered time and add some growth XP
+    const { data, error } = await supabase
+      .from("user_plants")
+      .update({
+        last_watered: new Date().toISOString(),
+        health: 100, // Restore health
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", plantId)
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Add growth XP
+    const growthResult = await updatePlantGrowth(plantId, 10);
+    
+    return { 
+      success: true, 
+      data: growthResult.data,
+      ...growthResult
+    };
+  });
+};
+
+export const fertilizePlant = async (plantId, userId, fertilizerValue = 25) => {
+  return safeSupabaseOperation(async () => {
+    // Update last fertilized time
+    const { data, error } = await supabase
+      .from("user_plants")
+      .update({
+        last_fertilized: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", plantId)
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Add significant growth XP
+    const growthResult = await updatePlantGrowth(plantId, fertilizerValue);
+    
+    return { 
+      success: true, 
+      data: growthResult.data,
+      ...growthResult
+    };
+  });
+};
+
+// Plant Store Functions
+export const getStoreItems = async () => {
+  return safeSupabaseOperation(async () => {
+    const { data, error } = await supabase
+      .from("plant_store_items")
+      .select("*")
+      .order("price", { ascending: true });
+
+    if (error) throw error;
+    return { success: true, data };
+  });
+};
+
+export const purchaseStoreItem = async (userId, itemId, quantity = 1) => {
+  return safeSupabaseOperation(async () => {
+    // Get item details
+    const { data: item, error: itemError } = await supabase
+      .from("plant_store_items")
+      .select("*")
+      .eq("id", itemId)
+      .single();
+
+    if (itemError) throw itemError;
+
+    const totalCost = item.price * quantity;
+
+    // Check if user has enough points
+    const pointsResult = await getUserPoints(userId);
+    if (!pointsResult.success || pointsResult.data.total_points < totalCost) {
+      return { success: false, error: "Insufficient points" };
+    }
+
+    // Spend points
+    const spendResult = await spendPoints(userId, totalCost, 'store_purchase', itemId, `Purchased ${quantity}x ${item.name}`);
+    if (!spendResult.success) {
+      return spendResult;
+    }
+
+    // Record purchase
+    const { data, error } = await supabase
+      .from("user_store_purchases")
+      .insert({
+        user_id: userId,
+        item_id: itemId,
+        quantity: quantity,
+        total_cost: totalCost
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return { 
+      success: true, 
+      data: {
+        purchase: data,
+        item,
+        remainingPoints: spendResult.data.new_total
+      }
+    };
+  });
+};
+
+export const getUserInventory = async (userId) => {
+  return safeSupabaseOperation(async () => {
+    const { data, error } = await supabase
+      .from("user_store_purchases")
+      .select(`
+        *,
+        plant_store_items (*)
+      `)
+      .eq("user_id", userId)
+      .gt("quantity", 0) // Only items with remaining quantity
+      .order("purchased_at", { ascending: false });
+
+    if (error) throw error;
+    return { success: true, data };
+  });
+};
+
+export const useInventoryItem = async (userId, purchaseId, plantId) => {
+  return safeSupabaseOperation(async () => {
+    // Get purchase details
+    const { data: purchase, error: purchaseError } = await supabase
+      .from("user_store_purchases")
+      .select(`
+        *,
+        plant_store_items (*)
+      `)
+      .eq("id", purchaseId)
+      .eq("user_id", userId)
+      .single();
+
+    if (purchaseError) throw purchaseError;
+
+    if (purchase.used_quantity >= purchase.quantity) {
+      return { success: false, error: "Item already fully used" };
+    }
+
+    const item = purchase.plant_store_items;
+    let result = { success: true };
+
+    // Apply item effect based on category
+    switch (item.category) {
+      case 'water':
+        result = await waterPlant(plantId, userId);
+        break;
+      case 'fertilizer':
+        result = await fertilizePlant(plantId, userId, item.effect_value);
+        break;
+      case 'decoration':
+        // Add decoration to plant
+        const { data: plant, error: plantError } = await supabase
+          .from("user_plants")
+          .select("decorations")
+          .eq("id", plantId)
+          .single();
+
+        if (plantError) throw plantError;
+
+        const decorations = plant.decorations || [];
+        decorations.push({
+          id: item.id,
+          name: item.name,
+          icon: item.icon,
+          addedAt: new Date().toISOString()
+        });
+
+        const { data: updatedPlant, error: updateError } = await supabase
+          .from("user_plants")
+          .update({ decorations })
+          .eq("id", plantId)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+        result = { success: true, data: updatedPlant };
+        break;
+    }
+
+    if (result.success) {
+      // Update used quantity
+      await supabase
+        .from("user_store_purchases")
+        .update({ used_quantity: purchase.used_quantity + 1 })
+        .eq("id", purchaseId);
+    }
+
+    return result;
+  });
+};
+
+export const getPlantHistory = async (userId) => {
+  return safeSupabaseOperation(async () => {
+    const { data, error } = await supabase
+      .from("plant_history")
+      .select("*")
+      .eq("user_id", userId)
+      .order("completion_date", { ascending: false });
+
+    if (error) throw error;
+    return { success: true, data };
   });
 };
