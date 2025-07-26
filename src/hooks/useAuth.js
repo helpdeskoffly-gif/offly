@@ -113,21 +113,33 @@ export const useAuth = () => {
             console.log("Attempting to initialize/fetch user analytics...");
             setAnalyticsLoaded(true); // Set this immediately to prevent repeated calls
 
-            // First ensure analytics are properly initialized
-            await initializeOrUpdateUserAnalytics(supabaseUser.id);
+            // First ensure analytics are properly initialized with a shorter timeout
+            const initTimeout = Promise.race([
+              initializeOrUpdateUserAnalytics(supabaseUser.id),
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Analytics init timeout")), 5000)
+              ),
+            ]);
 
-            // Then fetch the data
+            await initTimeout;
+
+            // Then fetch the data with a shorter timeout
             const [analyticsResult, userProfileResult] = await Promise.all([
               Promise.race([
                 getUserAnalytics(supabaseUser.id),
                 new Promise((_, reject) =>
                   setTimeout(
                     () => reject(new Error("Analytics fetch timeout")),
-                    8000,
+                    5000, // Reduced from 8000
                   ),
                 ),
               ]),
-              supabase.from('users').select('username, hobbies, avatar_url, full_name, bio').eq('id', supabaseUser.id).single(),
+              Promise.race([
+                supabase.from('users').select('username, hobbies, avatar_url, full_name, bio').eq('id', supabaseUser.id).single(),
+                new Promise((_, reject) =>
+                  setTimeout(() => reject(new Error("Profile fetch timeout")), 3000)
+                ),
+              ]),
             ]);
 
           let userHobbies = [];
@@ -205,8 +217,57 @@ export const useAuth = () => {
           console.warn("Failed to fetch analytics:", analyticsError.message);
           // Reset analytics loaded flag on error so it can be retried
           setAnalyticsLoaded(false);
-          // Continue with basic profile - don't fail the auth process
-          // The user creation will be handled by submitCheckin when needed
+          
+          // Set a fallback profile with user metadata to enable navigation
+          try {
+            const fallbackProfileResult = await supabase
+              .from('users')
+              .select('username, hobbies, avatar_url, full_name, bio')
+              .eq('id', supabaseUser.id)
+              .single();
+              
+            let userHobbies = [];
+            let userUsername = supabaseUser.user_metadata?.full_name || supabaseUser.email || "User";
+            let userFullName = supabaseUser.user_metadata?.full_name || "";
+            let userBio = "";
+            let userAvatarUrl = "";
+
+            if (fallbackProfileResult.data) {
+              userHobbies = fallbackProfileResult.data.hobbies || [];
+              userUsername = fallbackProfileResult.data.username || userUsername;
+              userFullName = fallbackProfileResult.data.full_name || userFullName;
+              userBio = fallbackProfileResult.data.bio || "";
+              userAvatarUrl = fallbackProfileResult.data.avatar_url || "";
+            }
+
+            const profileCompleted = userHobbies && userHobbies.length > 0;
+
+            setUserProfile({
+              username: userUsername,
+              full_name: userFullName,
+              bio: userBio,
+              avatar_url: userAvatarUrl,
+              hobbies: userHobbies,
+              profileCompleted: profileCompleted,
+              level: 1,
+              xp: 0,
+              nextLevelXp: 100,
+              dailyCheckins: 0,
+              totalCheckins: 0,
+              currentAiScore: 0,
+              todayAverage: 0,
+              overallAverage: 0,
+              currentStreak: 0,
+              lastCheckinDate: null,
+              weeklyUniqueCheckinDays: 0,
+              weekly_score: 0,
+            });
+            
+            console.log("Set fallback profile after analytics failure");
+          } catch (fallbackError) {
+            console.warn("Failed to fetch fallback profile:", fallbackError.message);
+            // Keep the basic profile that was already set
+          }
         }
       } else {
         console.log("Analytics already loaded, skipping");

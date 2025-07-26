@@ -81,13 +81,27 @@ export function Auth() {
 
   useEffect(() => {
     if (!loading && user) {
-      console.log("Auth: User authenticated, navigating to dashboard...", { user: user.id, loading });
+      console.log("Auth: User authenticated, navigating to dashboard...", { userId: user.id, loading });
       // Add a small delay to ensure router is ready
       const timer = setTimeout(() => {
         console.log("Auth: Executing navigation to dashboard");
-        navigate("/dashboard");
-      }, 100);
+        navigate("/dashboard", { replace: true });
+      }, 200); // Slightly longer delay
       return () => clearTimeout(timer);
+    }
+  }, [user, loading, navigate]);
+
+  // Additional safety mechanism - navigate even if userProfile is still loading
+  useEffect(() => {
+    if (user && !loading) {
+      console.log("Auth: Safety navigation check - user exists and not loading");
+      const safetyTimer = setTimeout(() => {
+        if (user) {
+          console.log("Auth: Safety navigation triggered");
+          navigate("/dashboard", { replace: true });
+        }
+      }, 3000); // Wait 3 seconds then force navigation
+      return () => clearTimeout(safetyTimer);
     }
   }, [user, loading, navigate]);
 
