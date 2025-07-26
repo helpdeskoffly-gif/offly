@@ -82,10 +82,16 @@ export function Navbar() {
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    setIsDropdownOpen(false);
-    setIsMobileMenuOpen(false);
-    navigate("/");
+    try {
+      setIsDropdownOpen(false);
+      setIsMobileMenuOpen(false);
+      await signOut();
+      navigate("/");
+    } catch (error) {
+      console.error("Error during sign out:", error);
+      // Still navigate to home even if there's an error
+      navigate("/");
+    }
   };
 
   const navigationItems = [

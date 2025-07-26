@@ -81,6 +81,12 @@ export const useAuth = () => {
     try {
       console.log("Handling user session for:", supabaseUser.id);
 
+      // Add a timeout to prevent infinite loading
+      const sessionTimeout = setTimeout(() => {
+        console.warn("Session handling timed out, setting loading to false");
+        setLoading(false);
+      }, 15000); // 15 second timeout
+
       // Create a basic user profile first
       const basicProfile = {
         username:
@@ -97,12 +103,9 @@ export const useAuth = () => {
         lastCheckinDate: null,
       };
 
-      // Set user and profile states together
+      // Set user and basic profile first
       setUser(supabaseUser);
       setUserProfile(basicProfile);
-
-      // Set loading to false AFTER user state is set
-      setLoading(false);
 
               // Re-enabled analytics fetching with improved error handling
         if (!analyticsLoaded) {
@@ -200,14 +203,22 @@ export const useAuth = () => {
           }
         } catch (analyticsError) {
           console.warn("Failed to fetch analytics:", analyticsError.message);
+          // Reset analytics loaded flag on error so it can be retried
+          setAnalyticsLoaded(false);
           // Continue with basic profile - don't fail the auth process
           // The user creation will be handled by submitCheckin when needed
         }
       } else {
         console.log("Analytics already loaded, skipping");
       }
+
+      // Clear the timeout and set loading to false at the end
+      clearTimeout(sessionTimeout);
+      setLoading(false);
     } catch (error) {
       console.error("Critical error handling user session:", error);
+      // Clear timeout on error
+      clearTimeout(sessionTimeout);
       // Always set a basic user profile to prevent infinite loading
       setUser(supabaseUser);
       setUserProfile({
@@ -224,20 +235,38 @@ export const useAuth = () => {
         currentStreak: 0,
         lastCheckinDate: null,
       });
+      // Always set loading to false even on errors
       setLoading(false);
     }
   };
 
   const signOut = async () => {
     try {
+      console.log("Signing out user...");
+      
+      // Clear states immediately to provide immediate feedback
+      setLoading(true);
+      
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase signOut error:", error);
+        throw error;
+      }
 
+      // Clear all user-related state
       setUser(null);
       setUserProfile(null);
-      setAnalyticsLoaded(false); // Reset analytics loaded state
+      setAnalyticsLoaded(false);
+      setLoading(false);
+      
+      console.log("Successfully signed out");
     } catch (error) {
       console.error("Error signing out:", error);
+      setLoading(false);
+      // Even if there's an error, clear the local state
+      setUser(null);
+      setUserProfile(null);
+      setAnalyticsLoaded(false);
     }
   };
 

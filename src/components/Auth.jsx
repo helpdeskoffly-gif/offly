@@ -81,7 +81,13 @@ export function Auth() {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate("/dashboard");
+      console.log("Auth: User authenticated, navigating to dashboard...", { user: user.id, loading });
+      // Add a small delay to ensure router is ready
+      const timer = setTimeout(() => {
+        console.log("Auth: Executing navigation to dashboard");
+        navigate("/dashboard");
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [user, loading, navigate]);
 
@@ -271,7 +277,8 @@ export function Auth() {
             { termsAccepted },
           );
           // Immediate login (email confirmation disabled)
-          navigate("/dashboard");
+          console.log("Auth: Sign up successful, navigating to dashboard");
+          setTimeout(() => navigate("/dashboard"), 100);
         }
       } else {
         // Sign in with email/password
@@ -282,7 +289,9 @@ export function Auth() {
         }
 
         // The auth state change will be handled by the useAuth hook
-        navigate("/dashboard");
+        console.log("Auth: Sign in successful, letting useAuth handle navigation");
+        // Don't navigate immediately, let the useEffect handle it
+        // navigate("/dashboard");
       }
     } catch (err) {
       console.error("Email auth error:", err);
@@ -329,7 +338,8 @@ export function Auth() {
         if (error) throw error;
 
         await createActiveUser(user.id, username.trim());
-        navigate("/dashboard");
+        console.log("Auth: Username updated, navigating to dashboard");
+        setTimeout(() => navigate("/dashboard"), 100);
       }
     } catch (err) {
       setError("Failed to update username. Please try again.");
@@ -354,7 +364,8 @@ export function Auth() {
 
         await createActiveUser(user.id, profileData.username);
         setShowProfileModal(false);
-        navigate("/dashboard");
+        console.log("Auth: Profile completed, navigating to dashboard");
+        setTimeout(() => navigate("/dashboard"), 100);
       }
     } catch (err) {
       console.error("Profile completion error:", err);
@@ -654,7 +665,8 @@ export function Auth() {
           onComplete={handleProfileComplete}
           onSkip={() => {
             setShowProfileModal(false);
-            navigate("/dashboard");
+            console.log("Auth: Profile skipped, navigating to dashboard");
+            setTimeout(() => navigate("/dashboard"), 100);
           }}
           userEmail={user?.email}
         />

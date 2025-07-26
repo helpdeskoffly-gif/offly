@@ -1123,9 +1123,14 @@ const Dashboard = () => {
           <div className={`p-2 border-t ${theme === "dark" ? "border-slate-700/50" : "border-slate-200/60"}`}>
             <Button
               variant="ghost"
-              onClick={() => {
-                signOut();
-                setShowProfile(false);
+              onClick={async () => {
+                try {
+                  setShowProfile(false);
+                  await signOut();
+                  navigate("/");
+                } catch (error) {
+                  console.error("Error signing out:", error);
+                }
               }}
               className="w-full justify-start px-4 py-3 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-300 group"
             >
