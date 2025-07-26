@@ -53,6 +53,11 @@ export function HomeOptimized() {
   const navigate = useNavigate();
   const [activeFeature, setActiveFeature] = useState(0);
 
+  // Debug user state
+  useEffect(() => {
+    console.log("HomeOptimized: User state changed:", user ? user.id : "null");
+  }, [user]);
+
   // Track landing page view on mount
   useEffect(() => {
     trackLandingPageView();

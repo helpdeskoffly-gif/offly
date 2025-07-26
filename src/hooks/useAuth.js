@@ -30,6 +30,7 @@ export const useAuth = () => {
           console.log("Skipping duplicate session for user:", session.user.id);
         }
       } else {
+        console.log("Auth state change: No session, clearing user state");
         lastProcessedUserId = null;
         setUser(null);
         setUserProfile(null);
@@ -235,17 +236,26 @@ export const useAuth = () => {
         throw error;
       }
 
-      // Clear all user-related state
+      // Clear all user-related state immediately
+      console.log("Clearing user state after signOut");
       setUser(null);
       setUserProfile(null);
       setAnalyticsLoaded(false);
       setLoading(false);
+      
+      // Force a small delay to ensure state updates are processed
+      setTimeout(() => {
+        console.log("SignOut: Forcing state refresh");
+        setUser(null);
+        setUserProfile(null);
+      }, 100);
       
       console.log("Successfully signed out");
     } catch (error) {
       console.error("Error signing out:", error);
       setLoading(false);
       // Even if there's an error, clear the local state
+      console.log("Clearing user state after signOut error");
       setUser(null);
       setUserProfile(null);
       setAnalyticsLoaded(false);

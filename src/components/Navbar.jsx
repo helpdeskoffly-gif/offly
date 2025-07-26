@@ -69,6 +69,7 @@ export function Navbar() {
 
   // Reset profile image error when user changes
   useEffect(() => {
+    console.log("Navbar: User state changed:", user ? user.id : "null");
     setProfileImageError(false);
   }, [user]);
 
@@ -83,9 +84,11 @@ export function Navbar() {
 
   const handleSignOut = async () => {
     try {
+      console.log("Navbar: Starting sign out process");
       setIsDropdownOpen(false);
       setIsMobileMenuOpen(false);
       await signOut();
+      console.log("Navbar: Sign out completed, navigating to home");
       navigate("/");
     } catch (error) {
       console.error("Error during sign out:", error);
