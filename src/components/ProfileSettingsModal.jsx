@@ -340,7 +340,7 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
             
             {/* Mobile Menu Button */}
             <div className="flex items-center space-x-2">
-              <div className="lg:hidden">
+              <div className="lg:hidden relative">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -349,6 +349,43 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
                 >
                   <Menu className="w-5 h-5" />
                 </Button>
+                
+                {/* Mobile Navigation Dropdown */}
+                {showMobileMenu && (
+                  <div className="absolute top-full right-0 mt-2 w-64 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-xl shadow-2xl z-50">
+                    <div className="p-4">
+                      <div className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Settings Navigation</div>
+                      <div className="space-y-2">
+                        {navigationItems.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => {
+                                setActiveTab(item.id);
+                                setShowMobileMenu(false);
+                              }}
+                              className={`w-full text-left px-4 py-4 rounded-lg transition-all duration-200 flex items-center space-x-3 ${
+                                activeTab === item.id 
+                                  ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg" 
+                                  : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                              }`}
+                            >
+                              <Icon className="w-5 h-5" />
+                              <div className="flex-1">
+                                <div className="font-medium">{item.label}</div>
+                                <div className="text-xs opacity-80">{item.description}</div>
+                              </div>
+                              {activeTab === item.id && (
+                                <div className="w-2 h-2 bg-white rounded-full"></div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               <Button
                 variant="ghost"
@@ -480,42 +517,7 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
           </div>
         </div>
 
-        {/* Mobile Navigation Dropdown */}
-        {showMobileMenu && (
-          <div className="lg:hidden absolute top-full left-0 right-0 mt-2 mx-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-xl shadow-2xl z-50">
-            <div className="p-4">
-              <div className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Settings Navigation</div>
-              <div className="space-y-2">
-                {navigationItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        setActiveTab(item.id);
-                        setShowMobileMenu(false);
-                      }}
-                      className={`w-full text-left px-4 py-4 rounded-lg transition-all duration-200 flex items-center space-x-3 ${
-                        activeTab === item.id 
-                          ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg" 
-                          : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
-                      }`}
-                    >
-                      <Icon className="w-5 h-5" />
-                      <div className="flex-1">
-                        <div className="font-medium">{item.label}</div>
-                        <div className="text-xs opacity-80">{item.description}</div>
-                      </div>
-                      {activeTab === item.id && (
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
+
       </div>
     </div>
   );
