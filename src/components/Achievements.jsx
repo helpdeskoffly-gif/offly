@@ -8,12 +8,7 @@ import {
   Sprout,
   Sparkles,
   Droplets,
-  X,
   Zap,
-  Gift,
-  Leaf,
-  Award,
-  CheckCircle,
 } from "lucide-react";
 import {
   getUserPoints,
@@ -24,11 +19,9 @@ import {
   useInventoryItem,
   spendPoints,
   updatePlantGrowth,
-  getPlantHistory,
-  completePlant,
 } from "../services/database";
 
-export function PlantGarden() {
+export function Achievements() {
   const { user } = useAuth();
   const { theme } = useTheme();
   
@@ -41,10 +34,6 @@ export function PlantGarden() {
   const [loading, setLoading] = useState(true);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
-  const [completedPlant, setCompletedPlant] = useState(null);
-  const [plantHistory, setPlantHistory] = useState([]);
-  const [treesPlanted, setTreesPlanted] = useState(0);
 
   // Theme colors matching the existing app
   const themeColors = {
@@ -55,16 +44,65 @@ export function PlantGarden() {
     },
   };
 
-  // Updated plant growth stages - 4 stages only
+  // Plant growth stages with 4-stage gamification (matches database progression)
   const plantStages = {
-    1: { name: 'Seedling', icon: '🌱', description: 'A tiny seedling just beginning its journey' },
-    2: { name: 'Sprout', icon: '🌿', description: 'Growing stronger with each passing day' },
-    3: { name: 'Small Tree', icon: '🌳', description: 'A young tree reaching for the sky' },
-    4: { name: 'Big Tree', icon: '🌲', description: 'A magnificent, fully grown tree!' }
+    1: { name: 'Seedling', icon: '🌱', xpRequired: 100, description: 'Your journey begins with a tiny seedling' },
+    2: { name: 'Sprout', icon: '🌿', xpRequired: 150, description: 'Growing stronger with each check-in' },
+    3: { name: 'Small Tree', icon: '🌳', xpRequired: 225, description: 'A young tree reaching for the sky' },
+    4: { name: 'Mature Tree', icon: '🌲', xpRequired: 337, description: 'A magnificent tree in full bloom' }
   };
 
-  const currentStage = plantStages[userPlant?.growth_level || 1];
-  const xpPercentage = userPlant ? (userPlant.growth_xp / userPlant.growth_xp_required) * 100 : 0;
+  // Tree lifecycle completion
+  const [showLifecycleComplete, setShowLifecycleComplete] = useState(false);
+  const [treesPlanted, setTreesPlanted] = useState(0);
+  const [achievementBadges, setAchievementBadges] = useState([]);
+
+  const currentStage = plantStages[userPlant?.growth_level || 1] || plantStages[1];
+  const xpPercentage = userPlant && currentStage?.xpRequired ? (userPlant.growth_xp / currentStage.xpRequired) * 100 : 0;
+
+  // Check if tree has reached maturity
+  const isTreeMature = userPlant?.growth_level === 4 && userPlant?.growth_xp >= (currentStage?.xpRequired || 337);
+
+  // Handle tree lifecycle completion
+  const handleTreeCompletion = async () => {
+    if (!isTreeMature) return;
+
+    try {
+      // Add to trees planted count
+      const newTreesPlanted = treesPlanted + 1;
+      setTreesPlanted(newTreesPlanted);
+      localStorage.setItem(`trees_planted_${user.id}`, newTreesPlanted.toString());
+
+      // Check for achievement badges
+      const newBadges = [];
+      if (newTreesPlanted >= 5 && !achievementBadges.includes('5_trees')) {
+        newBadges.push('5_trees');
+      }
+      if (newTreesPlanted >= 10 && !achievementBadges.includes('10_trees')) {
+        newBadges.push('10_trees');
+      }
+      if (newTreesPlanted >= 25 && !achievementBadges.includes('25_trees')) {
+        newBadges.push('25_trees');
+      }
+
+      if (newBadges.length > 0) {
+        const updatedBadges = [...achievementBadges, ...newBadges];
+        setAchievementBadges(updatedBadges);
+        localStorage.setItem(`achievement_badges_${user.id}`, JSON.stringify(updatedBadges));
+      }
+
+      // Reset plant to seedling
+      if (userPlant) {
+        await updatePlantGrowth(userPlant.id, 0);
+        setUserPlant({ ...userPlant, growth_level: 1, growth_xp: 0 });
+      }
+
+      setShowLifecycleComplete(false);
+      showToast(`🌳 Tree planted! You've grown ${newTreesPlanted} trees!`);
+    } catch (error) {
+      console.error('Error completing tree lifecycle:', error);
+    }
+  };
 
   // Load all data
   useEffect(() => {
@@ -76,18 +114,23 @@ export function PlantGarden() {
 
     setLoading(true);
     try {
-      const [pointsResult, plantResult, storeResult, inventoryResult, historyResult] = await Promise.all([
+      const [pointsResult, plantResult, storeResult, inventoryResult] = await Promise.all([
         getUserPoints(user.id),
         getUserPlant(user.id),
         getStoreItems(),
         getUserInventory(user.id),
-        getPlantHistory(user.id),
       ]);
 
+      console.log("Points result:", pointsResult);
       setUserPoints(pointsResult.data?.total_points || 0);
       setUserPlant(plantResult.data);
-      setPlantHistory(historyResult.data || []);
-      setTreesPlanted(historyResult.data?.length || 0);
+      
+      // Load trees planted count and achievements
+      const treesPlantedCount = localStorage.getItem(`trees_planted_${user.id}`) || 0;
+      setTreesPlanted(parseInt(treesPlantedCount));
+      
+      const savedBadges = localStorage.getItem(`achievement_badges_${user.id}`) || '[]';
+      setAchievementBadges(JSON.parse(savedBadges));
       
       const careItems = storeResult.data?.filter(item => 
         ['Basic Water', 'Organic Fertilizer', 'Super Fertilizer'].includes(item.name)
@@ -99,6 +142,11 @@ export function PlantGarden() {
       setStoreItems(careItems);
       setCosmeticItems(cosmetics);
       setUserInventory(inventoryResult.data || []);
+
+      // Check if tree is mature and show completion modal
+      if (plantResult.data?.growth_level === 4 && plantResult.data?.growth_xp >= (plantStages[4]?.xpRequired || 1000)) {
+        setShowLifecycleComplete(true);
+      }
     } catch (error) {
       console.error("Error loading plant data:", error);
     } finally {
@@ -106,42 +154,12 @@ export function PlantGarden() {
     }
   };
 
-  // Check for plant completion
-  useEffect(() => {
-    if (userPlant && userPlant.growth_level === 4 && !showCompletionDialog) {
-      handlePlantCompletion();
-    }
-  }, [userPlant]);
-
-  const handlePlantCompletion = async () => {
-    try {
-      const result = await completePlant(user.id, userPlant);
-      if (result.success) {
-        setCompletedPlant(result.completedPlant);
-        setShowCompletionDialog(true);
-        setTreesPlanted(prev => prev + 1);
-        
-        // Reload plant data
-        const plantResult = await getUserPlant(user.id);
-        setUserPlant(plantResult.data);
-        
-        // Reload history
-        const historyResult = await getPlantHistory(user.id);
-        setPlantHistory(historyResult.data || []);
-      }
-    } catch (error) {
-      console.error("Error completing plant:", error);
-    }
-  };
-
-  const handleStartNewPlant = () => {
-    setShowCompletionDialog(false);
-    setCompletedPlant(null);
-    loadAllData();
-  };
-
   // Plant care handlers
   const handleWaterPlant = async () => {
+    if (!userPlant || !userPlant.id) {
+      showToast("❌ Could not find your plant. Please refresh.");
+      return;
+    }
     const waterCost = 5;
     if (userPoints < waterCost) {
       showToast("❌ Not enough points to water!");
@@ -152,16 +170,29 @@ export function PlantGarden() {
       const spendResult = await spendPoints(user.id, waterCost, 'plant_care', userPlant.id, 'Watered plant');
       if (spendResult.success) {
         setUserPoints(spendResult.data.new_total);
-        const updatedPlant = { ...userPlant, growth_xp: userPlant.growth_xp + 5 };
-        setUserPlant(updatedPlant);
-        showToast("💧 Plant watered! +5 XP");
+        
+        const growthResult = await updatePlantGrowth(userPlant.id, 5);
+        if (growthResult.success) {
+          setUserPlant(growthResult.data);
+          showToast("💧 Plant watered! +5 XP");
+        }
+        
+        const pointsResult = await getUserPoints(user.id);
+        if (pointsResult.success) {
+          setUserPoints(pointsResult.data?.total_points || 0);
+        }
       }
     } catch (error) {
+      console.error("Error in handleWaterPlant:", error);
       showToast("❌ Failed to water plant");
     }
   };
 
   const handleFertilizePlant = async () => {
+    if (!userPlant || !userPlant.id) {
+      showToast("❌ Could not find your plant. Please refresh.");
+      return;
+    }
     const fertilizeCost = 15;
     if (userPoints < fertilizeCost) {
       showToast("❌ Not enough points to fertilize!");
@@ -172,16 +203,29 @@ export function PlantGarden() {
       const spendResult = await spendPoints(user.id, fertilizeCost, 'plant_care', userPlant.id, 'Fertilized plant');
       if (spendResult.success) {
         setUserPoints(spendResult.data.new_total);
-        const updatedPlant = { ...userPlant, growth_xp: userPlant.growth_xp + 25 };
-        setUserPlant(updatedPlant);
-        showToast("🌱 Plant fertilized! +25 XP");
+        
+        const growthResult = await updatePlantGrowth(userPlant.id, 25);
+        if (growthResult.success) {
+          setUserPlant(growthResult.data);
+          showToast("🌱 Plant fertilized! +25 XP");
+        }
+        
+        const pointsResult = await getUserPoints(user.id);
+        if (pointsResult.success) {
+          setUserPoints(pointsResult.data?.total_points || 0);
+        }
       }
     } catch (error) {
+      console.error("Error in handleFertilizePlant:", error);
       showToast("❌ Failed to fertilize plant");
     }
   };
 
   const handleSuperFertilize = async () => {
+    if (!userPlant || !userPlant.id) {
+      showToast("❌ Could not find your plant. Please refresh.");
+      return;
+    }
     const superCost = 50;
     if (userPoints < superCost) {
       showToast("❌ Not enough points!");
@@ -192,39 +236,25 @@ export function PlantGarden() {
       const spendResult = await spendPoints(user.id, superCost, 'plant_care', userPlant.id, 'Super fertilized plant');
       if (spendResult.success) {
         setUserPoints(spendResult.data.new_total);
-        const updatedPlant = { ...userPlant, growth_xp: userPlant.growth_xp + 100 };
-        setUserPlant(updatedPlant);
-        showToast("⚡ Super fertilized! +100 XP");
+        
+        const growthResult = await updatePlantGrowth(userPlant.id, 100);
+        if (growthResult.success) {
+          setUserPlant(growthResult.data);
+          showToast("⚡ Super fertilized! +100 XP");
+        }
+        
+        const pointsResult = await getUserPoints(user.id);
+        if (pointsResult.success) {
+          setUserPoints(pointsResult.data?.total_points || 0);
+        }
       }
     } catch (error) {
+      console.error("Error in handleSuperFertilize:", error);
       showToast("❌ Failed to super fertilize");
     }
   };
 
-  // Dummy test function to add 200 XP for free
-  const handleAddTestXP = async () => {
-    if (!userPlant) {
-      showToast("❌ No plant found!");
-      return;
-    }
 
-    try {
-      const result = await updatePlantGrowth(userPlant.id, 200);
-      if (result.success) {
-        setUserPlant(result.data);
-        showToast("🎁 Test XP added! +200 XP");
-        
-        // Reload plant data to get updated state
-        const plantResult = await getUserPlant(user.id);
-        if (plantResult.success) {
-          setUserPlant(plantResult.data);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to add test XP:", error);
-      showToast("❌ Failed to add test XP");
-    }
-  };
 
   const handleStorePurchase = async (item) => {
     try {
@@ -235,6 +265,12 @@ export function PlantGarden() {
         
         const inventoryResult = await getUserInventory(user.id);
         setUserInventory(inventoryResult.data || []);
+        
+        // Refresh points from database to ensure accuracy
+        const pointsResult = await getUserPoints(user.id);
+        if (pointsResult.success) {
+          setUserPoints(pointsResult.data?.total_points || 0);
+        }
         
         if (inventoryResult.data?.length > 0) {
           const newItem = inventoryResult.data.find(inv => inv.item_id === item.id && inv.used_quantity < inv.quantity);
@@ -271,16 +307,6 @@ export function PlantGarden() {
 
   const canAfford = (price) => userPoints >= price;
 
-  // Calculate badges based on trees planted
-  const getTreeBadges = () => {
-    const badges = [];
-    if (treesPlanted >= 5) badges.push({ name: "Tree Planter", icon: "🌱", description: "Planted 5 trees" });
-    if (treesPlanted >= 10) badges.push({ name: "Forest Guardian", icon: "🌿", description: "Planted 10 trees" });
-    if (treesPlanted >= 15) badges.push({ name: "Nature Master", icon: "🌳", description: "Planted 15 trees" });
-    if (treesPlanted >= 20) badges.push({ name: "Eco Warrior", icon: "🌲", description: "Planted 20 trees" });
-    return badges;
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -298,23 +324,16 @@ export function PlantGarden() {
         <div className="flex justify-between items-center gap-2 sm:hidden">
           {/* Points Display - Mobile */}
           <div className={`flex items-center gap-2 px-3 py-2 rounded-xl ${theme === 'dark' ? 'bg-slate-800/80 border border-slate-700/50' : 'bg-white/80 border border-slate-200/50'} backdrop-blur-sm`}>
-            <div className="w-5 h-5 bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full flex items-center justify-center">
-              <Coins className="w-2.5 h-2.5 text-white" />
+            <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full flex items-center justify-center">
+              <Coins className="w-3 h-3 text-white" />
             </div>
-            <span className={`text-base font-bold ${themeColors.text.primary}`}>{userPoints}</span>
-          </div>
-
-          {/* Trees Planted - Mobile */}
-          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl ${theme === 'dark' ? 'bg-slate-800/80 border border-slate-700/50' : 'bg-white/80 border border-slate-200/50'} backdrop-blur-sm`}>
-            <div className="w-5 h-5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-              <Leaf className="w-2.5 h-2.5 text-white" />
-            </div>
-            <span className={`text-base font-bold ${themeColors.text.primary}`}>{treesPlanted}</span>
+            <span className={`text-lg font-bold ${themeColors.text.primary}`}>{userPoints}</span>
+            <span className={`text-xs ${themeColors.text.muted}`}>pts</span>
           </div>
 
           {/* Level Display - Mobile */}
           <div className={`flex items-center gap-2 px-3 py-2 rounded-xl ${theme === 'dark' ? 'bg-slate-800/80 border border-slate-700/50' : 'bg-white/80 border border-slate-200/50'} backdrop-blur-sm`}>
-            <div className="w-5 h-5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+            <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
               <span className="text-white text-xs font-bold">{userPlant?.growth_level || 1}</span>
             </div>
             <span className={`text-sm font-semibold ${themeColors.text.primary}`}>Lv.{userPlant?.growth_level || 1}</span>
@@ -334,17 +353,6 @@ export function PlantGarden() {
             </div>
           </div>
 
-          {/* Trees Planted - Desktop */}
-          <div className="absolute top-0 left-1/3 z-10">
-            <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full ${theme === 'dark' ? 'bg-slate-800/80 border border-slate-700/50' : 'bg-white/80 border border-slate-200/50'} backdrop-blur-sm`}>
-              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-                <Leaf className="w-5 h-5 text-white" />
-              </div>
-              <span className={`text-xl font-bold ${themeColors.text.primary}`}>{treesPlanted}</span>
-              <span className={`text-sm ${themeColors.text.muted}`}>trees planted</span>
-            </div>
-          </div>
-
           {/* Level Display - Desktop */}
           <div className="absolute top-0 right-0 z-10">
             <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full ${theme === 'dark' ? 'bg-slate-800/80 border border-slate-700/50' : 'bg-white/80 border border-slate-200/50'} backdrop-blur-sm`}>
@@ -357,25 +365,6 @@ export function PlantGarden() {
           </div>
         </div>
       </div>
-
-      {/* Tree Planting Badges */}
-      {getTreeBadges().length > 0 && (
-        <div className={`${theme === 'dark' ? 'bg-slate-800/60' : 'bg-white/80'} rounded-2xl p-6 border ${theme === 'dark' ? 'border-slate-700/50' : 'border-slate-200/50'} backdrop-blur-sm`}>
-          <h3 className={`text-lg font-semibold ${themeColors.text.primary} mb-4 flex items-center gap-2`}>
-            <Award className="w-5 h-5 text-yellow-500" />
-            Tree Planting Achievements
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {getTreeBadges().map((badge, index) => (
-              <div key={index} className={`${theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-100/50'} rounded-xl p-3 text-center border ${theme === 'dark' ? 'border-slate-600/50' : 'border-slate-200/50'}`}>
-                <div className="text-2xl mb-2">{badge.icon}</div>
-                <div className={`text-sm font-semibold ${themeColors.text.primary}`}>{badge.name}</div>
-                <div className={`text-xs ${themeColors.text.muted}`}>{badge.description}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Main Content - Responsive Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-12 mt-4 sm:mt-20">
@@ -413,16 +402,19 @@ export function PlantGarden() {
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="relative">
                   <div className={`drop-shadow-2xl filter hover:scale-110 transition-transform duration-500 cursor-pointer ${
-                    userPlant?.growth_level >= 3 ? 'text-5xl sm:text-8xl' : 
-                    userPlant?.growth_level >= 2 ? 'text-4xl sm:text-7xl' : 'text-3xl sm:text-6xl'
+                    userPlant?.growth_level >= 8 ? 'text-5xl sm:text-8xl' : 
+                    userPlant?.growth_level >= 5 ? 'text-4xl sm:text-7xl' : 
+                    userPlant?.growth_level >= 3 ? 'text-3xl sm:text-6xl' : 'text-2xl sm:text-5xl'
                   }`}>
                     {currentStage.icon}
                   </div>
                   
                   {/* Glow effect for higher levels */}
-                  {userPlant?.growth_level >= 3 && (
+                  {userPlant?.growth_level >= 7 && (
                     <div className={`absolute inset-0 blur-sm opacity-30 -z-10 ${
-                      userPlant?.growth_level >= 3 ? 'text-5xl sm:text-8xl' : 'text-4xl sm:text-7xl'
+                      userPlant?.growth_level >= 8 ? 'text-5xl sm:text-8xl' : 
+                      userPlant?.growth_level >= 5 ? 'text-4xl sm:text-7xl' : 
+                      userPlant?.growth_level >= 3 ? 'text-3xl sm:text-6xl' : 'text-2xl sm:text-5xl'
                     }`}>
                       {currentStage.icon}
                     </div>
@@ -437,7 +429,7 @@ export function PlantGarden() {
               <div className="absolute -bottom-0.5 sm:-bottom-1 right-1/3 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-purple-400 rounded-full animate-ping delay-1000"></div>
               
               {/* Special orbiting effect for max level - Responsive */}
-              {userPlant?.growth_level === 4 && (
+              {userPlant?.growth_level === 10 && (
                 <div className="absolute inset-0 animate-spin" style={{ animationDuration: '20s' }}>
                   <div className="absolute top-2 sm:top-4 left-1/2 transform -translate-x-1/2 text-sm sm:text-xl opacity-70">✨</div>
                   <div className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 text-xs sm:text-lg opacity-60">💫</div>
@@ -453,7 +445,7 @@ export function PlantGarden() {
             <div className="flex justify-between items-center mb-2 sm:mb-3">
               <span className={`text-xs sm:text-sm font-medium ${themeColors.text.secondary}`}>Growth Journey</span>
               <span className={`text-xs sm:text-sm font-bold ${themeColors.text.primary}`}>
-                {userPlant?.growth_xp || 0} / {userPlant?.growth_xp_required || 100} XP
+                {userPlant?.growth_xp || 0} / {currentStage?.xpRequired || 100} XP
               </span>
             </div>
             
@@ -478,7 +470,7 @@ export function PlantGarden() {
             {userPlant?.growth_level < 4 && (
               <div className="mt-2 sm:mt-4 text-center">
                 <span className={`text-xs ${themeColors.text.muted}`}>
-                  Next: {plantStages[userPlant?.growth_level + 1]?.name}
+                  Next: {plantStages[userPlant?.growth_level + 1]?.name || 'Unknown'}
                 </span>
               </div>
             )}
@@ -496,22 +488,22 @@ export function PlantGarden() {
             <button
               onClick={handleWaterPlant}
               disabled={userPoints < 5}
-              className={`w-full p-3 sm:p-6 rounded-xl transition-all duration-300 ${
+              className={`w-full p-4 sm:p-6 rounded-xl transition-all duration-300 ${
                 userPoints >= 5 
                   ? `${theme === 'dark' ? 'bg-slate-800/40 hover:bg-slate-700/60 border border-blue-500/30 hover:border-blue-400/60' : 'bg-white/40 hover:bg-white/80 border border-blue-300/50 hover:border-blue-400/80'} hover:scale-105 hover:shadow-xl cursor-pointer` 
                   : `${theme === 'dark' ? 'bg-slate-800/20 border border-gray-600/30' : 'bg-gray-100/20 border border-gray-300/30'} opacity-60 cursor-not-allowed`
               } backdrop-blur-sm`}
             >
-              <div className="flex items-center gap-2 sm:gap-4">
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${userPoints >= 5 ? 'bg-gradient-to-br from-blue-400 to-cyan-500' : 'bg-gray-400'}`}>
-                  <Droplets className="w-4 h-4 sm:w-6 sm:h-6 sm:w-8 sm:h-8 text-white" />
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${userPoints >= 5 ? 'bg-gradient-to-br from-blue-400 to-cyan-500' : 'bg-gray-400'}`}>
+                  <Droplets className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
                 <div className="flex-1 text-left">
-                  <h3 className={`text-sm sm:text-base lg:text-lg font-semibold ${themeColors.text.primary}`}>Water Plant</h3>
+                  <h3 className={`text-base sm:text-lg font-semibold ${themeColors.text.primary}`}>Water Plant</h3>
                   <p className={`text-xs sm:text-sm ${themeColors.text.muted}`}>Gives +5 XP to your plant</p>
                   <div className="flex items-center gap-1 mt-1 sm:mt-2">
                     <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500" />
-                    <span className={`text-xs sm:text-sm font-bold ${themeColors.text.primary}`}>5 points</span>
+                    <span className={`text-sm font-bold ${themeColors.text.primary}`}>5 points</span>
                   </div>
                 </div>
               </div>
@@ -521,22 +513,22 @@ export function PlantGarden() {
             <button
               onClick={handleFertilizePlant}
               disabled={userPoints < 15}
-              className={`w-full p-3 sm:p-6 rounded-xl transition-all duration-300 ${
+              className={`w-full p-4 sm:p-6 rounded-xl transition-all duration-300 ${
                 userPoints >= 15 
                   ? `${theme === 'dark' ? 'bg-slate-800/40 hover:bg-slate-700/60 border border-green-500/30 hover:border-green-400/60' : 'bg-white/40 hover:bg-white/80 border border-green-300/50 hover:border-green-400/80'} hover:scale-105 hover:shadow-xl cursor-pointer` 
                   : `${theme === 'dark' ? 'bg-slate-800/20 border border-gray-600/30' : 'bg-gray-100/20 border border-gray-300/30'} opacity-60 cursor-not-allowed`
               } backdrop-blur-sm`}
             >
-              <div className="flex items-center gap-2 sm:gap-4">
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${userPoints >= 15 ? 'bg-gradient-to-br from-green-400 to-emerald-500' : 'bg-gray-400'}`}>
-                  <Sprout className="w-4 h-4 sm:w-6 sm:h-6 sm:w-8 sm:h-8 text-white" />
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${userPoints >= 15 ? 'bg-gradient-to-br from-green-400 to-emerald-500' : 'bg-gray-400'}`}>
+                  <Sprout className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
                 <div className="flex-1 text-left">
-                  <h3 className={`text-sm sm:text-base lg:text-lg font-semibold ${themeColors.text.primary}`}>Fertilize Plant</h3>
+                  <h3 className={`text-base sm:text-lg font-semibold ${themeColors.text.primary}`}>Fertilize Plant</h3>
                   <p className={`text-xs sm:text-sm ${themeColors.text.muted}`}>Gives +25 XP to your plant</p>
                   <div className="flex items-center gap-1 mt-1 sm:mt-2">
                     <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500" />
-                    <span className={`text-xs sm:text-sm font-bold ${themeColors.text.primary}`}>15 points</span>
+                    <span className={`text-sm font-bold ${themeColors.text.primary}`}>15 points</span>
                   </div>
                 </div>
               </div>
@@ -546,80 +538,184 @@ export function PlantGarden() {
             <button
               onClick={handleSuperFertilize}
               disabled={userPoints < 50}
-              className={`w-full p-3 sm:p-6 rounded-xl transition-all duration-300 ${
+              className={`w-full p-4 sm:p-6 rounded-xl transition-all duration-300 ${
                 userPoints >= 50 
                   ? `${theme === 'dark' ? 'bg-slate-800/40 hover:bg-slate-700/60 border border-purple-500/30 hover:border-purple-400/60' : 'bg-white/40 hover:bg-white/80 border border-purple-300/50 hover:border-purple-400/80'} hover:scale-105 hover:shadow-xl cursor-pointer` 
                   : `${theme === 'dark' ? 'bg-slate-800/20 border border-gray-600/30' : 'bg-gray-100/20 border border-gray-300/30'} opacity-60 cursor-not-allowed`
               } backdrop-blur-sm`}
             >
-              <div className="flex items-center gap-2 sm:gap-4">
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${userPoints >= 50 ? 'bg-gradient-to-br from-purple-400 to-pink-500' : 'bg-gray-400'}`}>
-                  <Zap className="w-4 h-4 sm:w-6 sm:h-6 sm:w-8 sm:h-8 text-white" />
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${userPoints >= 50 ? 'bg-gradient-to-br from-purple-400 to-pink-500' : 'bg-gray-400'}`}>
+                  <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
                 <div className="flex-1 text-left">
-                  <h3 className={`text-sm sm:text-base lg:text-lg font-semibold ${themeColors.text.primary}`}>Super Boost</h3>
+                  <h3 className={`text-base sm:text-lg font-semibold ${themeColors.text.primary}`}>Super Boost</h3>
                   <p className={`text-xs sm:text-sm ${themeColors.text.muted}`}>Gives +100 XP to your plant</p>
                   <div className="flex items-center gap-1 mt-1 sm:mt-2">
                     <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500" />
-                    <span className={`text-xs sm:text-sm font-bold ${themeColors.text.primary}`}>50 points</span>
+                    <span className={`text-sm font-bold ${themeColors.text.primary}`}>50 points</span>
                   </div>
                 </div>
               </div>
             </button>
 
-            {/* Test XP Button - Dummy button for testing */}
-            <button
-              onClick={handleAddTestXP}
-              className={`w-full p-3 sm:p-6 rounded-xl transition-all duration-300 ${
-                `${theme === 'dark' ? 'bg-slate-800/40 hover:bg-slate-700/60 border border-orange-500/30 hover:border-orange-400/60' : 'bg-white/40 hover:bg-white/80 border border-orange-300/50 hover:border-orange-400/80'} hover:scale-105 hover:shadow-xl cursor-pointer backdrop-blur-sm`
-              }`}
-            >
-              <div className="flex items-center gap-2 sm:gap-4">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center bg-gradient-to-br from-orange-400 to-red-500">
-                  <Gift className="w-4 h-4 sm:w-6 sm:h-6 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <div className="flex-1 text-left">
-                  <h3 className={`text-sm sm:text-base lg:text-lg font-semibold ${themeColors.text.primary}`}>🎁 Test XP (Free)</h3>
-                  <p className={`text-xs sm:text-sm ${themeColors.text.muted}`}>Adds +200 XP for testing</p>
-                  <div className="flex items-center gap-1 mt-1 sm:mt-2">
-                    <span className="text-xs text-orange-500 font-bold">FREE</span>
-                  </div>
-                </div>
-              </div>
-            </button>
+
           </div>
         </div>
       </div>
 
-      {/* Plant Completion Dialog */}
-      {showCompletionDialog && completedPlant && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className={`${theme === 'dark' ? 'bg-slate-800' : 'bg-white'} rounded-2xl p-8 max-w-md w-full shadow-2xl border ${theme === 'dark' ? 'border-slate-700' : 'border-slate-200'}`}>
+      {/* Trees Planted Card */}
+      <div 
+        ref={(el) => {
+          if (el) {
+            gsap.fromTo(el, 
+              { opacity: 0, y: 30 },
+              { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }
+            );
+          }
+        }}
+        className={`p-4 sm:p-6 rounded-xl ${theme === 'dark' ? 'bg-slate-800/50 border border-slate-700/50' : 'bg-white/70 border border-slate-200/60'} backdrop-blur-sm shadow-lg`}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className={`text-lg sm:text-xl font-semibold ${themeColors.text.primary}`}>🌳 Trees Planted</h3>
+          <div className="flex items-center gap-2">
+            {achievementBadges.map((badge, index) => (
+              <div 
+                key={index} 
+                className="relative"
+                ref={(el) => {
+                  if (el) {
+                    gsap.fromTo(el, 
+                      { scale: 0, rotation: 180 },
+                      { scale: 1, rotation: 0, duration: 0.6, ease: "back.out(1.7)", delay: 0.2 * index }
+                    );
+                  }
+                }}
+              >
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs sm:text-sm font-bold">
+                    {badge === '5_trees' ? '5' : badge === '10_trees' ? '10' : '25'}
+                  </span>
+                </div>
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="text-center">
+          <div 
+            ref={(el) => {
+              if (el) {
+                gsap.fromTo(el, 
+                  { scale: 0.8, opacity: 0 },
+                  { scale: 1, opacity: 1, duration: 0.8, ease: "elastic.out(1, 0.3)", delay: 0.3 }
+                );
+              }
+            }}
+            className="text-4xl sm:text-6xl font-bold mb-2"
+          >
+            <span className="bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">
+              {treesPlanted}
+            </span>
+          </div>
+          <p 
+            ref={(el) => {
+              if (el) {
+                gsap.fromTo(el, 
+                  { opacity: 0, y: 10 },
+                  { opacity: 1, y: 0, duration: 0.6, delay: 0.5 }
+                );
+              }
+            }}
+            className={`text-sm sm:text-base ${themeColors.text.secondary}`}
+          >
+            {treesPlanted === 0 ? 'Start your journey!' : 
+             treesPlanted === 1 ? 'First tree planted!' :
+             `${treesPlanted} trees planted so far!`}
+          </p>
+        </div>
+      </div>
+
+      {/* Lifecycle Completion Modal */}
+      {showLifecycleComplete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowLifecycleComplete(false)}></div>
+          <div 
+            ref={(el) => {
+              if (el) {
+                gsap.fromTo(el, 
+                  { scale: 0.8, opacity: 0, y: 20 },
+                  { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: "back.out(1.7)" }
+                );
+              }
+            }}
+            className={`relative w-full max-w-md p-6 rounded-2xl ${theme === 'dark' ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-200'} shadow-2xl`}
+          >
             <div className="text-center">
-              <div className="text-6xl mb-4">🌲</div>
-              <h2 className={`text-2xl font-bold ${themeColors.text.primary} mb-2`}>
-                Tree Completed! 🌟
+              <div 
+                ref={(el) => {
+                  if (el) {
+                    gsap.fromTo(el, 
+                      { scale: 0, rotation: -180 },
+                      { scale: 1, rotation: 0, duration: 0.8, ease: "elastic.out(1, 0.3)", delay: 0.2 }
+                    );
+                  }
+                }}
+                className="text-6xl mb-4"
+              >
+                🌳
+              </div>
+              <h2 
+                ref={(el) => {
+                  if (el) {
+                    gsap.fromTo(el, 
+                      { opacity: 0, y: 20 },
+                      { opacity: 1, y: 0, duration: 0.6, delay: 0.4 }
+                    );
+                  }
+                }}
+                className={`text-2xl font-bold mb-2 ${themeColors.text.primary}`}
+              >
+                Tree Lifecycle Complete!
               </h2>
-              <p className={`${themeColors.text.secondary} mb-6`}>
-                Congratulations! You've successfully grown "{completedPlant.plant_name}" to a magnificent big tree!
+              <p 
+                ref={(el) => {
+                  if (el) {
+                    gsap.fromTo(el, 
+                      { opacity: 0, y: 20 },
+                      { opacity: 1, y: 0, duration: 0.6, delay: 0.6 }
+                    );
+                  }
+                }}
+                className={`text-sm mb-6 ${themeColors.text.secondary}`}
+              >
+                Congratulations! Your tree has reached maturity. Plant it and start a new seedling!
               </p>
               
-              <div className={`${theme === 'dark' ? 'bg-slate-700/50' : 'bg-slate-100/50'} rounded-xl p-4 mb-6`}>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  <span className={`font-semibold ${themeColors.text.primary}`}>Achievement Unlocked!</span>
-                </div>
-                <p className={`text-sm ${themeColors.text.secondary}`}>
-                  You've planted {treesPlanted} tree{treesPlanted !== 1 ? 's' : ''} total!
-                </p>
-              </div>
-              
-              <div className="flex gap-3">
+              <div 
+                ref={(el) => {
+                  if (el) {
+                    gsap.fromTo(el, 
+                      { opacity: 0, y: 20 },
+                      { opacity: 1, y: 0, duration: 0.6, delay: 0.8 }
+                    );
+                  }
+                }}
+                className="flex gap-3"
+              >
                 <Button
-                  onClick={handleStartNewPlant}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:shadow-lg"
+                  onClick={handleTreeCompletion}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:scale-105 transition-transform duration-300"
                 >
-                  Start New Seedling
+                  🌱 Plant Tree & Start New
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowLifecycleComplete(false)}
+                  className="flex-1 hover:scale-105 transition-transform duration-300"
+                >
+                  Later
                 </Button>
               </div>
             </div>
@@ -640,7 +736,7 @@ export function PlantGarden() {
                 onClick={() => setShowSuccessToast(false)}
                 className={`${themeColors.text.muted} hover:${themeColors.text.primary} transition-colors flex-shrink-0`}
               >
-                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+                ✕
               </button>
             </div>
           </div>
@@ -650,4 +746,4 @@ export function PlantGarden() {
   );
 }
 
-export default PlantGarden;
+export default Achievements;

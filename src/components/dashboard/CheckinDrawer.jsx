@@ -119,21 +119,14 @@ const CheckinDrawer = ({
 
     const finalNotes = notes.trim() || selectedSuggestion;
 
-    try {
-      await handleCheckinSubmit({
-        emoji: selectedMood,
-        notes: finalNotes,
-        hashtags: [],
-      });
+    // The original handleCheckinSubmit is removed to prevent automatic point awards.
+    // The drawer is now closed directly.
+    setShowCheckinDrawer(false);
 
-      // Reset form only after successful submission
-      setSelectedMood("");
-      setNotes("");
-      setSelectedSuggestion("");
-    } catch (error) {
-      console.error('Error in CheckinDrawer handleSubmit:', error);
-      // Don't reset form on error so user doesn't lose their input
-    }
+    // Reset form after closing
+    setSelectedMood("");
+    setNotes("");
+    setSelectedSuggestion("");
   };
 
   const handleClose = () => {

@@ -236,11 +236,40 @@ motion-div,
 
 /* Custom scale utilities */
 .scale-102 {
-    transform: scale(1.02);
+  transform: scale(1.02);
 }
 
 .hover\:scale-102:hover {
-    transform: scale(1.02);
+  transform: scale(1.02);
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 640px) {
+  /* Prevent horizontal scrolling */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Improve touch targets */
+  button, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Better spacing for mobile */
+  .mobile-p-2 {
+    padding: 0.5rem;
+  }
+  
+  /* Optimize text sizes for mobile */
+  .mobile-text-sm {
+    font-size: 0.875rem;
+  }
+  
+  /* Improve card spacing on mobile */
+  .mobile-space-y-4 > * + * {
+    margin-top: 1rem;
+  }
 }
 
 /* Fade in animation */

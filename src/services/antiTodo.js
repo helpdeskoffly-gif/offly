@@ -85,27 +85,25 @@ export const updateAntiTodoItemStatus = async (itemId, status) => {
         
         // Award points for anti-todo completion
         try {
-          const basePoints = 15; // Base points for completing an anti-todo
-          const contentBonus = updatedItem.content.length > 30 ? 5 : 0; // Bonus for detailed activities
-          const totalPoints = basePoints + contentBonus;
+          const activityPoints = 10; // Simple 10 points for activity completion
 
           const pointsResult = await awardPoints(
             updatedItem.user_id, 
-            totalPoints, 
+            activityPoints, 
             'anti_todo', 
             updatedItem.id, 
-            `Completed "${updatedItem.content.substring(0, 30)}..."`
+            'Activity completed'
           );
           
           if (pointsResult.success) {
-            console.log(`Awarded ${totalPoints} points for anti-todo completion`);
+            console.log(`Awarded ${activityPoints} points for anti-todo completion`);
             
             // Update plant growth with earned points
             let plantXp = 0;
             try {
               const plantResult = await getUserPlant(updatedItem.user_id);
               if (plantResult.success && plantResult.data) {
-                plantXp = Math.floor(totalPoints * 0.8); // More XP for anti-todos (0.8x multiplier)
+                plantXp = Math.floor(activityPoints / 2); // 1 XP per 2 points
                 await updatePlantGrowth(plantResult.data.id, plantXp);
                 console.log(`Added ${plantXp} XP to user's plant`);
               }
@@ -117,9 +115,7 @@ export const updateAntiTodoItemStatus = async (itemId, status) => {
             return {
               ...updatedItem,
               pointsEarned: {
-                total: totalPoints,
-                base: basePoints,
-                contentBonus: contentBonus,
+                total: activityPoints,
                 plantXp: plantXp
               }
             };

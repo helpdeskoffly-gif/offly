@@ -1,47 +1,30 @@
 import * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
+
 import { cn } from "@/lib/utils"
 
 function Drawer({
-  shouldScaleBackground = true,
   ...props
 }) {
-  return (
-    <DrawerPrimitive.Root
-      shouldScaleBackground={shouldScaleBackground}
-      {...props}
-    />
-  )
+  return <DrawerPrimitive.Root data-slot="drawer" {...props} />;
 }
 
 function DrawerTrigger({
-  asChild = false,
-  className,
-  children,
   ...props
 }) {
-  return (
-    <DrawerPrimitive.Trigger
-      asChild={asChild}
-      className={cn("", className)}
-      {...props}
-    >
-      {children}
-    </DrawerPrimitive.Trigger>
-  )
+  return <DrawerPrimitive.Trigger data-slot="drawer-trigger" {...props} />;
 }
 
 function DrawerPortal({
-  className,
-  children,
   ...props
 }) {
-  return (
-    <DrawerPrimitive.Portal className={cn("", className)} {...props}>
-      <div className="fixed inset-0 z-50 bg-black/80" />
-      {children}
-    </DrawerPrimitive.Portal>
-  )
+  return <DrawerPrimitive.Portal data-slot="drawer-portal" {...props} />;
+}
+
+function DrawerClose({
+  ...props
+}) {
+  return <DrawerPrimitive.Close data-slot="drawer-close" {...props} />;
 }
 
 function DrawerOverlay({
@@ -50,10 +33,13 @@ function DrawerOverlay({
 }) {
   return (
     <DrawerPrimitive.Overlay
-      className={cn("fixed inset-0 z-50 bg-black/80", className)}
-      {...props}
-    />
-  )
+      data-slot="drawer-overlay"
+      className={cn(
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+        className
+      )}
+      {...props} />
+  );
 }
 
 function DrawerContent({
@@ -62,83 +48,76 @@ function DrawerContent({
   ...props
 }) {
   return (
-    <DrawerPortal>
+    <DrawerPortal data-slot="drawer-portal">
       <DrawerOverlay />
       <DrawerPrimitive.Content
+        data-slot="drawer-content"
         className={cn(
-          "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
+          "group/drawer-content bg-background fixed z-50 flex h-auto flex-col",
+          "data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[80vh] data-[vaul-drawer-direction=top]:rounded-b-lg data-[vaul-drawer-direction=top]:border-b",
+          "data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-24 data-[vaul-drawer-direction=bottom]:max-h-[80vh] data-[vaul-drawer-direction=bottom]:rounded-t-lg data-[vaul-drawer-direction=bottom]:border-t",
+          "data-[vaul-drawer-direction=right]:inset-y-0 data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=right]:border-l data-[vaul-drawer-direction=right]:sm:max-w-sm",
+          "data-[vaul-drawer-direction=left]:inset-y-0 data-[vaul-drawer-direction=left]:left-0 data-[vaul-drawer-direction=left]:w-3/4 data-[vaul-drawer-direction=left]:border-r data-[vaul-drawer-direction=left]:sm:max-w-sm",
           className
         )}
-        {...props}
-      >
-        <div className="mx-auto mt-4 h-1.5 w-[100px] rounded-full bg-muted" />
+        {...props}>
+        <div
+          className="bg-muted mx-auto mt-4 hidden h-2 w-[100px] shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
         {children}
       </DrawerPrimitive.Content>
     </DrawerPortal>
-  )
+  );
 }
 
 function DrawerHeader({
   className,
-  children,
   ...props
 }) {
   return (
     <div
-      className={cn("grid gap-1.5 p-4 text-center sm:text-left", className)}
-      {...props}
-    >
-      {children}
-    </div>
-  )
+      data-slot="drawer-header"
+      className={cn(
+        "flex flex-col gap-0.5 p-4 group-data-[vaul-drawer-direction=bottom]/drawer-content:text-center group-data-[vaul-drawer-direction=top]/drawer-content:text-center md:gap-1.5 md:text-left",
+        className
+      )}
+      {...props} />
+  );
 }
 
 function DrawerFooter({
   className,
-  children,
   ...props
 }) {
   return (
     <div
+      data-slot="drawer-footer"
       className={cn("mt-auto flex flex-col gap-2 p-4", className)}
-      {...props}
-    >
-      {children}
-    </div>
-  )
+      {...props} />
+  );
 }
 
 function DrawerTitle({
   className,
-  children,
   ...props
 }) {
   return (
     <DrawerPrimitive.Title
-      className={cn(
-        "text-lg font-semibold leading-none tracking-tight",
-        className
-      )}
-      {...props}
-    >
-      {children}
-    </DrawerPrimitive.Title>
-  )
+      data-slot="drawer-title"
+      className={cn("text-foreground font-semibold", className)}
+      {...props} />
+  );
 }
 
 function DrawerDescription({
   className,
-  children,
   ...props
 }) {
   return (
     <DrawerPrimitive.Description
-      className={cn("text-sm text-muted-foreground", className)}
-      {...props}
-    >
-      {children}
-    </DrawerPrimitive.Description>
-  )
+      data-slot="drawer-description"
+      className={cn("text-muted-foreground text-sm", className)}
+      {...props} />
+  );
 }
 
 export {
@@ -146,6 +125,7 @@ export {
   DrawerPortal,
   DrawerOverlay,
   DrawerTrigger,
+  DrawerClose,
   DrawerContent,
   DrawerHeader,
   DrawerFooter,

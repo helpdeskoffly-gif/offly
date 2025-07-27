@@ -14,39 +14,87 @@ const PlantVisualization = ({
   const containerRef = useRef(null);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  // Improved plant stage configurations with better visuals - 4 stages only
+  // Improved plant stage configurations with better visuals
   const plantStages = {
     1: {
       image: '🌱',
-      name: 'Seedling',
+      name: 'Tiny Seedling',
       color: 'from-green-300 to-green-500',
       size: 'w-16 h-16',
-      description: 'A tiny seedling just beginning its journey',
+      description: 'A tiny sprout just beginning its journey',
       bgGlow: 'shadow-green-300/50'
     },
     2: {
       image: '🌿',
-      name: 'Sprout',
+      name: 'Young Sprout',
       color: 'from-green-400 to-green-600',
       size: 'w-20 h-20',
       description: 'Growing stronger with each passing day',
       bgGlow: 'shadow-green-400/50'
     },
     3: {
-      image: '🌳',
-      name: 'Small Tree',
+      image: '🪴',
+      name: 'Healthy Plant',
       color: 'from-green-500 to-emerald-600',
       size: 'w-24 h-24',
-      description: 'A young tree reaching for the sky',
+      description: 'Thriving beautifully with your care',
       bgGlow: 'shadow-emerald-500/50'
     },
     4: {
-      image: '🌲',
-      name: 'Big Tree',
+      image: '🌳',
+      name: 'Small Tree',
       color: 'from-emerald-500 to-green-700',
       size: 'w-28 h-28',
-      description: 'A magnificent, fully grown tree!',
+      description: 'Growing tall and reaching for the sky',
       bgGlow: 'shadow-emerald-600/50'
+    },
+    5: {
+      image: '🌲',
+      name: 'Strong Tree',
+      color: 'from-green-600 to-emerald-700',
+      size: 'w-32 h-32',
+      description: 'Standing strong and resilient',
+      bgGlow: 'shadow-green-600/50'
+    },
+    6: {
+      image: '🌴',
+      name: 'Majestic Tree',
+      color: 'from-emerald-600 to-green-800',
+      size: 'w-36 h-36',
+      description: 'A magnificent sight to behold',
+      bgGlow: 'shadow-emerald-700/50'
+    },
+    7: {
+      image: '🌸',
+      name: 'Flowering Beauty',
+      color: 'from-pink-400 to-rose-500',
+      size: 'w-40 h-40',
+      description: 'Blooming with incredible beauty',
+      bgGlow: 'shadow-pink-500/50'
+    },
+    8: {
+      image: '🌺',
+      name: 'Tropical Paradise',
+      color: 'from-pink-500 to-fuchsia-600',
+      size: 'w-44 h-44',
+      description: 'A tropical paradise in full bloom',
+      bgGlow: 'shadow-fuchsia-500/50'
+    },
+    9: {
+      image: '🌹',
+      name: 'Elegant Garden',
+      color: 'from-rose-500 to-purple-600',
+      size: 'w-48 h-48',
+      description: 'Elegant and absolutely stunning',
+      bgGlow: 'shadow-purple-500/50'
+    },
+    10: {
+      image: '🌟',
+      name: 'Legendary Plant',
+      color: 'from-yellow-400 to-amber-500',
+      size: 'w-52 h-52',
+      description: 'The ultimate achievement - a legendary plant!',
+      bgGlow: 'shadow-yellow-500/50'
     }
   };
 
@@ -221,7 +269,7 @@ const PlantVisualization = ({
             </div>
             
             {/* Sparkle effects for higher levels */}
-            {plant?.growth_level >= 3 && (
+            {plant?.growth_level >= 6 && (
               <div className="absolute -inset-4 pointer-events-none">
                 <Sparkles className="absolute -top-2 -right-2 w-6 h-6 text-yellow-400 animate-pulse" />
                 <Sparkles className="absolute -bottom-2 -left-2 w-4 h-4 text-pink-400 animate-pulse" style={{ animationDelay: '0.5s' }} />
@@ -230,7 +278,7 @@ const PlantVisualization = ({
             )}
 
             {/* Crown for max level */}
-            {plant?.growth_level === 4 && (
+            {plant?.growth_level === 10 && (
               <div className="absolute -top-10 left-1/2 transform -translate-x-1/2">
                 <Crown className="w-12 h-12 text-yellow-500 animate-bounce drop-shadow-lg" />
               </div>

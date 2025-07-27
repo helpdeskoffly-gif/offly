@@ -583,34 +583,30 @@ export const submitCheckin = async (uid, checkinData) => {
 
     // Award points for checkin completion
     try {
-      const basePoints = 10; // Base points for any checkin
-      const moodBonus = validMoodScore >= 7 ? 5 : 0; // Bonus for positive mood
-      const textBonus = validMoodText.length > 50 ? 5 : 0; // Bonus for detailed reflection
-      const totalPoints = basePoints + moodBonus + textBonus;
+      const checkinPoints = 5; // Simple 5 points for checkin
 
       const pointsResult = await awardPoints(
         uid, 
-        totalPoints, 
+        checkinPoints, 
         'checkin', 
         result[0].id, 
-        `Daily check-in (+${moodBonus} mood bonus, +${textBonus} detail bonus)`
+        'Daily check-in'
       );
       
       if (pointsResult.success) {
-        console.log(`Awarded ${totalPoints} points for checkin`);
+        console.log(`Awarded ${checkinPoints} points for checkin`);
         
-        // Update plant growth with earned points (convert points to XP)
+        // Update plant growth with earned points
         let plantXp = 0;
         try {
           const plantResult = await getUserPlant(uid);
           if (plantResult.success && plantResult.data) {
-            plantXp = Math.floor(totalPoints / 2); // 1 XP per 2 points
+            plantXp = Math.floor(checkinPoints / 2); // 1 XP per 2 points
             await updatePlantGrowth(plantResult.data.id, plantXp);
             console.log(`Added ${plantXp} XP to user's plant`);
           }
         } catch (plantError) {
           console.error("Failed to update plant growth:", plantError);
-          // Don't fail checkin if plant update fails
         }
         
         // Return checkin data with points information for toast
@@ -619,10 +615,7 @@ export const submitCheckin = async (uid, checkinData) => {
           data: {
             ...result[0],
             pointsEarned: {
-              total: totalPoints,
-              base: basePoints,
-              moodBonus: moodBonus,
-              textBonus: textBonus,
+              total: checkinPoints,
               plantXp: plantXp
             }
           }
@@ -630,7 +623,6 @@ export const submitCheckin = async (uid, checkinData) => {
       }
     } catch (pointsError) {
       console.error("Failed to award points for checkin:", pointsError);
-      // Don't fail the checkin if points award fails
     }
 
     return { success: true, data: result[0] };
@@ -1157,74 +1149,37 @@ export const ACHIEVEMENT_DEFINITIONS = {
     id: "antitodo_5",
     name: "Wellness Enthusiast",
     description: "Complete 5 wellness activities",
-    icon: "🌿",
+    icon: "🌺",
     category: "wellness",
     target: 5,
     condition: (stats) => stats.completedAntiTodos >= 5,
   },
-  antitodo_10: {
-    id: "antitodo_10",
-    name: "Wellness Champion",
-    description: "Complete 10 wellness activities",
+  antitodo_15: {
+    id: "antitodo_15",
+    name: "Mindfulness Master",
+    description: "Complete 15 wellness activities",
+    icon: "🧘‍♀️",
+    category: "wellness",
+    target: 15,
+    condition: (stats) => stats.completedAntiTodos >= 15,
+  },
+  antitodo_30: {
+    id: "antitodo_30",
+    name: "Zen Warrior",
+    description: "Complete 30 wellness activities",
     icon: "🏆",
     category: "wellness",
-    target: 10,
-    condition: (stats) => stats.completedAntiTodos >= 10,
+    target: 30,
+    condition: (stats) => stats.completedAntiTodos >= 30,
   },
-  antitodo_25: {
-    id: "antitodo_25",
-    name: "Wellness Master",
-    description: "Complete 25 wellness activities",
-    icon: "👑",
+  wellness_week: {
+    id: "wellness_week",
+    name: "Weekly Wellness",
+    description: "Complete 3 activities in one week",
+    icon: "📅",
     category: "wellness",
-    target: 25,
-    condition: (stats) => stats.completedAntiTodos >= 25,
-  },
-  // NEW: Tree Planting Achievements
-  trees_planted_5: {
-    id: "trees_planted_5",
-    name: "Tree Planter",
-    description: "Plant 5 trees",
-    icon: "🌱",
-    category: "planting",
-    target: 5,
-    condition: (stats) => stats.treesPlanted >= 5,
-  },
-  trees_planted_10: {
-    id: "trees_planted_10",
-    name: "Forest Guardian",
-    description: "Plant 10 trees",
-    icon: "🌿",
-    category: "planting",
-    target: 10,
-    condition: (stats) => stats.treesPlanted >= 10,
-  },
-  trees_planted_15: {
-    id: "trees_planted_15",
-    name: "Nature Master",
-    description: "Plant 15 trees",
-    icon: "🌳",
-    category: "planting",
-    target: 15,
-    condition: (stats) => stats.treesPlanted >= 15,
-  },
-  trees_planted_20: {
-    id: "trees_planted_20",
-    name: "Eco Warrior",
-    description: "Plant 20 trees",
-    icon: "🌲",
-    category: "planting",
-    target: 20,
-    condition: (stats) => stats.treesPlanted >= 20,
-  },
-  first_tree_completed: {
-    id: "first_tree_completed",
-    name: "First Tree",
-    description: "Complete your first tree",
-    icon: "🌲",
-    category: "planting",
-    target: 1,
-    condition: (stats) => stats.treesPlanted >= 1,
+    target: 3,
+    condition: (stats) => stats.weeklyAntiTodos >= 3,
   },
 };
 
@@ -1264,17 +1219,9 @@ export const calculateAchievementProgress = (achievementId, stats) => {
     // NEW: Anti-Todo Achievement Progress
     case "first_antitodo":
     case "antitodo_5":
-    case "antitodo_10":
-    case "antitodo_25":
+    case "antitodo_15":
+    case "antitodo_30":
       progress = Math.min(stats.completedAntiTodos || 0, achievement.target);
-      break;
-    // NEW: Tree Planting Achievement Progress
-    case "trees_planted_5":
-    case "trees_planted_10":
-    case "trees_planted_15":
-    case "trees_planted_20":
-    case "first_tree_completed":
-      progress = Math.min(stats.treesPlanted || 0, achievement.target);
       break;
     case "wellness_week":
       progress = Math.min(stats.weeklyAntiTodos || 0, achievement.target);
@@ -1291,25 +1238,6 @@ export const calculateAchievementProgress = (achievementId, stats) => {
   };
 };
 
-// Get tree planting stats for achievements
-export const getTreePlantingStats = async (userId) => {
-  return safeSupabaseOperation(async () => {
-    const { data, error } = await supabase
-      .from("plant_history")
-      .select("id")
-      .eq("user_id", userId);
-
-    if (error) throw error;
-    
-    return { 
-      success: true, 
-      data: { 
-        treesPlanted: data?.length || 0 
-      } 
-    };
-  });
-};
-
 // Check and unlock achievements
 export const checkAndUnlockAchievements = async (uid) => {
   return safeSupabaseOperation(async () => {
@@ -1319,15 +1247,6 @@ export const checkAndUnlockAchievements = async (uid) => {
       return { success: false, newAchievements: [] };
 
     const stats = analyticsResult.data;
-    
-    // Get tree planting stats
-    const treeStatsResult = await getTreePlantingStats(uid);
-    if (treeStatsResult.success) {
-      stats.treesPlanted = treeStatsResult.data.treesPlanted;
-    } else {
-      stats.treesPlanted = 0;
-    }
-    
     const newAchievements = [];
 
     // Get existing achievements
@@ -1376,45 +1295,29 @@ export const checkAndUnlockAchievements = async (uid) => {
         }
       } else {
         // Update existing achievement progress
-        const existingAchievement = existingAchievements.find(
+        const existing = existingAchievements.find(
           (a) => a.achievement_id === achievementId,
         );
-        if (existingAchievement && !existingAchievement.is_unlocked) {
+        if (!existing.is_unlocked) {
           const progress = calculateAchievementProgress(achievementId, stats);
 
-          if (progress.isUnlocked) {
-            // Update to unlocked
-            await supabaseHelpers.update(
-              "achievements",
-              existingAchievement.id,
-              {
-                is_unlocked: true,
-                unlocked_at: new Date().toISOString(),
-                progress: progress.progress,
-              }
-            );
+          const updateData = {
+            progress: progress.progress,
+            updated_at: new Date().toISOString(),
+          };
 
-            newAchievements.push({
-              ...existingAchievement,
-              is_unlocked: true,
-              unlocked_at: new Date().toISOString(),
-            });
-          } else {
-            // Update progress
-            await supabaseHelpers.update(
-              "achievements",
-              existingAchievement.id,
-              { progress: progress.progress }
-            );
+          if (progress.isUnlocked) {
+            updateData.is_unlocked = true;
+            updateData.unlocked_at = new Date().toISOString();
+            newAchievements.push({ ...existing, ...updateData });
           }
+
+          await supabaseHelpers.update("achievements", existing.id, updateData);
         }
       }
     }
 
-    return {
-      success: true,
-      newlyUnlocked: newAchievements,
-    };
+    return { success: true, newAchievements };
   });
 };
 
@@ -1777,16 +1680,21 @@ export const getUserPoints = async (userId) => {
       throw error;
     }
 
-    // Return default points if no record exists
+    // Create points record if none exists
     if (!data) {
-      return { 
-        success: true, 
-        data: { 
-          total_points: 0, 
-          total_earned: 0, 
-          total_spent: 0 
-        } 
-      };
+      const { data: newPoints, error: createError } = await supabase
+        .from("user_points")
+        .insert({
+          user_id: userId,
+          total_points: 0,
+          total_earned: 0,
+          total_spent: 0
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+      return { success: true, data: newPoints };
     }
 
     return { success: true, data };
@@ -1880,7 +1788,6 @@ export const createNewPlant = async (userId, plantName = "My Plant", plantType =
         growth_level: 1,
         growth_xp: 0,
         growth_xp_required: 100,
-        health: 100,
         is_active: true
       })
       .select()
@@ -1906,19 +1813,22 @@ export const updatePlantGrowth = async (plantId, xpGain) => {
     let newLevel = plant.growth_level;
     let newXpRequired = plant.growth_xp_required;
 
-    // Check for level ups - now only 4 levels (1-4)
-    while (newXp >= newXpRequired && newLevel < 4) {
+    // Check for level ups (handle any level, but cap at 4 for display)
+    while (newXp >= newXpRequired && newLevel < 10) {
       newXp -= newXpRequired;
       newLevel++;
       newXpRequired = Math.floor(newXpRequired * 1.5); // Increase XP requirement by 50% each level
     }
+    
+    // Cap the level at 4 for display purposes (since schema only allows 1-4)
+    const displayLevel = Math.min(newLevel, 4);
 
     // Update plant
     const { data, error } = await supabase
       .from("user_plants")
       .update({
         growth_xp: newXp,
-        growth_level: newLevel,
+        growth_level: displayLevel, // Use capped level for database
         growth_xp_required: newXpRequired,
         updated_at: new Date().toISOString()
       })
@@ -1928,9 +1838,9 @@ export const updatePlantGrowth = async (plantId, xpGain) => {
 
     if (error) throw error;
 
-    // Check if plant is fully grown (level 4)
+    // Check if plant is fully grown (when it reaches level 4)
     let completedPlant = null;
-    if (newLevel === 4 && plant.growth_level < 4) {
+    if (displayLevel === 4 && plant.growth_level < 4) {
       // Move to history and create new plant
       completedPlant = await completePlant(plant.user_id, data);
     }
@@ -1958,9 +1868,10 @@ export const completePlant = async (userId, plantData) => {
         user_id: userId,
         plant_name: plantData.plant_name,
         plant_type: plantData.plant_type,
-        final_level: plantData.growth_level,
-        decorations: plantData.decorations,
-        completion_date: new Date().toISOString()
+        final_growth_level: plantData.growth_level,
+        final_decorations: plantData.decorations,
+        growth_duration: growthDuration,
+        total_care_actions: 0 // TODO: Track this
       })
       .select()
       .single();
@@ -1969,6 +1880,24 @@ export const completePlant = async (userId, plantData) => {
 
     // Create new plant
     const newPlantResult = await createNewPlant(userId, "My New Plant", "basic_seed");
+    
+    // Award points for completing a plant
+    try {
+      const completionPoints = 50; // Points for completing a plant
+      const pointsResult = await awardPoints(
+        userId, 
+        completionPoints, 
+        'achievement', 
+        historyEntry.id, 
+        `Completed plant: ${plantData.plant_name}`
+      );
+      
+      if (pointsResult.success) {
+        console.log(`Awarded ${completionPoints} points for plant completion`);
+      }
+    } catch (pointsError) {
+      console.error("Failed to award points for plant completion:", pointsError);
+    }
     
     return { 
       success: true, 
@@ -1980,22 +1909,7 @@ export const completePlant = async (userId, plantData) => {
 
 export const waterPlant = async (plantId, userId) => {
   return safeSupabaseOperation(async () => {
-    // Update last watered time and add some growth XP
-    const { data, error } = await supabase
-      .from("user_plants")
-      .update({
-        last_watered: new Date().toISOString(),
-        health: 100, // Restore health
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", plantId)
-      .eq("user_id", userId)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // Add growth XP
+    // Add growth XP directly
     const growthResult = await updatePlantGrowth(plantId, 10);
     
     return { 
@@ -2008,21 +1922,7 @@ export const waterPlant = async (plantId, userId) => {
 
 export const fertilizePlant = async (plantId, userId, fertilizerValue = 25) => {
   return safeSupabaseOperation(async () => {
-    // Update last fertilized time
-    const { data, error } = await supabase
-      .from("user_plants")
-      .update({
-        last_fertilized: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", plantId)
-      .eq("user_id", userId)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // Add significant growth XP
+    // Add significant growth XP directly
     const growthResult = await updatePlantGrowth(plantId, fertilizerValue);
     
     return { 
@@ -2046,7 +1946,7 @@ export const getStoreItems = async () => {
   });
 };
 
-export const purchaseStoreItem = async (userId, itemId, quantity = 1) => {
+export const purchaseStoreItem = async (userId, itemId) => {
   return safeSupabaseOperation(async () => {
     // Get item details
     const { data: item, error: itemError } = await supabase
@@ -2057,7 +1957,7 @@ export const purchaseStoreItem = async (userId, itemId, quantity = 1) => {
 
     if (itemError) throw itemError;
 
-    const totalCost = item.price * quantity;
+    const totalCost = item.price;
 
     // Check if user has enough points
     const pointsResult = await getUserPoints(userId);
@@ -2066,7 +1966,7 @@ export const purchaseStoreItem = async (userId, itemId, quantity = 1) => {
     }
 
     // Spend points
-    const spendResult = await spendPoints(userId, totalCost, 'store_purchase', itemId, `Purchased ${quantity}x ${item.name}`);
+    const spendResult = await spendPoints(userId, totalCost, 'store_purchase', itemId, `Purchased ${item.name}`);
     if (!spendResult.success) {
       return spendResult;
     }
@@ -2076,9 +1976,7 @@ export const purchaseStoreItem = async (userId, itemId, quantity = 1) => {
       .from("user_store_purchases")
       .insert({
         user_id: userId,
-        item_id: itemId,
-        quantity: quantity,
-        total_cost: totalCost
+        item_id: itemId
       })
       .select()
       .single();
@@ -2105,7 +2003,7 @@ export const getUserInventory = async (userId) => {
         plant_store_items (*)
       `)
       .eq("user_id", userId)
-      .gt("quantity", 0) // Only items with remaining quantity
+      .eq("is_used", false) // Only unused items
       .order("purchased_at", { ascending: false });
 
     if (error) throw error;
@@ -2128,15 +2026,15 @@ export const useInventoryItem = async (userId, purchaseId, plantId) => {
 
     if (purchaseError) throw purchaseError;
 
-    if (purchase.used_quantity >= purchase.quantity) {
-      return { success: false, error: "Item already fully used" };
+    if (purchase.is_used) {
+      return { success: false, error: "Item already used" };
     }
 
     const item = purchase.plant_store_items;
     let result = { success: true };
 
-    // Apply item effect based on category
-    switch (item.category) {
+    // Apply item effect based on item_type
+    switch (item.item_type) {
       case 'water':
         result = await waterPlant(plantId, userId);
         break;
@@ -2174,10 +2072,13 @@ export const useInventoryItem = async (userId, purchaseId, plantId) => {
     }
 
     if (result.success) {
-      // Update used quantity
+      // Mark item as used
       await supabase
         .from("user_store_purchases")
-        .update({ used_quantity: purchase.used_quantity + 1 })
+        .update({ 
+          is_used: true,
+          used_at: new Date().toISOString()
+        })
         .eq("id", purchaseId);
     }
 
@@ -2192,6 +2093,27 @@ export const getPlantHistory = async (userId) => {
       .select("*")
       .eq("user_id", userId)
       .order("completion_date", { ascending: false });
+
+    if (error) throw error;
+    return { success: true, data };
+  });
+};
+
+// Reset plant to level 1 for testing
+export const resetPlantToLevel1 = async (userId) => {
+  return safeSupabaseOperation(async () => {
+    const { data, error } = await supabase
+      .from("user_plants")
+      .update({
+        growth_level: 1,
+        growth_xp: 0,
+        growth_xp_required: 100,
+        updated_at: new Date().toISOString()
+      })
+      .eq("user_id", userId)
+      .eq("is_active", true)
+      .select()
+      .single();
 
     if (error) throw error;
     return { success: true, data };

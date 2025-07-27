@@ -248,12 +248,9 @@ export const AntiTodoList = ({ userId }) => {
           )
         );
         
-        // Show points toast for completed anti-todos
-        if (action === 'completed' && result.pointsEarned) {
-          const { total, base, contentBonus, plantXp } = result.pointsEarned;
-          let bonusText = contentBonus > 0 ? ` (+${contentBonus} detail bonus)` : '';
-          const message = `🎉 Anti-todo completed! +${total} points${bonusText}${plantXp > 0 ? ` & +${plantXp} plant XP` : ''}`;
-          setToastMessage(message);
+        // Show a simple completion message instead of points
+        if (action === 'completed') {
+          setToastMessage(`🎉 Anti-todo completed!`);
           setShowToast(true);
           setTimeout(() => setShowToast(false), 4000);
         }
@@ -722,7 +719,7 @@ export const AntiTodoList = ({ userId }) => {
                 Share to Community
               </DialogTitle>
               <DialogDescription className={`${themeColors.text.secondary} text-sm leading-relaxed`}>
-                Your wellness activity will be visible to other community members who can like your post.
+                Your wellness activity will be visible to other community members who can like and comment on your post.
               </DialogDescription>
             </DialogHeader>
 
@@ -744,6 +741,10 @@ export const AntiTodoList = ({ userId }) => {
                       <div className={`flex items-center gap-1 ${themeColors.text.muted}`}>
                         <ThumbsUp className="w-3 h-3" />
                         <span>Likes</span>
+                      </div>
+                      <div className={`flex items-center gap-1 ${themeColors.text.muted}`}>
+                        <MessageCircle className="w-3 h-3" />
+                        <span>Comments</span>
                       </div>
                       <div className={`flex items-center gap-1 ${themeColors.text.muted}`}>
                         <Users className="w-3 h-3" />
