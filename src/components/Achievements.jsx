@@ -11,7 +11,7 @@ import {
   X,
   Zap,
   Gift,
-  Tree,
+  Leaf,
   Award,
   CheckCircle,
 } from "lucide-react";
@@ -307,7 +307,7 @@ export function PlantGarden() {
           {/* Trees Planted - Mobile */}
           <div className={`flex items-center gap-2 px-3 py-2 rounded-xl ${theme === 'dark' ? 'bg-slate-800/80 border border-slate-700/50' : 'bg-white/80 border border-slate-200/50'} backdrop-blur-sm`}>
             <div className="w-5 h-5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-              <Tree className="w-2.5 h-2.5 text-white" />
+              <Leaf className="w-2.5 h-2.5 text-white" />
             </div>
             <span className={`text-base font-bold ${themeColors.text.primary}`}>{treesPlanted}</span>
           </div>
@@ -338,7 +338,7 @@ export function PlantGarden() {
           <div className="absolute top-0 left-1/3 z-10">
             <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full ${theme === 'dark' ? 'bg-slate-800/80 border border-slate-700/50' : 'bg-white/80 border border-slate-200/50'} backdrop-blur-sm`}>
               <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-                <Tree className="w-5 h-5 text-white" />
+                <Leaf className="w-5 h-5 text-white" />
               </div>
               <span className={`text-xl font-bold ${themeColors.text.primary}`}>{treesPlanted}</span>
               <span className={`text-sm ${themeColors.text.muted}`}>trees planted</span>

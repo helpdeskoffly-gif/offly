@@ -31,7 +31,6 @@ import {
   Target,
   Zap,
   Award,
-  Tree,
   Leaf,
   Sprout,
 } from "lucide-react";
@@ -240,7 +239,7 @@ export function Dashboard() {
         <Card className={`${themeColors.card} p-3 sm:p-6`}>
           <CardHeader className="pb-2 sm:pb-3">
             <CardTitle className={`text-xs sm:text-sm font-medium ${themeColors.text.secondary} flex items-center gap-1 sm:gap-2`}>
-              <Tree className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
+              <Leaf className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
               <span className="hidden sm:inline">Trees Planted</span>
               <span className="sm:hidden">Trees</span>
             </CardTitle>
