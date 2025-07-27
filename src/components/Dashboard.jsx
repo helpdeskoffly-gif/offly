@@ -278,10 +278,7 @@ export function Dashboard() {
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         {/* Mobile: Icon-only tabs, Desktop: Full tabs */}
-        <TabsList className={`grid w-full ${
-          // Mobile: 5 columns with icons only, Desktop: 5 columns with text
-          'grid-cols-5 gap-1 sm:gap-2'
-        } ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-white/50'} backdrop-blur-sm p-1`}>
+        <TabsList className={`grid w-full grid-cols-5 gap-1 sm:gap-2 ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-white/50'} backdrop-blur-sm p-1`}>
           <TabsTrigger 
             value="overview" 
             className="flex flex-col items-center gap-1 px-2 py-3 text-xs sm:text-sm sm:flex-row sm:gap-2"

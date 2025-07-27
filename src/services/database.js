@@ -1386,12 +1386,12 @@ export const checkAndUnlockAchievements = async (uid) => {
             // Update to unlocked
             await supabaseHelpers.update(
               "achievements",
+              existingAchievement.id,
               {
                 is_unlocked: true,
                 unlocked_at: new Date().toISOString(),
                 progress: progress.progress,
-              },
-              { id: existingAchievement.id },
+              }
             );
 
             newAchievements.push({
@@ -1403,8 +1403,8 @@ export const checkAndUnlockAchievements = async (uid) => {
             // Update progress
             await supabaseHelpers.update(
               "achievements",
-              { progress: progress.progress },
-              { id: existingAchievement.id },
+              existingAchievement.id,
+              { progress: progress.progress }
             );
           }
         }
@@ -1958,10 +1958,9 @@ export const completePlant = async (userId, plantData) => {
         user_id: userId,
         plant_name: plantData.plant_name,
         plant_type: plantData.plant_type,
-        final_growth_level: plantData.growth_level,
-        final_decorations: plantData.decorations,
-        growth_duration: growthDuration,
-        total_care_actions: 0 // TODO: Track this
+        final_level: plantData.growth_level,
+        decorations: plantData.decorations,
+        completion_date: new Date().toISOString()
       })
       .select()
       .single();
