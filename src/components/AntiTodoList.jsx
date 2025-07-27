@@ -722,7 +722,7 @@ export const AntiTodoList = ({ userId }) => {
                 Share to Community
               </DialogTitle>
               <DialogDescription className={`${themeColors.text.secondary} text-sm leading-relaxed`}>
-                Your wellness activity will be visible to other community members who can like and comment on your post.
+                Your wellness activity will be visible to other community members who can like your post.
               </DialogDescription>
             </DialogHeader>
 
@@ -744,10 +744,6 @@ export const AntiTodoList = ({ userId }) => {
                       <div className={`flex items-center gap-1 ${themeColors.text.muted}`}>
                         <ThumbsUp className="w-3 h-3" />
                         <span>Likes</span>
-                      </div>
-                      <div className={`flex items-center gap-1 ${themeColors.text.muted}`}>
-                        <MessageCircle className="w-3 h-3" />
-                        <span>Comments</span>
                       </div>
                       <div className={`flex items-center gap-1 ${themeColors.text.muted}`}>
                         <Users className="w-3 h-3" />

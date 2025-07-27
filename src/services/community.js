@@ -1,12 +1,10 @@
 import { supabase } from '../supabase';
 
-// Helper for safe operations
 const safeCommunityOperation = async (operation) => {
   try {
-    const result = await operation();
-    return { success: true, ...result };
+    return await operation();
   } catch (error) {
-    console.error('Community operation error:', error);
+    console.error('Community operation failed:', error);
     return { success: false, error: error.message };
   }
 };
@@ -48,37 +46,31 @@ export const createCommunityPost = async (userId, postData) => {
   });
 };
 
-// Share an anti-todo item to community
-export const shareAntiTodoToCommunity = async (userId, antiTodoItem, additionalText = '') => {
-  console.log('shareAntiTodoToCommunity called with:', { userId, antiTodoItem, additionalText });
-  
+// Toggle like on a post
+export const togglePostLike = async (userId, postId, currentLikeStatus) => {
   return safeCommunityOperation(async () => {
-    const content = additionalText 
-      ? `${additionalText}\n\n🎯 ${antiTodoItem.content}` 
-      : `🎯 ${antiTodoItem.content}`;
-    
-    const hashtags = ['wellness', 'antitodo', 'mindfulness'];
-    
-    console.log('Creating community post with data:', {
-      content,
-      title: 'Wellness Activity Completed! 🌟',
-      contentType: 'anti_todo',
-      sourceType: 'anti_todo',
-      sourceId: antiTodoItem.id,
-      hashtags
-    });
-    
-    const result = await createCommunityPost(userId, {
-      content: content,
-      title: 'Wellness Activity Completed! 🌟',
-      contentType: 'anti_todo',
-      sourceType: 'anti_todo',
-      sourceId: antiTodoItem.id,
-      hashtags: hashtags
-    });
-    
-    console.log('createCommunityPost result:', result);
-    return result;
+    if (currentLikeStatus) {
+      // Unlike
+      const { error } = await supabase
+        .from('community_likes')
+        .delete()
+        .eq('user_id', userId)
+        .eq('post_id', postId);
+      
+      if (error) throw error;
+      return { success: true, liked: false };
+    } else {
+      // Like
+      const { error } = await supabase
+        .from('community_likes')
+        .insert([{
+          user_id: userId,
+          post_id: postId
+        }]);
+      
+      if (error) throw error;
+      return { success: true, liked: true };
+    }
   });
 };
 
@@ -152,16 +144,6 @@ export const shareTooCommunity = async (userId, shareData) => {
     
     console.log('Successfully shared to community:', data);
     return { data };
-  });
-};
-
-// Share checkin to community (specific function for checkins)
-export const shareCheckinToCommunity = async (userId, checkinData) => {
-  return shareTooCommunity(userId, {
-    type: 'checkin_share',
-    checkinId: checkinData.id,
-    content: `Feeling ${checkinData.mood_emoji} today! ${checkinData.mood_text ? `"${checkinData.mood_text}"` : ''}`,
-    hashtags: ['mood', 'checkin']
   });
 };
 
@@ -296,46 +278,97 @@ export const getCommunityFeed = async (userId, options = {}) => {
   });
 };
 
-// Follow/unfollow a user
-export const toggleUserFollow = async (followerId, followingId) => {
+// Get trending hashtags
+export const getTrendingHashtags = async (limit = 10) => {
   return safeCommunityOperation(async () => {
-    // Check if relationship already exists
-    const { data: existingRelation, error: checkError } = await supabase
-      .from('user_relationships')
-      .select('id, status')
-      .eq('follower_id', followerId)
-      .eq('following_id', followingId)
+    const { data, error } = await supabase
+      .from('community_posts')
+      .select('hashtags')
+      .eq('is_public', true)
+      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()); // Last 7 days
+    
+    if (error) throw error;
+    
+    // Count hashtag frequency
+    const hashtagCounts = {};
+    data.forEach(post => {
+      if (post.hashtags) {
+        post.hashtags.forEach(tag => {
+          hashtagCounts[tag] = (hashtagCounts[tag] || 0) + 1;
+        });
+      }
+    });
+    
+    // Sort by frequency and return top hashtags
+    const sortedHashtags = Object.entries(hashtagCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, limit)
+      .map(([tag]) => tag);
+    
+    return { data: sortedHashtags };
+  });
+};
+
+// Search posts by content or hashtags
+export const searchPosts = async (query, userId, limit = 20, offset = 0) => {
+  return safeCommunityOperation(async () => {
+    const { data, error } = await supabase
+      .from('community_post_stats')
+      .select('*')
+      .or(`content.ilike.%${query}%,title.ilike.%${query}%`)
+      .eq('is_public', true)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+    
+    if (error) throw error;
+    
+    // Check if user has liked each post
+    const postIds = data.map(post => post.post_id);
+    if (postIds.length > 0) {
+      const { data: userLikes, error: likesError } = await supabase
+        .from('community_likes')
+        .select('post_id')
+        .eq('user_id', userId)
+        .in('post_id', postIds);
+      
+      if (!likesError) {
+        const likedPostIds = new Set(userLikes.map(like => like.post_id));
+        const postsWithLikeStatus = data.map(post => ({
+          ...post,
+          user_has_liked: likedPostIds.has(post.post_id)
+        }));
+        return { data: postsWithLikeStatus, hasMore: data.length === limit };
+      }
+    }
+    
+    return { data, hasMore: data.length === limit };
+  });
+};
+
+// Delete a post
+export const deletePost = async (userId, postId) => {
+  return safeCommunityOperation(async () => {
+    // First check if user owns the post
+    const { data: post, error: fetchError } = await supabase
+      .from('community_posts')
+      .select('user_id')
+      .eq('id', postId)
       .single();
     
-    if (checkError && checkError.code !== 'PGRST116') {
-      throw checkError;
+    if (fetchError) throw fetchError;
+    
+    if (post.user_id !== userId) {
+      throw new Error('Unauthorized to delete this post');
     }
     
-    if (existingRelation) {
-      // Unfollow
-      const { error: deleteError } = await supabase
-        .from('user_relationships')
-        .delete()
-        .eq('id', existingRelation.id);
-      
-      if (deleteError) throw deleteError;
-      return { action: 'unfollowed', following: false };
-    } else {
-      // Follow
-      const { data, error: insertError } = await supabase
-        .from('user_relationships')
-        .insert([{
-          follower_id: followerId,
-          following_id: followingId,
-          status: 'accepted', // Auto-accept for now, can be changed to 'pending' for friend requests
-          created_at: new Date().toISOString()
-        }])
-        .select()
-        .single();
-      
-      if (insertError) throw insertError;
-      return { action: 'followed', following: true, data };
-    }
+    // Delete the post (cascade will handle likes and comments)
+    const { error } = await supabase
+      .from('community_posts')
+      .delete()
+      .eq('id', postId);
+    
+    if (error) throw error;
+    return { success: true };
   });
 };
 
@@ -352,40 +385,42 @@ export const getSuggestedFriends = async (userId, limit = 10) => {
   });
 };
 
-// Get user's friends/following
-export const getUserFriends = async (userId, type = 'following') => {
+// Toggle follow/unfollow user
+export const toggleUserFollow = async (followerId, followingId) => {
   return safeCommunityOperation(async () => {
-    let query = supabase
+    // Check if already following
+    const { data: existing, error: checkError } = await supabase
       .from('user_relationships')
-      .select(`
-        *,
-        following:users!following_id (
-          id,
-          username,
-          full_name,
-          avatar_url,
-          bio
-        ),
-        follower:users!follower_id (
-          id,
-          username,
-          full_name,
-          avatar_url,
-          bio
-        )
-      `)
-      .eq('status', 'accepted');
+      .select('*')
+      .eq('follower_id', followerId)
+      .eq('following_id', followingId)
+      .single();
     
-    if (type === 'following') {
-      query = query.eq('follower_id', userId);
+    if (checkError && checkError.code !== 'PGRST116') throw checkError;
+    
+    if (existing) {
+      // Unfollow
+      const { error } = await supabase
+        .from('user_relationships')
+        .delete()
+        .eq('follower_id', followerId)
+        .eq('following_id', followingId);
+      
+      if (error) throw error;
+      return { success: true, following: false };
     } else {
-      query = query.eq('following_id', userId);
+      // Follow
+      const { error } = await supabase
+        .from('user_relationships')
+        .insert([{
+          follower_id: followerId,
+          following_id: followingId,
+          status: 'accepted' // Auto-accept for now
+        }]);
+      
+      if (error) throw error;
+      return { success: true, following: true };
     }
-    
-    const { data, error } = await query;
-    if (error) throw error;
-    
-    return { data };
   });
 };
 
@@ -394,293 +429,36 @@ export const isUserFollowing = async (followerId, followingId) => {
   return safeCommunityOperation(async () => {
     const { data, error } = await supabase
       .from('user_relationships')
-      .select('id')
+      .select('status')
       .eq('follower_id', followerId)
       .eq('following_id', followingId)
-      .eq('status', 'accepted')
       .single();
     
-    if (error && error.code !== 'PGRST116') {
-      throw error;
-    }
+    if (error && error.code !== 'PGRST116') throw error;
     
-    return { following: !!data };
+    return { 
+      data: data ? data.status === 'accepted' : false 
+    };
   });
 };
 
-// Toggle like on a post
-export const togglePostLike = async (userId, postId) => {
-  return safeCommunityOperation(async () => {
-    // Check if user already liked the post
-    const { data: existingLike, error: checkError } = await supabase
-      .from('community_likes')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('post_id', postId)
-      .single();
-    
-    if (checkError && checkError.code !== 'PGRST116') {
-      throw checkError;
-    }
-    
-    if (existingLike) {
-      // Unlike the post
-      const { error: deleteError } = await supabase
-        .from('community_likes')
-        .delete()
-        .eq('id', existingLike.id);
-      
-      if (deleteError) throw deleteError;
-      return { action: 'unliked', liked: false };
-    } else {
-      // Like the post
-      const { data, error: insertError } = await supabase
-        .from('community_likes')
-        .insert([{
-          user_id: userId,
-          post_id: postId,
-          created_at: new Date().toISOString()
-        }])
-        .select()
-        .single();
-      
-      if (insertError) throw insertError;
-      return { action: 'liked', liked: true, data };
-    }
-  });
-};
-
-// Add a comment to a post
-export const addComment = async (userId, postId, content, parentCommentId = null) => {
-  return safeCommunityOperation(async () => {
-    const { data, error } = await supabase
-      .from('community_comments')
+// Helper function to ensure user preferences exist
+const ensureUserPreferences = async (userId) => {
+  const { data, error } = await supabase
+    .from('user_preferences')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+  
+  if (error && error.code === 'PGRST116') {
+    // Create default preferences
+    await supabase
+      .from('user_preferences')
       .insert([{
         user_id: userId,
-        post_id: postId,
-        content: content,
-        parent_comment_id: parentCommentId,
-        created_at: new Date().toISOString()
-      }])
-      .select(`
-        *,
-        users (
-          username,
-          full_name,
-          avatar_url
-        )
-      `)
-      .single();
-    
-    if (error) throw error;
-    return { data };
-  });
-};
-
-// Get comments for a post
-export const getPostComments = async (postId) => {
-  return safeCommunityOperation(async () => {
-    const { data, error } = await supabase
-      .from('community_comments')
-      .select(`
-        *,
-        users (
-          username,
-          full_name,
-          avatar_url
-        )
-      `)
-      .eq('post_id', postId)
-      .order('created_at', { ascending: true });
-    
-    if (error) throw error;
-    return { data };
-  });
-};
-
-// Get user's own posts
-export const getUserPosts = async (userId, options = {}) => {
-  return safeCommunityOperation(async () => {
-    const { limit = 20, offset = 0 } = options;
-    
-    const { data, error } = await supabase
-      .from('community_post_stats')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-    
-    if (error) throw error;
-    return { data, hasMore: data.length === limit };
-  });
-};
-
-// Delete a post (only by the author)
-export const deletePost = async (userId, postId) => {
-  return safeCommunityOperation(async () => {
-    const { data, error } = await supabase
-      .from('community_posts')
-      .delete()
-      .eq('id', postId)
-      .eq('user_id', userId) // Ensure only the author can delete
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return { data };
-  });
-};
-
-// Get or create user preferences
-export const getUserPreferences = async (userId) => {
-  return safeCommunityOperation(async () => {
-    let { data, error } = await supabase
-      .from('user_preferences')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-    
-    if (error && error.code === 'PGRST116') {
-      // Create default preferences if none exist
-      const { data: newPrefs, error: createError } = await supabase
-        .from('user_preferences')
-        .insert([{
-          user_id: userId,
-          preferred_content_types: ['text', 'anti_todo', 'checkin'],
-          preferred_hashtags: ['wellness', 'mindfulness'],
-          feed_algorithm: 'recent'
-        }])
-        .select()
-        .single();
-      
-      if (createError) throw createError;
-      return { data: newPrefs };
-    }
-    
-    if (error) throw error;
-    return { data };
-  });
-};
-
-// Update user preferences
-export const updateUserPreferences = async (userId, preferences) => {
-  return safeCommunityOperation(async () => {
-    const { data, error } = await supabase
-      .from('user_preferences')
-      .update({
-        ...preferences,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', userId)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return { data };
-  });
-};
-
-// Ensure user has preferences (helper function)
-const ensureUserPreferences = async (userId) => {
-  return safeCommunityOperation(async () => {
-    // Check if user preferences exist
-    const { data: existingPrefs, error: fetchError } = await supabase
-      .from('user_preferences')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    if (fetchError && fetchError.code === 'PGRST116') {
-      // Get user's hobbies to create smart defaults
-      const { data: userProfile, error: profileError } = await supabase
-        .from('users')
-        .select('hobbies')
-        .eq('id', userId)
-        .single();
-
-      const userHobbies = userProfile?.hobbies || [];
-      
-      // Create default preferences based on user's hobbies
-      const defaultHashtags = ['wellness', 'mindfulness'];
-      if (userHobbies.includes('fitness')) defaultHashtags.push('fitness');
-      if (userHobbies.includes('meditation')) defaultHashtags.push('meditation');
-      if (userHobbies.includes('reading')) defaultHashtags.push('reading');
-      if (userHobbies.includes('cooking')) defaultHashtags.push('cooking');
-      if (userHobbies.includes('music')) defaultHashtags.push('music');
-      
-      const { data: newPrefs, error: createError } = await supabase
-        .from('user_preferences')
-        .insert([{
-          user_id: userId,
-          preferred_content_types: ['anti_todo', 'checkin'],
-          preferred_hashtags: defaultHashtags,
-          feed_algorithm: 'personalized'
-        }])
-        .select()
-        .single();
-
-      if (createError) throw createError;
-      return { data: newPrefs };
-    }
-
-    if (fetchError) throw fetchError;
-    return { data: existingPrefs };
-  });
-};
-
-// Search posts by hashtags or content
-export const searchPosts = async (query, options = {}) => {
-  return safeCommunityOperation(async () => {
-    const { limit = 20, offset = 0 } = options;
-    
-    let dbQuery = supabase
-      .from('community_post_stats')
-      .select('*');
-    
-    // Search in content or hashtags
-    if (query) {
-      dbQuery = dbQuery.or(`content.ilike.%${query}%,hashtags.cs.{${query}}`);
-    }
-    
-    dbQuery = dbQuery
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-    
-    const { data, error } = await dbQuery;
-    if (error) throw error;
-    
-    return { data, hasMore: data.length === limit };
-  });
-};
-
-// Get trending hashtags
-export const getTrendingHashtags = async (limit = 10) => {
-  return safeCommunityOperation(async () => {
-    // This would ideally be a more sophisticated query that counts hashtag usage over time
-    const { data, error } = await supabase
-      .from('community_posts')
-      .select('hashtags')
-      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Last 7 days
-      .limit(100);
-    
-    if (error) throw error;
-    
-    // Count hashtag frequency
-    const hashtagCounts = {};
-    data.forEach(post => {
-      if (post.hashtags) {
-        post.hashtags.forEach(tag => {
-          hashtagCounts[tag] = (hashtagCounts[tag] || 0) + 1;
-        });
-      }
-    });
-    
-    // Sort by frequency and return top hashtags
-    const trending = Object.entries(hashtagCounts)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, limit)
-      .map(([tag, count]) => ({ tag, count }));
-    
-    return { data: trending };
-  });
+        preferred_content_types: ['text', 'anti_todo', 'checkin'],
+        preferred_hashtags: ['wellness', 'mindfulness'],
+        feed_algorithm: 'personalized'
+      }]);
+  }
 }; 

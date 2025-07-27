@@ -1157,37 +1157,74 @@ export const ACHIEVEMENT_DEFINITIONS = {
     id: "antitodo_5",
     name: "Wellness Enthusiast",
     description: "Complete 5 wellness activities",
-    icon: "🌺",
+    icon: "🌿",
     category: "wellness",
     target: 5,
     condition: (stats) => stats.completedAntiTodos >= 5,
   },
-  antitodo_15: {
-    id: "antitodo_15",
-    name: "Mindfulness Master",
-    description: "Complete 15 wellness activities",
-    icon: "🧘‍♀️",
-    category: "wellness",
-    target: 15,
-    condition: (stats) => stats.completedAntiTodos >= 15,
-  },
-  antitodo_30: {
-    id: "antitodo_30",
-    name: "Zen Warrior",
-    description: "Complete 30 wellness activities",
+  antitodo_10: {
+    id: "antitodo_10",
+    name: "Wellness Champion",
+    description: "Complete 10 wellness activities",
     icon: "🏆",
     category: "wellness",
-    target: 30,
-    condition: (stats) => stats.completedAntiTodos >= 30,
+    target: 10,
+    condition: (stats) => stats.completedAntiTodos >= 10,
   },
-  wellness_week: {
-    id: "wellness_week",
-    name: "Weekly Wellness",
-    description: "Complete 3 activities in one week",
-    icon: "📅",
+  antitodo_25: {
+    id: "antitodo_25",
+    name: "Wellness Master",
+    description: "Complete 25 wellness activities",
+    icon: "👑",
     category: "wellness",
-    target: 3,
-    condition: (stats) => stats.weeklyAntiTodos >= 3,
+    target: 25,
+    condition: (stats) => stats.completedAntiTodos >= 25,
+  },
+  // NEW: Tree Planting Achievements
+  trees_planted_5: {
+    id: "trees_planted_5",
+    name: "Tree Planter",
+    description: "Plant 5 trees",
+    icon: "🌱",
+    category: "planting",
+    target: 5,
+    condition: (stats) => stats.treesPlanted >= 5,
+  },
+  trees_planted_10: {
+    id: "trees_planted_10",
+    name: "Forest Guardian",
+    description: "Plant 10 trees",
+    icon: "🌿",
+    category: "planting",
+    target: 10,
+    condition: (stats) => stats.treesPlanted >= 10,
+  },
+  trees_planted_15: {
+    id: "trees_planted_15",
+    name: "Nature Master",
+    description: "Plant 15 trees",
+    icon: "🌳",
+    category: "planting",
+    target: 15,
+    condition: (stats) => stats.treesPlanted >= 15,
+  },
+  trees_planted_20: {
+    id: "trees_planted_20",
+    name: "Eco Warrior",
+    description: "Plant 20 trees",
+    icon: "🌲",
+    category: "planting",
+    target: 20,
+    condition: (stats) => stats.treesPlanted >= 20,
+  },
+  first_tree_completed: {
+    id: "first_tree_completed",
+    name: "First Tree",
+    description: "Complete your first tree",
+    icon: "🌲",
+    category: "planting",
+    target: 1,
+    condition: (stats) => stats.treesPlanted >= 1,
   },
 };
 
@@ -1227,9 +1264,17 @@ export const calculateAchievementProgress = (achievementId, stats) => {
     // NEW: Anti-Todo Achievement Progress
     case "first_antitodo":
     case "antitodo_5":
-    case "antitodo_15":
-    case "antitodo_30":
+    case "antitodo_10":
+    case "antitodo_25":
       progress = Math.min(stats.completedAntiTodos || 0, achievement.target);
+      break;
+    // NEW: Tree Planting Achievement Progress
+    case "trees_planted_5":
+    case "trees_planted_10":
+    case "trees_planted_15":
+    case "trees_planted_20":
+    case "first_tree_completed":
+      progress = Math.min(stats.treesPlanted || 0, achievement.target);
       break;
     case "wellness_week":
       progress = Math.min(stats.weeklyAntiTodos || 0, achievement.target);
@@ -1246,6 +1291,25 @@ export const calculateAchievementProgress = (achievementId, stats) => {
   };
 };
 
+// Get tree planting stats for achievements
+export const getTreePlantingStats = async (userId) => {
+  return safeSupabaseOperation(async () => {
+    const { data, error } = await supabase
+      .from("plant_history")
+      .select("id")
+      .eq("user_id", userId);
+
+    if (error) throw error;
+    
+    return { 
+      success: true, 
+      data: { 
+        treesPlanted: data?.length || 0 
+      } 
+    };
+  });
+};
+
 // Check and unlock achievements
 export const checkAndUnlockAchievements = async (uid) => {
   return safeSupabaseOperation(async () => {
@@ -1255,6 +1319,15 @@ export const checkAndUnlockAchievements = async (uid) => {
       return { success: false, newAchievements: [] };
 
     const stats = analyticsResult.data;
+    
+    // Get tree planting stats
+    const treeStatsResult = await getTreePlantingStats(uid);
+    if (treeStatsResult.success) {
+      stats.treesPlanted = treeStatsResult.data.treesPlanted;
+    } else {
+      stats.treesPlanted = 0;
+    }
+    
     const newAchievements = [];
 
     // Get existing achievements
@@ -1303,29 +1376,45 @@ export const checkAndUnlockAchievements = async (uid) => {
         }
       } else {
         // Update existing achievement progress
-        const existing = existingAchievements.find(
+        const existingAchievement = existingAchievements.find(
           (a) => a.achievement_id === achievementId,
         );
-        if (!existing.is_unlocked) {
+        if (existingAchievement && !existingAchievement.is_unlocked) {
           const progress = calculateAchievementProgress(achievementId, stats);
 
-          const updateData = {
-            progress: progress.progress,
-            updated_at: new Date().toISOString(),
-          };
-
           if (progress.isUnlocked) {
-            updateData.is_unlocked = true;
-            updateData.unlocked_at = new Date().toISOString();
-            newAchievements.push({ ...existing, ...updateData });
-          }
+            // Update to unlocked
+            await supabaseHelpers.update(
+              "achievements",
+              {
+                is_unlocked: true,
+                unlocked_at: new Date().toISOString(),
+                progress: progress.progress,
+              },
+              { id: existingAchievement.id },
+            );
 
-          await supabaseHelpers.update("achievements", existing.id, updateData);
+            newAchievements.push({
+              ...existingAchievement,
+              is_unlocked: true,
+              unlocked_at: new Date().toISOString(),
+            });
+          } else {
+            // Update progress
+            await supabaseHelpers.update(
+              "achievements",
+              { progress: progress.progress },
+              { id: existingAchievement.id },
+            );
+          }
         }
       }
     }
 
-    return { success: true, newAchievements };
+    return {
+      success: true,
+      newlyUnlocked: newAchievements,
+    };
   });
 };
 
@@ -1817,8 +1906,8 @@ export const updatePlantGrowth = async (plantId, xpGain) => {
     let newLevel = plant.growth_level;
     let newXpRequired = plant.growth_xp_required;
 
-    // Check for level ups
-    while (newXp >= newXpRequired && newLevel < 10) {
+    // Check for level ups - now only 4 levels (1-4)
+    while (newXp >= newXpRequired && newLevel < 4) {
       newXp -= newXpRequired;
       newLevel++;
       newXpRequired = Math.floor(newXpRequired * 1.5); // Increase XP requirement by 50% each level
@@ -1839,9 +1928,9 @@ export const updatePlantGrowth = async (plantId, xpGain) => {
 
     if (error) throw error;
 
-    // Check if plant is fully grown (level 10)
+    // Check if plant is fully grown (level 4)
     let completedPlant = null;
-    if (newLevel === 10 && plant.growth_level < 10) {
+    if (newLevel === 4 && plant.growth_level < 4) {
       // Move to history and create new plant
       completedPlant = await completePlant(plant.user_id, data);
     }
