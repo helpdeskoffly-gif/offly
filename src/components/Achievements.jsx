@@ -10,6 +10,7 @@ import {
   Droplets,
   X,
   Zap,
+  Gift,
 } from "lucide-react";
 import {
   getUserPoints,
@@ -19,6 +20,7 @@ import {
   getUserInventory,
   useInventoryItem,
   spendPoints,
+  updatePlantGrowth,
 } from "../services/database";
 
 export function PlantGarden() {
@@ -156,6 +158,31 @@ export function PlantGarden() {
       }
     } catch (error) {
       showToast("❌ Failed to super fertilize");
+    }
+  };
+
+  // Dummy test function to add 200 XP for free
+  const handleAddTestXP = async () => {
+    if (!userPlant) {
+      showToast("❌ No plant found!");
+      return;
+    }
+
+    try {
+      const result = await updatePlantGrowth(userPlant.id, 200);
+      if (result.success) {
+        setUserPlant(result.data);
+        showToast("🎁 Test XP added! +200 XP");
+        
+        // Reload plant data to get updated state
+        const plantResult = await getUserPlant(user.id);
+        if (plantResult.success) {
+          setUserPlant(plantResult.data);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to add test XP:", error);
+      showToast("❌ Failed to add test XP");
     }
   };
 
@@ -451,6 +478,27 @@ export function PlantGarden() {
                   <div className="flex items-center gap-1 mt-1 sm:mt-2">
                     <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500" />
                     <span className={`text-sm font-bold ${themeColors.text.primary}`}>50 points</span>
+                  </div>
+                </div>
+              </div>
+            </button>
+
+            {/* Test XP Button - Dummy button for testing */}
+            <button
+              onClick={handleAddTestXP}
+              className={`w-full p-4 sm:p-6 rounded-xl transition-all duration-300 ${
+                `${theme === 'dark' ? 'bg-slate-800/40 hover:bg-slate-700/60 border border-orange-500/30 hover:border-orange-400/60' : 'bg-white/40 hover:bg-white/80 border border-orange-300/50 hover:border-orange-400/80'} hover:scale-105 hover:shadow-xl cursor-pointer backdrop-blur-sm`
+              }`}
+            >
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center bg-gradient-to-br from-orange-400 to-red-500">
+                  <Gift className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                </div>
+                <div className="flex-1 text-left">
+                  <h3 className={`text-base sm:text-lg font-semibold ${themeColors.text.primary}`}>🎁 Test XP (Free)</h3>
+                  <p className={`text-xs sm:text-sm ${themeColors.text.muted}`}>Adds +200 XP for testing</p>
+                  <div className="flex items-center gap-1 mt-1 sm:mt-2">
+                    <span className="text-xs text-orange-500 font-bold">FREE</span>
                   </div>
                 </div>
               </div>
