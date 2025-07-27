@@ -311,13 +311,30 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
                 <Settings className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h2 className={`text-xl sm:text-2xl font-bold ${themeColors.text.primary}`}>
                   Account Settings
                 </h2>
                 <p className={`${themeColors.text.secondary} mt-1 text-sm sm:text-base`}>
                   Manage your profile and account preferences
                 </p>
+                {/* Mobile Current Tab Indicator */}
+                <div className="lg:hidden mt-2">
+                  <div className="inline-flex items-center space-x-2 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
+                    {(() => {
+                      const currentItem = navigationItems.find(item => item.id === activeTab);
+                      const Icon = currentItem?.icon;
+                      return (
+                        <>
+                          <Icon className="w-4 h-4 text-violet-500" />
+                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                            {currentItem?.label}
+                          </span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -456,6 +473,8 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
                 toggleTheme={toggleTheme}
                 themeColors={themeColors}
                 navigationItems={navigationItems}
+                showMobileMenu={showMobileMenu}
+                setShowMobileMenu={setShowMobileMenu}
               />
             </div>
           </div>
@@ -476,18 +495,20 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
                         setActiveTab(item.id);
                         setShowMobileMenu(false);
                       }}
-                      className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center space-x-3 ${
+                      className={`w-full text-left px-4 py-4 rounded-lg transition-all duration-200 flex items-center space-x-3 ${
                         activeTab === item.id 
                           ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg" 
                           : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
                       }`}
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-5 h-5" />
                       <div className="flex-1">
-                        <div className="font-medium text-sm">{item.label}</div>
+                        <div className="font-medium">{item.label}</div>
                         <div className="text-xs opacity-80">{item.description}</div>
                       </div>
-                      <ChevronRight className="w-4 h-4" />
+                      {activeTab === item.id && (
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                      )}
                     </button>
                   );
                 })}
@@ -869,7 +890,9 @@ function MobileTabContent({
   theme,
   toggleTheme,
   themeColors,
-  navigationItems
+  navigationItems,
+  showMobileMenu,
+  setShowMobileMenu
 }) {
   const getCurrentTabContent = () => {
     switch (activeTab) {
@@ -923,27 +946,6 @@ function MobileTabContent({
 
   return (
     <div className="space-y-6">
-      {/* Mobile Tab Navigation */}
-      <div className="flex items-center space-x-2 overflow-x-auto pb-2">
-        {navigationItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-xl whitespace-nowrap transition-all duration-200 ${
-                activeTab === item.id 
-                  ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg" 
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span className="text-sm font-medium">{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
       {/* Current Tab Content */}
       {getCurrentTabContent()}
     </div>
