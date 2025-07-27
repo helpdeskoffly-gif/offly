@@ -39,13 +39,7 @@ import {
 import { supabase } from "../supabase";
 import { updateUserProfile } from "../services/database";
 import { getUserAvatarUrl, uploadAvatar, deleteAvatar, updateUserAvatar } from "../services/avatars";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "./ui/drawer";
+
 
 export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSave }) {
   const { theme, toggleTheme } = useTheme();
@@ -311,7 +305,7 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
         className={`relative w-full max-w-4xl max-h-[95vh] overflow-hidden ${themeColors.modal} shadow-2xl rounded-2xl border`}
       >
         {/* Header */}
-        <div className={`sticky top-0 z-10 ${themeColors.card} border-b px-4 sm:px-8 py-4 sm:py-6`}>
+        <div className={`sticky top-0 z-10 ${themeColors.card} border-b px-4 sm:px-8 py-4 sm:py-6 relative`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3 sm:space-x-4">
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
@@ -330,15 +324,14 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
             {/* Mobile Menu Button */}
             <div className="flex items-center space-x-2">
               <div className="lg:hidden">
-                <DrawerTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`${themeColors.text.muted} hover:${themeColors.text.primary} p-2`}
-                  >
-                    <Menu className="w-5 h-5" />
-                  </Button>
-                </DrawerTrigger>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  className={`${themeColors.text.muted} hover:${themeColors.text.primary} p-2`}
+                >
+                  <Menu className="w-5 h-5" />
+                </Button>
               </div>
               <Button
                 variant="ghost"
@@ -468,42 +461,40 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
           </div>
         </div>
 
-        {/* Mobile Navigation Drawer */}
-        <Drawer open={showMobileMenu} onOpenChange={setShowMobileMenu}>
-          <DrawerContent className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-slate-200/50 dark:border-slate-700/50">
-            <DrawerHeader className="text-center">
-              <DrawerTitle className={`${themeColors.text.primary} text-lg`}>
-                Settings Navigation
-              </DrawerTitle>
-            </DrawerHeader>
-            <div className="p-6 space-y-2">
-              {navigationItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveTab(item.id);
-                      setShowMobileMenu(false);
-                    }}
-                    className={`w-full text-left px-4 py-4 rounded-xl transition-all duration-200 flex items-center space-x-3 ${
-                      activeTab === item.id 
-                        ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg" 
-                        : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <div className="flex-1">
-                      <div className="font-medium">{item.label}</div>
-                      <div className="text-xs opacity-80">{item.description}</div>
-                    </div>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                );
-              })}
+        {/* Mobile Navigation Dropdown */}
+        {showMobileMenu && (
+          <div className="lg:hidden absolute top-full left-0 right-0 mt-2 mx-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-xl shadow-2xl z-50">
+            <div className="p-4">
+              <div className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Settings Navigation</div>
+              <div className="space-y-2">
+                {navigationItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveTab(item.id);
+                        setShowMobileMenu(false);
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center space-x-3 ${
+                        activeTab === item.id 
+                          ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg" 
+                          : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{item.label}</div>
+                        <div className="text-xs opacity-80">{item.description}</div>
+                      </div>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </DrawerContent>
-        </Drawer>
+          </div>
+        )}
       </div>
     </div>
   );
