@@ -23,8 +23,18 @@ import {
   CheckCircle,
   ArrowRight,
   Globe,
-  Zap
+  Zap,
+  Menu,
+  X,
+  ChevronDown
 } from "lucide-react";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "./ui/drawer";
 
 export function Auth() {
   const { user, loading } = useAuth();
@@ -42,6 +52,8 @@ export function Auth() {
   const [successMessage, setSuccessMessage] = useState("");
   const [formLoading, setFormLoading] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [activeTab, setActiveTab] = useState("signin");
 
   // GSAP refs for animations
   const containerRef = useRef(null);
@@ -134,7 +146,7 @@ export function Auth() {
     handleAuthCallback();
   }, [user, termsAccepted]);
 
-  // Enhanced GSAP animations
+  // Enhanced GSAP animations with mobile considerations
   useEffect(() => {
     if (containerRef.current && authCardRef.current && titleRef.current) {
       const ctx = gsap.context(() => {
@@ -197,11 +209,45 @@ export function Auth() {
           { opacity: 1, x: 0, duration: 0.6, stagger: 0.1, ease: "power2.out" },
           "-=0.6"
         );
+
+        // Mobile-specific animations
+        const isMobile = window.innerWidth < 1024;
+        if (isMobile) {
+          // Add subtle hover animations for mobile
+          gsap.utils.toArray(".mobile-touch-target").forEach(element => {
+            element.addEventListener("touchstart", () => {
+              gsap.to(element, { scale: 0.98, duration: 0.1 });
+            });
+            element.addEventListener("touchend", () => {
+              gsap.to(element, { scale: 1, duration: 0.1 });
+            });
+          });
+
+          // Add form field focus animations
+          gsap.utils.toArray("input").forEach(input => {
+            input.addEventListener("focus", () => {
+              gsap.to(input, { 
+                scale: 1.02, 
+                duration: 0.2, 
+                ease: "power2.out" 
+              });
+            });
+            input.addEventListener("blur", () => {
+              gsap.to(input, { 
+                scale: 1, 
+                duration: 0.2, 
+                ease: "power2.out" 
+              });
+            });
+          });
+        }
       }, containerRef);
 
       return () => ctx.revert();
     }
   }, []);
+
+
 
   // Enhanced floating background
   const FloatingBackground = () => (
@@ -402,19 +448,33 @@ export function Auth() {
     <div ref={containerRef} className={`min-h-screen bg-gradient-to-br ${premiumGradients.background} relative overflow-hidden`}>
       <FloatingBackground />
 
-      {/* Header */}
-      <div className="relative z-10 w-full p-6">
+      {/* Mobile Header */}
+      <div className="relative z-10 w-full p-4 lg:p-6">
         <div className="flex items-center justify-between max-w-6xl mx-auto">
           <div className="flex items-center space-x-3">
-            <div className={`w-10 h-10 bg-gradient-to-r ${premiumGradients.primary} rounded-xl flex items-center justify-center shadow-lg`}>
-              <span className="text-white font-bold text-lg">O</span>
+            <div className={`w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-r ${premiumGradients.primary} rounded-xl flex items-center justify-center shadow-lg`}>
+              <span className="text-white font-bold text-sm lg:text-lg">O</span>
             </div>
-            <span className={`text-2xl font-bold bg-gradient-to-r ${premiumGradients.primary} bg-clip-text text-transparent`}>
+            <span className={`text-xl lg:text-2xl font-bold bg-gradient-to-r ${premiumGradients.primary} bg-clip-text text-transparent`}>
               OFFLY
             </span>
           </div>
           
-          <div className="flex items-center space-x-4">
+          {/* Mobile Menu Button */}
+          <div className="lg:hidden">
+            <DrawerTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`${themeColors.text.secondary} hover:${themeColors.text.primary} p-2`}
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+            </DrawerTrigger>
+          </div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center space-x-4">
             <Button
               variant="ghost"
               onClick={() => navigate("/")}
@@ -425,14 +485,99 @@ export function Auth() {
             </Button>
           </div>
         </div>
+
+        {/* Mobile Menu Drawer */}
+        <Drawer open={showMobileMenu} onOpenChange={setShowMobileMenu}>
+          <DrawerContent className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-slate-200/50 dark:border-slate-700/50">
+            <DrawerHeader className="text-center">
+              <DrawerTitle className={`${themeColors.text.primary} text-lg`}>
+                Navigation
+              </DrawerTitle>
+            </DrawerHeader>
+            <div className="p-6 space-y-4">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  navigate("/");
+                  setShowMobileMenu(false);
+                }}
+                className={`w-full justify-start h-12 ${themeColors.text.secondary} hover:${themeColors.text.primary} text-left`}
+              >
+                <ArrowRight className="w-4 h-4 mr-3 rotate-180" />
+                Back to Home
+              </Button>
+              
+              <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+                <div className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Quick Actions</div>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      setActiveTab("signin");
+                      setIsSignUp(false);
+                      setShowMobileMenu(false);
+                    }}
+                    className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 h-12 flex items-center ${
+                      activeTab === "signin" 
+                        ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg" 
+                        : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                    }`}
+                  >
+                    <User className="w-4 h-4 mr-3" />
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab("signup");
+                      setIsSignUp(true);
+                      setShowMobileMenu(false);
+                    }}
+                    className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 h-12 flex items-center ${
+                      activeTab === "signup" 
+                        ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg" 
+                        : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4 mr-3" />
+                    Create Account
+                  </button>
+                </div>
+              </div>
+              
+              <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+                <div className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Features</div>
+                <div className="space-y-2">
+                  {[
+                    { icon: Heart, title: "Daily Check-ins", desc: "Track your mood and thoughts" },
+                    { icon: Sparkles, title: "AI Insights", desc: "Get personalized recommendations" },
+                    { icon: Shield, title: "Private & Secure", desc: "Your data is encrypted" },
+                    { icon: Globe, title: "Community Support", desc: "Connect with others" }
+                  ].map((feature, index) => {
+                    const Icon = feature.icon;
+                    return (
+                      <div key={index} className="flex items-center space-x-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                        <div className={`w-8 h-8 bg-gradient-to-r ${premiumGradients.secondary} rounded-lg flex items-center justify-center`}>
+                          <Icon className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className={`font-medium text-sm ${themeColors.text.primary}`}>{feature.title}</div>
+                          <div className={`text-xs ${themeColors.text.muted}`}>{feature.desc}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </DrawerContent>
+        </Drawer>
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 flex items-center justify-center min-h-[calc(100vh-120px)] px-6">
-        <div className="w-full max-w-6xl mx-auto flex flex-col-reverse lg:grid lg:grid-cols-2 gap-12 items-center">
+      <div className="relative z-10 flex items-center justify-center min-h-[calc(100vh-120px)] px-4 lg:px-6">
+        <div className="w-full max-w-6xl mx-auto flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           
-          {/* Left Side - Features */}
-          <div className="space-y-8 w-full">
+          {/* Left Side - Features (Hidden on mobile) */}
+          <div className="hidden lg:block space-y-8 w-full">
             <div ref={titleRef} className="space-y-4">
               <h1 className={`text-4xl lg:text-5xl font-bold ${themeColors.text.primary} leading-tight`}>
                 {isSignUp ? "Join the Community" : "Welcome Back"}
@@ -468,23 +613,38 @@ export function Auth() {
             </div>
           </div>
 
+          {/* Mobile Title */}
+          <div className="lg:hidden w-full text-center mb-6">
+            <div ref={titleRef} className="space-y-3">
+              <h1 className={`text-3xl font-bold ${themeColors.text.primary} leading-tight`}>
+                {isSignUp ? "Join the Community" : "Welcome Back"}
+              </h1>
+              <p className={`text-base ${themeColors.text.secondary} leading-relaxed px-4`}>
+                {isSignUp 
+                  ? "Start your wellness journey with personalized insights"
+                  : "Continue your wellness journey with meaningful check-ins"
+                }
+              </p>
+            </div>
+          </div>
+
           {/* Right Side - Auth Form */}
           <div className="flex justify-center w-full">
             <Card ref={authCardRef} className={`w-full max-w-md ${themeColors.card} border shadow-2xl overflow-hidden`}>
-              <div className={`p-8 bg-gradient-to-br ${premiumGradients.primary} relative`}>
+              <div className={`p-6 lg:p-8 bg-gradient-to-br ${premiumGradients.primary} relative`}>
                 <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
                 <div className="relative z-10 text-center text-white">
-                  <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <User className="w-8 h-8" />
+                  <div className="w-12 h-12 lg:w-16 lg:h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <User className="w-6 h-6 lg:w-8 lg:h-8" />
                   </div>
-                  <h2 className="text-2xl font-bold mb-2">
+                  <h2 className="text-xl lg:text-2xl font-bold mb-2">
                     {showUsernameInput
                       ? "Choose Username"
                       : isSignUp
                         ? "Create Account"
                         : "Sign In"}
                   </h2>
-                  <p className="text-white/80">
+                  <p className="text-white/80 text-sm lg:text-base">
                     {showUsernameInput
                       ? "Pick a unique username for your account"
                       : isSignUp
@@ -494,32 +654,32 @@ export function Auth() {
                 </div>
               </div>
 
-              <div className="p-6 sm:p-8">
+              <div className="p-4 lg:p-6 sm:p-8 space-y-6">
                 {error && (
-                  <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-600 dark:text-red-400 text-sm">
+                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 dark:text-red-400 text-sm">
                     {error}
                   </div>
                 )}
 
                 {successMessage && (
-                  <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-green-500/10 border border-green-500/20 rounded-lg text-green-600 dark:text-green-400 text-sm">
+                  <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl text-green-600 dark:text-green-400 text-sm">
                     {successMessage}
                   </div>
                 )}
 
                 {showUsernameInput ? (
                   <form onSubmit={handleUsernameSubmit} className="space-y-6">
-                    <div>
-                      <Label htmlFor="username" className={themeColors.text.secondary}>Username</Label>
-                      <div className="relative mt-2">
-                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <div className="space-y-2">
+                      <Label htmlFor="username" className={`${themeColors.text.secondary} text-sm font-medium`}>Username</Label>
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <Input
                           id="username"
                           type="text"
                           value={username}
                           onChange={(e) => setUsername(e.target.value)}
                           placeholder="Enter your username"
-                          className={`pl-10 h-12 ${themeColors.input}`}
+                          className={`pl-12 h-14 text-base ${themeColors.input} rounded-xl`}
                           required
                         />
                       </div>
@@ -528,14 +688,14 @@ export function Auth() {
                     <Button
                       type="submit"
                       disabled={formLoading || !username.trim()}
-                      className={`w-full h-12 bg-gradient-to-r ${premiumGradients.primary} text-white font-medium rounded-xl transition-all duration-300 hover:shadow-lg disabled:opacity-50`}
+                      className={`w-full h-14 bg-gradient-to-r ${premiumGradients.primary} text-white font-medium rounded-xl transition-all duration-300 hover:shadow-lg disabled:opacity-50 text-base mobile-touch-target`}
                     >
                       {formLoading ? (
-                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent" />
                       ) : (
                         <>
                           Continue
-                          <ArrowRight className="w-4 h-4 ml-2" />
+                          <ArrowRight className="w-5 h-5 ml-2" />
                         </>
                       )}
                     </Button>
@@ -543,39 +703,39 @@ export function Auth() {
                 ) : (
                   <>
                     <form onSubmit={handleEmailPasswordAuth} className="space-y-6">
-                      <div>
-                        <Label htmlFor="email" className={themeColors.text.secondary}>Email</Label>
-                        <div className="relative mt-2">
-                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <div className="space-y-2">
+                        <Label htmlFor="email" className={`${themeColors.text.secondary} text-sm font-medium`}>Email</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                           <Input
                             id="email"
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="Enter your email"
-                            className={`pl-10 h-12 ${themeColors.input}`}
+                            className={`pl-12 h-14 text-base ${themeColors.input} rounded-xl`}
                             required
                           />
                         </div>
                       </div>
 
-                      <div>
-                        <Label htmlFor="password" className={themeColors.text.secondary}>Password</Label>
-                        <div className="relative mt-2">
-                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <div className="space-y-2">
+                        <Label htmlFor="password" className={`${themeColors.text.secondary} text-sm font-medium`}>Password</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                           <Input
                             id="password"
                             type={showPassword ? "text" : "password"}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="Enter your password"
-                            className={`pl-10 pr-10 h-12 ${themeColors.input}`}
+                            className={`pl-12 pr-12 h-14 text-base ${themeColors.input} rounded-xl`}
                             required
                           />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
                           >
                             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                           </button>
@@ -583,29 +743,30 @@ export function Auth() {
                       </div>
 
                       {isSignUp && (
-                        <div>
-                          <Label htmlFor="username" className={themeColors.text.secondary}>Username (Optional)</Label>
-                          <div className="relative mt-2">
-                            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <div className="space-y-2">
+                          <Label htmlFor="username" className={`${themeColors.text.secondary} text-sm font-medium`}>Username (Optional)</Label>
+                          <div className="relative">
+                            <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <Input
                               id="username"
                               type="text"
                               value={username}
                               onChange={(e) => setUsername(e.target.value)}
                               placeholder="Choose a username"
-                              className={`pl-10 h-12 ${themeColors.input}`}
+                              className={`pl-12 h-14 text-base ${themeColors.input} rounded-xl`}
                             />
                           </div>
                         </div>
                       )}
 
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-start space-x-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                         <Checkbox
                           id="terms"
                           checked={termsAccepted}
                           onCheckedChange={setTermsAccepted}
+                          className="mt-1"
                         />
-                        <Label htmlFor="terms" className={`text-sm ${themeColors.text.muted}`}>
+                        <Label htmlFor="terms" className={`text-sm ${themeColors.text.muted} leading-relaxed flex-1`}>
                           I agree to the Terms of Service and Privacy Policy
                         </Label>
                       </div>
@@ -613,26 +774,26 @@ export function Auth() {
                       <Button
                         type="submit"
                         disabled={formLoading || !termsAccepted}
-                        className={`w-full h-12 bg-gradient-to-r ${premiumGradients.primary} text-white font-medium rounded-xl transition-all duration-300 hover:shadow-lg disabled:opacity-50`}
+                        className={`w-full h-14 bg-gradient-to-r ${premiumGradients.primary} text-white font-medium rounded-xl transition-all duration-300 hover:shadow-lg disabled:opacity-50 text-base mobile-touch-target`}
                       >
                         {formLoading ? (
-                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                          <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent" />
                         ) : (
                           <>
                             {isSignUp ? "Create Account" : "Sign In"}
-                            <ArrowRight className="w-4 h-4 ml-2" />
+                            <ArrowRight className="w-5 h-5 ml-2" />
                           </>
                         )}
                       </Button>
                     </form>
 
-                    <div className="mt-6">
+                    <div className="space-y-4">
                       <div className="relative">
                         <div className="absolute inset-0 flex items-center">
                           <div className="w-full border-t border-gray-300 dark:border-gray-600" />
                         </div>
                         <div className="relative flex justify-center text-sm">
-                          <span className={`px-2 bg-white dark:bg-slate-900 ${themeColors.text.muted}`}>
+                          <span className={`px-4 bg-white dark:bg-slate-900 ${themeColors.text.muted}`}>
                             Or continue with
                           </span>
                         </div>
@@ -643,9 +804,9 @@ export function Auth() {
                         variant="outline"
                         onClick={handleGoogleSignIn}
                         disabled={formLoading}
-                        className={`w-full mt-4 h-12 border-2 ${themeColors.text.secondary} hover:${themeColors.text.primary} transition-all duration-300`}
+                        className={`w-full h-14 border-2 ${themeColors.text.secondary} hover:${themeColors.text.primary} transition-all duration-300 rounded-xl text-base mobile-touch-target`}
                       >
-                        <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                           <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                           <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                           <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -655,11 +816,14 @@ export function Auth() {
                       </Button>
                     </div>
 
-                    <div className="mt-6 text-center">
+                    <div className="text-center pt-2">
                       <button
                         type="button"
-                        onClick={() => setIsSignUp(!isSignUp)}
-                        className={`text-sm ${themeColors.text.muted} hover:${themeColors.text.primary} transition-colors duration-300`}
+                        onClick={() => {
+                          setIsSignUp(!isSignUp);
+                          setActiveTab(isSignUp ? "signin" : "signup");
+                        }}
+                        className={`text-sm ${themeColors.text.muted} hover:${themeColors.text.primary} transition-colors duration-300 py-2 px-4 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 mobile-touch-target`}
                       >
                         {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
                       </button>
