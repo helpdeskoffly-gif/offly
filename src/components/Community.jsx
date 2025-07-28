@@ -481,7 +481,77 @@ export const Community = () => {
       <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 justify-center max-w-6xl mx-auto">
         {/* Main Content Area - Posts Feed */}
         <div className="flex-1 max-w-2xl w-full">
-                  {/* Friends Fallback Notification */}
+                  {/* Mobile Friends Suggestions */}
+        <div className="lg:hidden mb-6">
+          <Card className={`${themeColors.card} rounded-2xl border shadow-lg`}>
+            <CardHeader className="pb-3">
+              <CardTitle className={`flex items-center gap-2 ${themeColors.text.primary} text-base`}>
+                <div className={`w-5 h-5 rounded-lg bg-gradient-to-br ${premiumGradients.secondary} flex items-center justify-center`}>
+                  <Heart className="w-2.5 h-2.5 text-white" />
+                </div>
+                <span>Suggested Friends</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {suggestedFriends.length > 0 ? (
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                  {suggestedFriends.slice(0, 4).map((friend) => (
+                    <div key={friend.user_id} className="flex flex-col items-center gap-1.5 min-w-[100px] p-2.5 rounded-lg bg-slate-100/50 dark:bg-slate-800/50 flex-shrink-0">
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage 
+                          src={getUserAvatarUrl({ id: friend.user_id }, { avatar_url: friend.avatar_url })} 
+                          alt={friend.username || friend.full_name} 
+                        />
+                        <AvatarFallback className={`bg-gradient-to-br ${premiumGradients.accent} text-white text-xs`}>
+                          {(friend.username || friend.full_name || 'U').charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      <div className="text-center min-w-0 w-full">
+                        <h4 className={`font-medium ${themeColors.text.primary} text-xs truncate px-1`}>
+                          {friend.username || friend.full_name || 'Anonymous'}
+                        </h4>
+                        {friend.hobby_match_count > 0 && (
+                          <p className={`text-xs ${themeColors.text.muted} truncate px-1`}>
+                            {friend.hobby_match_count} shared hobby{friend.hobby_match_count !== 1 ? 's' : ''}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <Button
+                        onClick={() => handleFollowUser(friend.user_id)}
+                        disabled={loadingFollow.has(friend.user_id)}
+                        size="sm"
+                        className={`h-5 px-2 text-xs ${
+                          followingUsers.has(friend.user_id)
+                            ? `bg-gradient-to-r ${premiumGradients.tertiary} text-white`
+                            : `bg-gradient-to-r ${premiumGradients.secondary} text-white`
+                        }`}
+                      >
+                        {loadingFollow.has(friend.user_id) ? (
+                          <Sparkles className="w-2.5 h-2.5 animate-spin" />
+                        ) : followingUsers.has(friend.user_id) ? (
+                          'Following'
+                        ) : (
+                          'Follow'
+                        )}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <Users className={`w-6 h-6 ${themeColors.text.muted} mx-auto mb-2`} />
+                  <p className={`text-xs ${themeColors.text.muted}`}>
+                    Looking for friends...
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Friends Fallback Notification */}
         {showFriendsFallback && activeTab === 'friends' && (
           <div className={`mb-4 p-4 rounded-xl border ${themeColors.cardVariants.neutral} ${themeColors.text.primary}`}>
             <div className="flex items-center gap-3">
@@ -509,10 +579,10 @@ export const Community = () => {
         {/* Community Tabs */}
         <div className="w-full overflow-hidden">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className={`grid w-full grid-cols-3 bg-slate-800/40 dark:bg-slate-800/40 border border-slate-700/40 dark:border-slate-700/40 rounded-xl p-2 overflow-hidden`}>
-          <TabsTrigger 
-            value="all" 
-            className={`flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg transition-all duration-200 px-3 py-3 min-w-0 ${
+        <div className={`grid w-full grid-cols-3 bg-slate-800/40 dark:bg-slate-800/40 border border-slate-700/40 dark:border-slate-700/40 rounded-xl p-2 overflow-hidden`}>
+          <button
+            onClick={() => handleTabChange('all')}
+            className={`h-14 flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg transition-all duration-200 px-3 min-w-0 ${
               activeTab === 'all' 
                 ? `bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md` 
                 : `text-slate-400 dark:text-slate-400 hover:text-slate-200 dark:hover:text-slate-200`
@@ -520,10 +590,10 @@ export const Community = () => {
           >
             <Globe className="w-3.5 h-3.5 flex-shrink-0" />
             <span className="text-xs font-medium">All</span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="friends"
-            className={`flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg transition-all duration-200 px-3 py-3 min-w-0 ${
+          </button>
+          <button
+            onClick={() => handleTabChange('friends')}
+            className={`h-14 flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg transition-all duration-200 px-3 min-w-0 ${
               activeTab === 'friends' 
                 ? `bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md` 
                 : `text-slate-400 dark:text-slate-400 hover:text-slate-200 dark:hover:text-slate-200`
@@ -531,10 +601,10 @@ export const Community = () => {
           >
             <Users className="w-3.5 h-3.5 flex-shrink-0" />
             <span className="text-xs font-medium">Friends</span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="my_posts"
-            className={`flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg transition-all duration-200 px-3 py-3 min-w-0 ${
+          </button>
+          <button
+            onClick={() => handleTabChange('my_posts')}
+            className={`h-14 flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg transition-all duration-200 px-3 min-w-0 ${
               activeTab === 'my_posts' 
                 ? `bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md` 
                 : `text-slate-400 dark:text-slate-400 hover:text-slate-200 dark:hover:text-slate-200`
@@ -542,8 +612,8 @@ export const Community = () => {
           >
             <User className="w-3.5 h-3.5 flex-shrink-0" />
             <span className="text-xs font-medium">Mine</span>
-          </TabsTrigger>
-        </TabsList>
+          </button>
+        </div>
 
         {/* Tab Content */}
         <TabsContent value={activeTab} className="mt-6">
@@ -640,7 +710,31 @@ export const Community = () => {
 
                   {/* Post Content */}
                   <div className={`text-base sm:text-lg ${themeColors.text.primary} mb-6 leading-relaxed break-words`}>
-                    {post.content}
+                    {post.content.length > 200 ? (
+                      <div>
+                        <div className="line-clamp-3">
+                          {post.content.substring(0, 200)}...
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="mt-2 text-blue-500 hover:text-blue-600 p-0 h-auto"
+                          onClick={() => {
+                            // Toggle full content view
+                            const contentElement = document.querySelector(`[data-post-content="${post.community_post_id}"]`);
+                            if (contentElement) {
+                              contentElement.classList.toggle('line-clamp-3');
+                            }
+                          }}
+                        >
+                          Read more
+                        </Button>
+                      </div>
+                    ) : (
+                      <div data-post-content={post.community_post_id}>
+                        {post.content}
+                      </div>
+                    )}
                   </div>
 
                   {/* Hashtags */}
@@ -749,8 +843,8 @@ export const Community = () => {
         </div>
         </div>
 
-        {/* Sidebar - Friends Suggestions (Instagram-style) */}
-        <div className="w-full lg:w-80">
+        {/* Sidebar - Friends Suggestions (Desktop only) */}
+        <div className="w-full lg:w-80 hidden lg:block">
           <div className="sticky top-8">
             <Card className={`${themeColors.card} rounded-2xl border shadow-lg`}>
               <CardHeader className="pb-4">

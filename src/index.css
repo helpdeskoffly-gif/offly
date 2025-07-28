@@ -221,6 +221,16 @@ motion-div,
     background-color: rgb(51 65 85);
 }
 
+/* Hide scrollbar utility */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
 /* Container constraint utilities */
 .contain-layout {
     contain: layout;
