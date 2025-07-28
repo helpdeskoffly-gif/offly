@@ -187,11 +187,12 @@ export const getCommunityFeed = async (userId, options = {}) => {
       
       if (error) {
         console.warn('Friends feed failed, falling back to all posts:', error);
-        return await getCommunityFeed(userId, { ...options, algorithm: 'all_posts' });
+        // Return empty data for friends tab if the function doesn't exist
+        return { data: [], hasMore: false };
       }
       
       // Check if user has liked each post
-      const postIds = data.map(post => post.post_id);
+      const postIds = data.map(post => post.community_post_id);
       if (postIds.length > 0) {
         const { data: userLikes, error: likesError } = await supabase
           .from('community_likes')
@@ -203,7 +204,7 @@ export const getCommunityFeed = async (userId, options = {}) => {
           const likedPostIds = new Set(userLikes.map(like => like.post_id));
           const postsWithLikeStatus = data.map(post => ({
             ...post,
-            user_has_liked: likedPostIds.has(post.post_id)
+            user_has_liked: likedPostIds.has(post.community_post_id)
           }));
           return { data: postsWithLikeStatus, hasMore: data.length === limit };
         }
@@ -212,10 +213,35 @@ export const getCommunityFeed = async (userId, options = {}) => {
       return { data, hasMore: data.length === limit };
     } else if (algorithm === 'my_posts') {
       // Get user's own posts
-      query = supabase
+      const { data, error } = await supabase
         .from('community_post_stats')
         .select('*')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+      
+      if (error) throw error;
+      
+      // Check if user has liked each post
+      const postIds = data.map(post => post.community_post_id);
+      if (postIds.length > 0) {
+        const { data: userLikes, error: likesError } = await supabase
+          .from('community_likes')
+          .select('post_id')
+          .eq('user_id', userId)
+          .in('post_id', postIds);
+        
+        if (!likesError) {
+          const likedPostIds = new Set(userLikes.map(like => like.post_id));
+          const postsWithLikeStatus = data.map(post => ({
+            ...post,
+            user_has_liked: likedPostIds.has(post.community_post_id)
+          }));
+          return { data: postsWithLikeStatus, hasMore: data.length === limit };
+        }
+      }
+      
+      return { data, hasMore: data.length === limit };
     } else {
       // All posts except user's own (original behavior for "For You" tab)
       // Use personalized feed if available, otherwise recent
@@ -230,15 +256,17 @@ export const getCommunityFeed = async (userId, options = {}) => {
       if (error) {
         console.warn('Personalized feed failed, falling back to recent:', error);
         // Fallback to recent if personalized fails
-        query = supabase
+        const { data, error: fallbackError } = await supabase
           .from('community_post_stats')
           .select('*')
           .neq('user_id', userId)
           .order('created_at', { ascending: false })
           .range(offset, offset + limit - 1);
-      } else {
+        
+        if (fallbackError) throw fallbackError;
+        
         // Check if user has liked each post
-        const postIds = data.map(post => post.post_id);
+        const postIds = data.map(post => post.community_post_id);
         if (postIds.length > 0) {
           const { data: userLikes, error: likesError } = await supabase
             .from('community_likes')
@@ -250,7 +278,28 @@ export const getCommunityFeed = async (userId, options = {}) => {
             const likedPostIds = new Set(userLikes.map(like => like.post_id));
             const postsWithLikeStatus = data.map(post => ({
               ...post,
-              user_has_liked: likedPostIds.has(post.post_id)
+              user_has_liked: likedPostIds.has(post.community_post_id)
+            }));
+            return { data: postsWithLikeStatus, hasMore: data.length === limit };
+          }
+        }
+        
+        return { data, hasMore: data.length === limit };
+      } else {
+        // Check if user has liked each post
+        const postIds = data.map(post => post.community_post_id);
+        if (postIds.length > 0) {
+          const { data: userLikes, error: likesError } = await supabase
+            .from('community_likes')
+            .select('post_id')
+            .eq('user_id', userId)
+            .in('post_id', postIds);
+          
+          if (!likesError) {
+            const likedPostIds = new Set(userLikes.map(like => like.post_id));
+            const postsWithLikeStatus = data.map(post => ({
+              ...post,
+              user_has_liked: likedPostIds.has(post.community_post_id)
             }));
             return { data: postsWithLikeStatus, hasMore: data.length === limit };
           }
@@ -260,39 +309,7 @@ export const getCommunityFeed = async (userId, options = {}) => {
       }
     }
     
-    // For non-personalized queries
-    if (query) {
-      // Filter by hashtags if provided
-      if (hashtags.length > 0) {
-        query = query.overlaps('hashtags', hashtags);
-      }
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      
-      // Check if user has liked each post
-      const postIds = data.map(post => post.post_id);
-      if (postIds.length > 0) {
-        const { data: userLikes, error: likesError } = await supabase
-          .from('community_likes')
-          .select('post_id')
-          .eq('user_id', userId)
-          .in('post_id', postIds);
-        
-        if (likesError) throw likesError;
-        
-        const likedPostIds = new Set(userLikes.map(like => like.post_id));
-        
-        const postsWithLikeStatus = data.map(post => ({
-          ...post,
-          user_has_liked: likedPostIds.has(post.post_id)
-        }));
-        
-        return { data: postsWithLikeStatus, hasMore: data.length === limit };
-      }
-      
-      return { data, hasMore: data.length === limit };
-    }
+
   });
 };
 

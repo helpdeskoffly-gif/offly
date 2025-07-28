@@ -68,6 +68,7 @@ export const Community = () => {
   // Post management state
   const [deletingPosts, setDeletingPosts] = useState(new Set());
   const [openMenus, setOpenMenus] = useState(new Set());
+  const [showFriendsFallback, setShowFriendsFallback] = useState(false);
   
 
   
@@ -197,8 +198,33 @@ export const Community = () => {
         setHasMore(result.hasMore);
       } else {
         console.error('Feed result not successful:', result);
-        setPosts([]);
-        setHasMore(false);
+        // Show user-friendly error message
+        if (activeTab === 'friends') {
+          console.log('Friends feed not available, showing all posts instead');
+          setShowFriendsFallback(true);
+          // Fallback to all posts for friends tab
+          const fallbackResult = await getCommunityFeed(user.id, {
+            limit: 20,
+            offset: currentOffset,
+            algorithm: 'all_posts'
+          });
+          if (fallbackResult && fallbackResult.success) {
+            if (reset) {
+              setPosts(fallbackResult.data || []);
+              setOffset(20);
+            } else {
+              setPosts(prev => [...prev, ...(fallbackResult.data || [])]);
+              setOffset(prev => prev + 20);
+            }
+            setHasMore(fallbackResult.hasMore);
+          } else {
+            setPosts([]);
+            setHasMore(false);
+          }
+        } else {
+          setPosts([]);
+          setHasMore(false);
+        }
       }
     } catch (error) {
       console.error('Error loading feed:', error);
@@ -257,6 +283,7 @@ export const Community = () => {
     setOffset(0);
     setPosts([]);
     setHasMore(true);
+    setShowFriendsFallback(false);
   };
 
   const handleFollowUser = async (userId) => {
@@ -297,7 +324,7 @@ export const Community = () => {
       
       if (result.success) {
         setPosts(prev => prev.map(post => {
-          if (post.post_id === postId) {
+          if (post.community_post_id === postId) {
             return {
               ...post,
               user_has_liked: result.liked,
@@ -353,7 +380,7 @@ export const Community = () => {
       
       if (result.success) {
         // Remove post from local state
-        setPosts(prev => prev.filter(post => post.post_id !== postId));
+        setPosts(prev => prev.filter(post => post.community_post_id !== postId));
         
         // Show success feedback with GSAP animation
         const successElement = document.createElement('div');
@@ -451,48 +478,71 @@ export const Community = () => {
       </div>
 
       {/* Instagram-style Layout: Main Content + Sidebar */}
-      <div className="flex gap-8 justify-center max-w-6xl mx-auto">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 justify-center max-w-6xl mx-auto">
         {/* Main Content Area - Posts Feed */}
-        <div className="flex-1 max-w-2xl">
-          {/* Community Tabs */}
+        <div className="flex-1 max-w-2xl w-full">
+                  {/* Friends Fallback Notification */}
+        {showFriendsFallback && activeTab === 'friends' && (
+          <div className={`mb-4 p-4 rounded-xl border ${themeColors.cardVariants.neutral} ${themeColors.text.primary}`}>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <Users className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="font-medium">Friends feed temporarily unavailable</p>
+                <p className={`text-sm ${themeColors.text.secondary}`}>
+                  Showing all community posts instead. Follow some friends to see their posts here!
+                </p>
+              </div>
+              <Button
+                onClick={() => setShowFriendsFallback(false)}
+                variant="ghost"
+                size="sm"
+                className="text-slate-400 hover:text-slate-200"
+              >
+                ×
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Community Tabs */}
+        <div className="w-full overflow-hidden">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className={`grid w-full grid-cols-3 bg-slate-800/40 dark:bg-slate-800/40 border border-slate-700/40 dark:border-slate-700/40 rounded-xl p-1`}>
+        <TabsList className={`grid w-full grid-cols-3 bg-slate-800/40 dark:bg-slate-800/40 border border-slate-700/40 dark:border-slate-700/40 rounded-xl p-2 overflow-hidden`}>
           <TabsTrigger 
             value="all" 
-            className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium rounded-lg transition-all duration-200 px-2 py-2 md:px-4 md:py-2 ${
+            className={`flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg transition-all duration-200 px-3 py-3 min-w-0 ${
               activeTab === 'all' 
                 ? `bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md` 
                 : `text-slate-400 dark:text-slate-400 hover:text-slate-200 dark:hover:text-slate-200`
             }`}
           >
-            <Globe className="w-3 h-3 md:w-4 md:h-4" />
-            <span className="hidden md:inline">All Offly Posts</span>
-            <span className="md:hidden">All</span>
+            <Globe className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="text-xs font-medium">All</span>
           </TabsTrigger>
           <TabsTrigger 
             value="friends"
-            className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium rounded-lg transition-all duration-200 px-2 py-2 md:px-4 md:py-2 ${
+            className={`flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg transition-all duration-200 px-3 py-3 min-w-0 ${
               activeTab === 'friends' 
                 ? `bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md` 
                 : `text-slate-400 dark:text-slate-400 hover:text-slate-200 dark:hover:text-slate-200`
             }`}
           >
-            <Users className="w-3 h-3 md:w-4 md:h-4" />
-            <span className="hidden md:inline">Friends</span>
-            <span className="md:hidden">Friends</span>
+            <Users className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="text-xs font-medium">Friends</span>
           </TabsTrigger>
-                     <TabsTrigger 
-             value="my_posts"
-             className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium rounded-lg transition-all duration-200 px-2 py-2 md:px-4 md:py-2 ${
-               activeTab === 'my_posts' 
-                 ? `bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md` 
-                 : `text-slate-400 dark:text-slate-400 hover:text-slate-200 dark:hover:text-slate-200`
-             }`}
-           >
-             <User className="w-3 h-3 md:w-4 md:h-4" />
-             <span className="hidden md:inline">My Posts</span>
-             <span className="md:hidden">Mine</span>
-           </TabsTrigger>
+          <TabsTrigger 
+            value="my_posts"
+            className={`flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg transition-all duration-200 px-3 py-3 min-w-0 ${
+              activeTab === 'my_posts' 
+                ? `bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md` 
+                : `text-slate-400 dark:text-slate-400 hover:text-slate-200 dark:hover:text-slate-200`
+            }`}
+          >
+            <User className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="text-xs font-medium">Mine</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* Tab Content */}
@@ -501,48 +551,48 @@ export const Community = () => {
           <div className="space-y-6">
             {posts.map((post, index) => (
               <Card
-                key={post.post_id}
+                key={post.community_post_id}
                 className={`community-post ${themeColors.card} ${themeColors.cardHover} rounded-2xl border-0 shadow-xl transition-all duration-300 transform hover:scale-[1.01] overflow-hidden`}
               >
-                <CardContent className="p-8">
+                <CardContent className="p-4 sm:p-6 lg:p-8">
                   {/* Post Header */}
                   <div className="flex items-start justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="w-12 h-12 border-2 border-white/20">
-                        <AvatarImage 
-                          src={getUserAvatarUrl({ id: post.user_id }, { avatar_url: post.avatar_url })} 
-                          alt={post.username || post.full_name} 
-                        />
-                        <AvatarFallback className={`bg-gradient-to-br ${premiumGradients.secondary} text-white font-semibold`}>
-                          {(post.username || post.full_name || 'U').charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className={`font-semibold ${themeColors.text.primary}`}>
-                            {post.username || post.full_name || 'Anonymous'}
-                          </h4>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Clock className={`w-3 h-3 ${themeColors.text.muted}`} />
-                          <span className={themeColors.text.muted}>
-                            {formatTimeAgo(post.created_at)}
-                          </span>
-                        </div>
+                                      <div className="flex items-center gap-3 min-w-0">
+                    <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-white/20 flex-shrink-0">
+                      <AvatarImage 
+                        src={getUserAvatarUrl({ id: post.user_id }, { avatar_url: post.avatar_url })} 
+                        alt={post.username || post.full_name} 
+                      />
+                      <AvatarFallback className={`bg-gradient-to-br ${premiumGradients.secondary} text-white font-semibold text-sm sm:text-base`}>
+                        {(post.username || post.full_name || 'U').charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className={`font-semibold ${themeColors.text.primary} text-sm sm:text-base truncate`}>
+                          {post.username || post.full_name || 'Anonymous'}
+                        </h4>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs sm:text-sm">
+                        <Clock className={`w-3 h-3 ${themeColors.text.muted} flex-shrink-0`} />
+                        <span className={`${themeColors.text.muted} truncate`}>
+                          {formatTimeAgo(post.created_at)}
+                        </span>
                       </div>
                     </div>
+                  </div>
                     
                     {post.user_id === user.id && (
                       <Popover 
-                        open={openMenus.has(post.post_id)}
+                        open={openMenus.has(post.community_post_id)}
                         onOpenChange={(open) => {
                           if (open) {
-                            toggleMenu(post.post_id);
+                            toggleMenu(post.community_post_id);
                           } else {
                             setOpenMenus(prev => {
                               const newSet = new Set(prev);
-                              newSet.delete(post.post_id);
+                              newSet.delete(post.community_post_id);
                               return newSet;
                             });
                           }
@@ -553,9 +603,9 @@ export const Community = () => {
                             variant="ghost"
                             size="sm"
                             className={`${themeColors.text.muted} hover:${themeColors.text.primary} h-8 w-8 rounded-lg`}
-                            disabled={deletingPosts.has(post.post_id)}
+                            disabled={deletingPosts.has(post.community_post_id)}
                           >
-                            {deletingPosts.has(post.post_id) ? (
+                            {deletingPosts.has(post.community_post_id) ? (
                               <Sparkles className="w-4 h-4 animate-spin" />
                             ) : (
                               <MoreVertical className="w-4 h-4" />
@@ -568,8 +618,8 @@ export const Community = () => {
                           side="bottom"
                         >
                           <Button
-                            onClick={() => handleDeletePost(post.post_id)}
-                            disabled={deletingPosts.has(post.post_id)}
+                            onClick={() => handleDeletePost(post.community_post_id)}
+                            disabled={deletingPosts.has(post.community_post_id)}
                             variant="ghost"
                             className={`w-full flex items-center gap-2 px-3 py-2 text-sm justify-start hover:bg-red-500/10 text-red-600 dark:text-red-400 focus:bg-red-500/10 rounded-md`}
                           >
@@ -583,26 +633,26 @@ export const Community = () => {
 
                   {/* Post Title */}
                   {post.title && (
-                    <h3 className={`text-xl font-semibold ${themeColors.text.primary} mb-4`}>
+                    <h3 className={`text-lg sm:text-xl font-semibold ${themeColors.text.primary} mb-4 break-words`}>
                       {post.title}
                     </h3>
                   )}
 
                   {/* Post Content */}
-                  <div className={`text-lg ${themeColors.text.primary} mb-6 leading-relaxed`}>
+                  <div className={`text-base sm:text-lg ${themeColors.text.primary} mb-6 leading-relaxed break-words`}>
                     {post.content}
                   </div>
 
                   {/* Hashtags */}
                   {post.hashtags && post.hashtags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-6">
+                    <div className="flex flex-wrap gap-1 sm:gap-2 mb-6">
                       {post.hashtags.map((hashtag, idx) => (
                         <Button
                           key={idx}
                           onClick={() => handleHashtagClick(hashtag)}
                           variant="outline"
                           size="sm"
-                          className={`rounded-full text-xs border-2 ${theme === 'dark' ? 'hover:bg-slate-700/50' : 'hover:bg-slate-100/50'}`}
+                          className={`rounded-full text-xs border-2 px-2 py-1 ${theme === 'dark' ? 'hover:bg-slate-700/50' : 'hover:bg-slate-100/50'}`}
                         >
                           #{hashtag}
                         </Button>
@@ -612,13 +662,13 @@ export const Community = () => {
 
                   {/* Post Actions */}
                   <div className="flex items-center justify-between pt-6 border-t border-slate-200/10">
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-4 sm:gap-6">
                       <Button
-                        onClick={() => handleLikePost(post.post_id, post.user_has_liked)}
+                        onClick={() => handleLikePost(post.community_post_id, post.user_has_liked)}
                         variant="ghost"
                         size="sm"
-                        data-like-btn={post.post_id}
-                        className={`flex items-center gap-2 h-10 px-4 rounded-xl transition-all duration-300 ${
+                        data-like-btn={post.community_post_id}
+                        className={`flex items-center gap-2 h-8 sm:h-10 px-3 sm:px-4 rounded-xl transition-all duration-300 ${
                           post.user_has_liked
                             ? `text-red-500 bg-red-500/10 hover:bg-red-500/20`
                             : `${themeColors.text.muted} hover:${themeColors.text.primary} hover:bg-red-500/10`
@@ -627,7 +677,7 @@ export const Community = () => {
                         <Heart 
                           className={`w-4 h-4 ${post.user_has_liked ? 'fill-current' : ''}`} 
                         />
-                        <span className="font-medium">{post.like_count || 0}</span>
+                        <span className="font-medium text-sm sm:text-base">{post.like_count || 0}</span>
                       </Button>
                     </div>
                   </div>
@@ -652,26 +702,55 @@ export const Community = () => {
           {!loading && posts.length === 0 && (
             <Card className={`${themeColors.cardVariants.neutral} rounded-2xl border-0 shadow-lg`}>
               <CardContent className="p-12 text-center">
-                <Users className={`w-16 h-16 ${themeColors.text.muted} mx-auto mb-4`} />
-                <h3 className={`text-xl font-semibold ${themeColors.text.primary} mb-2`}>
-                  {activeTab === 'friends' && 'No posts from friends yet'}
-                  {activeTab === 'my_posts' && 'You haven\'t posted anything yet'}
-                  {activeTab === 'all' && 'No posts yet'}
-                </h3>
-                <p className={`${themeColors.text.secondary} mb-6`}>
-                  {activeTab === 'friends' && 'Follow some friends to see their posts here!'}
-                  {activeTab === 'my_posts' && 'Complete activities or check-ins to share with the community!'}
-                  {activeTab === 'all' && 'Be the first to share something with the community!'}
-                </p>
+                {activeTab === 'my_posts' ? (
+                  <div>
+                    <div className={`w-16 h-16 ${themeColors.text.muted} mx-auto mb-4 rounded-full bg-gradient-to-br ${premiumGradients.secondary} flex items-center justify-center`}>
+                      <User className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className={`text-xl font-semibold ${themeColors.text.primary} mb-2`}>
+                      You haven't posted anything yet
+                    </h3>
+                    <p className={`${themeColors.text.secondary} mb-6`}>
+                      Complete activities or check-ins to share with the community! Try completing an anti-todo or doing a mood check-in.
+                    </p>
+                    <div className="flex gap-3 justify-center">
+                      <Button 
+                        onClick={() => window.location.href = '/dashboard'}
+                        className={`bg-gradient-to-r ${premiumGradients.secondary} text-white`}
+                      >
+                        Go to Dashboard
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => setActiveTab('all')}
+                      >
+                        Browse Community
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <Users className={`w-16 h-16 ${themeColors.text.muted} mx-auto mb-4`} />
+                    <h3 className={`text-xl font-semibold ${themeColors.text.primary} mb-2`}>
+                      {activeTab === 'friends' && 'No posts from friends yet'}
+                      {activeTab === 'all' && 'No posts yet'}
+                    </h3>
+                    <p className={`${themeColors.text.secondary} mb-6`}>
+                      {activeTab === 'friends' && 'Follow some friends to see their posts here! You can find suggested friends in the sidebar.'}
+                      {activeTab === 'all' && 'Be the first to share something with the community!'}
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
         </TabsContent>
       </Tabs>
         </div>
+        </div>
 
         {/* Sidebar - Friends Suggestions (Instagram-style) */}
-        <div className="w-80 hidden lg:block">
+        <div className="w-full lg:w-80">
           <div className="sticky top-8">
             <Card className={`${themeColors.card} rounded-2xl border shadow-lg`}>
               <CardHeader className="pb-4">
