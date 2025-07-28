@@ -183,6 +183,7 @@ const Dashboard = () => {
     }
     return false;
   });
+  const [showPlantGarden, setShowPlantGarden] = useState(false);
   const [profileCompletion, setProfileCompletion] = useState({
     isCompleted: false,
     hasBasicInfo: false,
@@ -424,7 +425,7 @@ const Dashboard = () => {
     },
     {
       id: "Achievements",
-      label: "Plant Garden",
+      label: "Achievements",
       icon: Trophy,
       color: "text-gray-600",
       bgColor: "bg-gray-500/10",
@@ -2042,7 +2043,35 @@ const Dashboard = () => {
         return <Community />;
 
       case "Achievements":
-        return <Achievements />;
+        return (
+          <div className="space-y-4 sm:space-y-8 p-3 sm:p-6">
+            <div className="text-center py-12 sm:py-20">
+              <div className="mb-6 sm:mb-8">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center mb-4">
+                  <Trophy className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+                </div>
+                <h1 className={`text-2xl sm:text-3xl font-bold ${themeColors.text.primary} mb-2`}>
+                  Achievements
+                </h1>
+                <p className={`text-sm sm:text-base ${themeColors.text.secondary} max-w-md mx-auto`}>
+                  Track your accomplishments and milestones on your wellness journey
+                </p>
+              </div>
+              
+              <div className={`p-6 sm:p-8 rounded-xl ${theme === 'dark' ? 'bg-slate-800/50 border border-slate-700/50' : 'bg-white/70 border border-slate-200/60'} backdrop-blur-sm shadow-lg max-w-md mx-auto`}>
+                <div className="text-center space-y-4">
+                  <div className="text-4xl sm:text-5xl mb-4">🏆</div>
+                  <h2 className={`text-lg sm:text-xl font-semibold ${themeColors.text.primary}`}>
+                    Coming Soon
+                  </h2>
+                  <p className={`text-sm ${themeColors.text.secondary}`}>
+                    Achievement system will be available soon. Stay tuned for exciting rewards and milestones!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
 
       default:
         return null;
@@ -2113,6 +2142,17 @@ const Dashboard = () => {
             {/* User Actions */}
             <div className="flex items-center space-x-2 sm:space-x-3">
               <NotificationPanel />
+              
+              {/* Plant Icon */}
+              <div 
+                onClick={() => setShowPlantGarden(true)}
+                className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-slate-700/50 backdrop-blur-sm border border-slate-600/30 rounded-lg sm:rounded-xl hover:bg-slate-600/50 hover:border-slate-500/50 transition-all duration-300 cursor-pointer group"
+              >
+                <span className="text-emerald-400 text-base sm:text-lg group-hover:text-emerald-300 transition-colors duration-300">
+                  🌱
+                </span>
+              </div>
+              
               <ProfileDropdown />
             </div>
           </div>
@@ -2239,6 +2279,38 @@ const Dashboard = () => {
           await loadNotifications();
         }}
       />
+
+      {/* Plant Garden Modal */}
+      {showPlantGarden && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowPlantGarden(false)} />
+          <div className={`relative w-full max-w-6xl max-h-[95vh] overflow-hidden ${themeColors.card} rounded-2xl shadow-2xl border`}>
+            <div className="flex items-center justify-between p-6 border-b border-slate-200/20">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl flex items-center justify-center">
+                  <span className="text-white text-xl">🌱</span>
+                </div>
+                <div>
+                  <h2 className={`text-xl font-bold ${themeColors.text.primary}`}>Plant Garden</h2>
+                  <p className={`text-sm ${themeColors.text.secondary}`}>Grow your wellness journey</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPlantGarden(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="overflow-y-auto max-h-[calc(95vh-120px)]">
+              <Achievements />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
