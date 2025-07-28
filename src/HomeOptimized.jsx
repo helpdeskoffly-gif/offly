@@ -1,11 +1,4 @@
-import React, {
-  useState,
-  useMemo,
-  useCallback,
-  Suspense,
-  useRef,
-  useEffect,
-} from "react";
+import React, { useMemo, useCallback, Suspense, useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useAuth } from "./hooks/useAuth";
@@ -16,8 +9,6 @@ import { useOptimizedInView } from "./hooks/useOptimizedInView";
 // Optimized imports
 import {
   containerVariants,
-  itemVariants,
-  fastCardVariants,
   OptimizedMotionDiv,
   animateContainer,
   animateItem,
@@ -51,7 +42,7 @@ export function HomeOptimized() {
   const { user } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
-  const [activeFeature, setActiveFeature] = useState(0);
+  
 
   // Debug user state
   useEffect(() => {
@@ -207,14 +198,7 @@ export function HomeOptimized() {
 
 // Memoized Hero Section Component
 const HeroSection = React.memo(
-  ({
-    theme,
-    themeColors,
-    premiumGradients,
-    handleJoinWaitlist,
-    handleWatchDemo,
-    user,
-  }) => {
+  ({ theme, themeColors, premiumGradients, handleJoinWaitlist, handleWatchDemo, user }) => {
     const { ref, inView } = useOptimizedInView();
 
     return (
@@ -225,9 +209,9 @@ const HeroSection = React.memo(
         <div className="max-w-7xl mx-auto w-full">
           <OptimizedMotionDiv
             className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center"
-            variants={containerVariants}
             initial="hidden"
             animate={inView ? "visible" : "hidden"}
+            variants={containerVariants}
           >
             {/* Left Content */}
             <div

@@ -17,7 +17,6 @@ const CheckinDrawer = ({
   showCheckinDrawer,
   setShowCheckinDrawer,
   handleCheckinSubmit,
-  theme,
   isSubmitting,
 }) => {
   const [selectedMood, setSelectedMood] = useState("");
@@ -25,7 +24,6 @@ const CheckinDrawer = ({
   const [selectedSuggestion, setSelectedSuggestion] = useState("");
   const contentRef = useRef(null);
 
-  const { user } = useAuth();
   const { theme: currentTheme } = useTheme();
 
   // 10 emojis in a horizontal row
@@ -119,8 +117,9 @@ const CheckinDrawer = ({
 
     const finalNotes = notes.trim() || selectedSuggestion;
 
-    // The original handleCheckinSubmit is removed to prevent automatic point awards.
-    // The drawer is now closed directly.
+    // Call the passed handleCheckinSubmit prop
+    await handleCheckinSubmit(selectedMood, finalNotes);
+
     setShowCheckinDrawer(false);
 
     // Reset form after closing

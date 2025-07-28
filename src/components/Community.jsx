@@ -421,27 +421,18 @@ export const Community = () => {
   };
 
   const formatTimeAgo = (dateString) => {
-    const date = new Date(dateString);
     const now = new Date();
-    const diff = now - date;
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
+    const date = new Date(dateString);
+    const diffInSeconds = Math.floor((now - date) / 1000);
     
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString();
+    if (diffInSeconds < 60) return 'just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return `${Math.floor(diffInSeconds / 2592000)}mo ago`;
   };
 
-  const getPostTypeIcon = (contentType, sourceType) => {
-    if (sourceType === 'anti_todo') return '🎯';
-    if (sourceType === 'checkin') return '💭';
-    return '✨';
-  };
-
-    return (
+  return (
     <div ref={containerRef} className="min-h-screen">
       {/* Header */}
       <div ref={headerRef} className={`${themeColors.card} rounded-2xl border shadow-lg mb-8`}>
@@ -465,39 +456,42 @@ export const Community = () => {
         <div className="flex-1 max-w-2xl">
           {/* Community Tabs */}
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className={`grid w-full grid-cols-3 ${themeColors.cardVariants.neutral} rounded-xl p-1`}>
+        <TabsList className={`grid w-full grid-cols-3 bg-slate-800/40 dark:bg-slate-800/40 border border-slate-700/40 dark:border-slate-700/40 rounded-xl p-1`}>
           <TabsTrigger 
             value="all" 
-            className={`flex items-center gap-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+            className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium rounded-lg transition-all duration-200 px-2 py-2 md:px-4 md:py-2 ${
               activeTab === 'all' 
                 ? `bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md` 
-                : `${themeColors.text.secondary} hover:${themeColors.text.primary}`
+                : `text-slate-400 dark:text-slate-400 hover:text-slate-200 dark:hover:text-slate-200`
             }`}
           >
-            <Globe className="w-4 h-4" />
-            All Offly Posts
+            <Globe className="w-3 h-3 md:w-4 md:h-4" />
+            <span className="hidden md:inline">All Offly Posts</span>
+            <span className="md:hidden">All</span>
           </TabsTrigger>
           <TabsTrigger 
             value="friends"
-            className={`flex items-center gap-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+            className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium rounded-lg transition-all duration-200 px-2 py-2 md:px-4 md:py-2 ${
               activeTab === 'friends' 
                 ? `bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md` 
-                : `${themeColors.text.secondary} hover:${themeColors.text.primary}`
+                : `text-slate-400 dark:text-slate-400 hover:text-slate-200 dark:hover:text-slate-200`
             }`}
           >
-            <Users className="w-4 h-4" />
-            Friends
+            <Users className="w-3 h-3 md:w-4 md:h-4" />
+            <span className="hidden md:inline">Friends</span>
+            <span className="md:hidden">Friends</span>
           </TabsTrigger>
                      <TabsTrigger 
              value="my_posts"
-             className={`flex items-center gap-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+             className={`flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium rounded-lg transition-all duration-200 px-2 py-2 md:px-4 md:py-2 ${
                activeTab === 'my_posts' 
                  ? `bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md` 
-                 : `${themeColors.text.secondary} hover:${themeColors.text.primary}`
+                 : `text-slate-400 dark:text-slate-400 hover:text-slate-200 dark:hover:text-slate-200`
              }`}
            >
-             <User className="w-4 h-4" />
-             My Posts
+             <User className="w-3 h-3 md:w-4 md:h-4" />
+             <span className="hidden md:inline">My Posts</span>
+             <span className="md:hidden">Mine</span>
            </TabsTrigger>
         </TabsList>
 
@@ -529,9 +523,6 @@ export const Community = () => {
                           <h4 className={`font-semibold ${themeColors.text.primary}`}>
                             {post.username || post.full_name || 'Anonymous'}
                           </h4>
-                          <span className="text-2xl">
-                            {getPostTypeIcon(post.content_type, post.source_type)}
-                          </span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <Clock className={`w-3 h-3 ${themeColors.text.muted}`} />
@@ -638,41 +629,6 @@ export const Community = () => {
                         />
                         <span className="font-medium">{post.like_count || 0}</span>
                       </Button>
-                      
-
-                      
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`flex items-center gap-2 h-10 px-4 rounded-xl ${themeColors.text.muted} hover:${themeColors.text.primary} hover:bg-emerald-500/10 transition-all duration-300`}
-                      >
-                        <Share2 className="w-4 h-4" />
-                      </Button>
-                      
-                      {/* Reaction Buttons */}
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={`flex items-center gap-1 h-8 px-2 rounded-lg ${themeColors.text.muted} hover:${themeColors.text.primary} hover:bg-yellow-500/10 transition-all duration-300`}
-                        >
-                          <span className="text-sm">😊</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={`flex items-center gap-1 h-8 px-2 rounded-lg ${themeColors.text.muted} hover:${themeColors.text.primary} hover:bg-blue-500/10 transition-all duration-300`}
-                        >
-                          <span className="text-sm">❤️</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={`flex items-center gap-1 h-8 px-2 rounded-lg ${themeColors.text.muted} hover:${themeColors.text.primary} hover:bg-green-500/10 transition-all duration-300`}
-                        >
-                          <span className="text-sm">👍</span>
-                        </Button>
-                      </div>
                     </div>
                   </div>
 
@@ -802,11 +758,9 @@ export const Community = () => {
                 )}
               </CardContent>
             </Card>
-
-
           </div>
         </div>
       </div>
     </div>
   );
-}; 
+};

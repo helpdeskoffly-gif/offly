@@ -450,54 +450,6 @@ export const togglePostLike = async (userId, postId) => {
   });
 };
 
-// Add a comment to a post
-export const addComment = async (userId, postId, content, parentCommentId = null) => {
-  return safeCommunityOperation(async () => {
-    const { data, error } = await supabase
-      .from('community_comments')
-      .insert([{
-        user_id: userId,
-        post_id: postId,
-        content: content,
-        parent_comment_id: parentCommentId,
-        created_at: new Date().toISOString()
-      }])
-      .select(`
-        *,
-        users (
-          username,
-          full_name,
-          avatar_url
-        )
-      `)
-      .single();
-    
-    if (error) throw error;
-    return { data };
-  });
-};
-
-// Get comments for a post
-export const getPostComments = async (postId) => {
-  return safeCommunityOperation(async () => {
-    const { data, error } = await supabase
-      .from('community_comments')
-      .select(`
-        *,
-        users (
-          username,
-          full_name,
-          avatar_url
-        )
-      `)
-      .eq('post_id', postId)
-      .order('created_at', { ascending: true });
-    
-    if (error) throw error;
-    return { data };
-  });
-};
-
 // Get user's own posts
 export const getUserPosts = async (userId, options = {}) => {
   return safeCommunityOperation(async () => {

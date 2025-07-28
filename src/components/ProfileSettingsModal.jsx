@@ -49,7 +49,17 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
   const tabsRef = useRef(null);
 
   // Form states
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedTab = localStorage.getItem('profile-settings-active-tab');
+      // Valid tabs for profile settings
+      const validTabs = ["profile", "security", "preferences", "danger"];
+      if (savedTab && validTabs.includes(savedTab)) {
+        return savedTab;
+      }
+    }
+    return "profile";
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState("");
@@ -129,6 +139,19 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
       );
     }
   }, [isOpen, activeTab]);
+
+  // Save activeTab to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('profile-settings-active-tab', activeTab);
+    }
+  }, [activeTab]);
+
+  // Handle tab change with persistence
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    // localStorage is saved in the useEffect above
+  };
 
   // Get profile image
   const getProfileImage = () => {
@@ -362,7 +385,7 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
                             <button
                               key={item.id}
                               onClick={() => {
-                                setActiveTab(item.id);
+                                handleTabChange(item.id);
                                 setShowMobileMenu(false);
                               }}
                               className={`w-full text-left px-4 py-4 rounded-lg transition-all duration-200 flex items-center space-x-3 ${
@@ -420,7 +443,7 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
 
             {/* Desktop Tabs */}
             <div className="hidden lg:block">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <TabsList className="grid w-full grid-cols-4 mb-8">
                   <TabsTrigger value="profile" className="flex items-center gap-2">
                     <UserCircle className="w-4 h-4" />
@@ -490,7 +513,7 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
             <div className="lg:hidden">
               <MobileTabContent 
                 activeTab={activeTab}
-                setActiveTab={setActiveTab}
+                setActiveTab={handleTabChange}
                 profileData={profileData}
                 setProfileData={setProfileData}
                 getProfileImage={getProfileImage}

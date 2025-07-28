@@ -176,7 +176,13 @@ const Dashboard = () => {
   const [weeklyInsights, setWeeklyInsights] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedSettingsModal = localStorage.getItem('dashboard-settings-modal-open');
+      return savedSettingsModal === 'true';
+    }
+    return false;
+  });
   const [profileCompletion, setProfileCompletion] = useState({
     isCompleted: false,
     hasBasicInfo: false,
@@ -645,6 +651,19 @@ const Dashboard = () => {
     return () => ctx.revert();
   }, [activeTab]);
 
+  // Save settings modal state to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dashboard-settings-modal-open', showSettingsModal.toString());
+    }
+  }, [showSettingsModal]);
+
+  // Handle settings modal state change with persistence
+  const handleSettingsModalChange = (isOpen) => {
+    setShowSettingsModal(isOpen);
+    // localStorage is saved in the useEffect above
+  };
+
   // Animate tab changes
   const animateTabChange = (newTab) => {
     // Save to localStorage (only if it's a valid tab)
@@ -1063,7 +1082,7 @@ const Dashboard = () => {
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className={`w-64 sm:w-72 p-0 ${themeColors.card} border shadow-xl rounded-xl overflow-hidden`}
+          className={`w-80 sm:w-72 p-0 ${themeColors.card} border shadow-xl rounded-xl overflow-hidden`}
           align="end"
         >
           {/* Profile Header */}
@@ -1077,11 +1096,13 @@ const Dashboard = () => {
                 src={getProfileImage()}
                 alt="Profile"
               />
-              <div>
-                <div className="font-semibold text-white text-base">
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-white text-base truncate">
                   {userProfile?.username || user?.displayName || "User"}
                 </div>
-                <div className="text-white/80 text-sm">{user?.email}</div>
+                <div className="text-white/80 text-xs sm:text-sm break-all">
+                  {user?.email}
+                </div>
                 <Badge className="bg-white/20 text-white border-white/30 mt-2 px-2 py-1 rounded-full text-xs">
                   ✨ Premium Explorer
                 </Badge>
@@ -1096,7 +1117,7 @@ const Dashboard = () => {
                 variant="ghost"
                 className={`w-full justify-start px-4 py-3 ${themeColors.text.secondary} hover:${themeColors.text.primary} hover:bg-violet-500/10 rounded-lg transition-all duration-300 group`}
                 onClick={() => {
-                  setShowSettingsModal(true);
+                  handleSettingsModalChange(true);
                   setShowProfile(false);
                 }}
               >
@@ -1279,10 +1300,8 @@ const Dashboard = () => {
   };
 
   // Checkin functionality
-  const handleCheckinSubmit = async (checkinData) => {
-    const moodEmoji = checkinData?.emoji;
-    const notes = checkinData?.notes || "";
-    const hashtags = checkinData?.hashtags || [];
+  const handleCheckinSubmit = async (moodEmoji, notes) => {
+    const hashtags = []; // Hashtags are not currently passed from CheckinDrawer
 
     // Validate that at least one field is filled
     if (!moodEmoji && !notes.trim()) {
@@ -2214,7 +2233,7 @@ const Dashboard = () => {
         user={user}
         userProfile={userProfile}
         isOpen={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
+        onClose={() => handleSettingsModalChange(false)}
         onSave={async (data) => {
           await refreshUserProfile();
           await loadNotifications();

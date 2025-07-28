@@ -534,12 +534,19 @@ export const submitCheckin = async (uid, checkinData) => {
     const validMoodEmoji = typeof moodEmoji === "string" ? moodEmoji : "🙂";
     const validHashtags = Array.isArray(hashtags) ? hashtags : [];
 
-    // Calculate sentiment score using the database function
-    const sentimentResult = await supabase.rpc("calculate_sentiment_score", {
-      mood_text: validMoodText,
-    });
-
-    const sentimentScore = sentimentResult.data || 0;
+    // Calculate sentiment score based on moodScore (1-10 scale) to 1-5 scale
+    let sentimentScore;
+    if (validMoodScore >= 9) {
+      sentimentScore = 5; // Very Positive
+    } else if (validMoodScore >= 7) {
+      sentimentScore = 4; // Positive
+    } else if (validMoodScore >= 5) {
+      sentimentScore = 3; // Neutral
+    } else if (validMoodScore >= 3) {
+      sentimentScore = 2; // Negative
+    } else {
+      sentimentScore = 1; // Very Negative
+    }
 
     // Create base checkin record with required fields only
     const checkinRecord = {
