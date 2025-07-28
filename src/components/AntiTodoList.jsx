@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { getAntiTodoList, updateAntiTodoItemStatus, regenerateAntiTodoList, generateInitialAntiTodos } from '../services/antiTodo';
+import { supabase } from '../supabase';
 
 export const AntiTodoList = ({ userId }) => {
   const { theme } = useTheme();
@@ -41,6 +42,7 @@ export const AntiTodoList = ({ userId }) => {
   const [isSharing, setIsSharing] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [totalCompletedCount, setTotalCompletedCount] = useState(0); // Track total completions from analytics
   
   const containerRef = useRef(null);
   const headerRef = useRef(null);
@@ -106,25 +108,92 @@ export const AntiTodoList = ({ userId }) => {
 
   // Get category for activity
   const getActivityCategory = (content, index) => {
-    const keywords = {
-      'Mindfulness': ['breathe', 'meditate', 'mindful', 'present', 'awareness', 'reflect', 'observe'],
-      'Movement': ['walk', 'dance', 'stretch', 'move', 'exercise', 'body'],
-      'Creativity': ['create', 'draw', 'write', 'color', 'art', 'express', 'creative'],
-      'Connection': ['call', 'friend', 'family', 'connect', 'share', 'together'],
-      'Learning': ['read', 'learn', 'study', 'explore', 'discover'],
-      'Nature': ['outside', 'nature', 'garden', 'sky', 'trees', 'sun'],
-      'Music': ['music', 'sing', 'listen', 'sound', 'rhythm'],
-      'Visual': ['watch', 'see', 'look', 'observe', 'photo', 'image']
-    };
-
+    // Enhanced categorization with more specific patterns
     const lowerContent = content.toLowerCase();
-    for (const [category, words] of Object.entries(keywords)) {
-      if (words.some(word => lowerContent.includes(word))) {
-        return activityCategories.find(cat => cat.name === category);
-      }
+    
+    // Physical activities
+    if (lowerContent.includes('walk') || lowerContent.includes('run') || lowerContent.includes('exercise') || 
+        lowerContent.includes('stretch') || lowerContent.includes('dance') || lowerContent.includes('yoga')) {
+      return {
+        icon: Heart,
+        gradient: 'from-red-500 to-pink-500',
+        name: 'Physical'
+      };
     }
     
-    return activityCategories[index % activityCategories.length];
+    // Mental/learning activities
+    if (lowerContent.includes('read') || lowerContent.includes('learn') || lowerContent.includes('study') || 
+        lowerContent.includes('practice') || lowerContent.includes('meditate') || lowerContent.includes('journal')) {
+      return {
+        icon: Brain,
+        gradient: 'from-blue-500 to-indigo-500',
+        name: 'Mental'
+      };
+    }
+    
+    // Creative activities
+    if (lowerContent.includes('draw') || lowerContent.includes('paint') || lowerContent.includes('write') || 
+        lowerContent.includes('create') || lowerContent.includes('craft') || lowerContent.includes('design')) {
+      return {
+        icon: Palette,
+        gradient: 'from-purple-500 to-violet-500',
+        name: 'Creative'
+      };
+    }
+    
+    // Social activities
+    if (lowerContent.includes('call') || lowerContent.includes('meet') || lowerContent.includes('visit') || 
+        lowerContent.includes('talk') || lowerContent.includes('share') || lowerContent.includes('connect')) {
+      return {
+        icon: Users,
+        gradient: 'from-green-500 to-emerald-500',
+        name: 'Social'
+      };
+    }
+    
+    // Music/audio activities
+    if (lowerContent.includes('music') || lowerContent.includes('listen') || lowerContent.includes('play') || 
+        lowerContent.includes('sing') || lowerContent.includes('podcast')) {
+      return {
+        icon: Music,
+        gradient: 'from-orange-500 to-amber-500',
+        name: 'Audio'
+      };
+    }
+    
+    // Nature/outdoor activities
+    if (lowerContent.includes('nature') || lowerContent.includes('outdoor') || lowerContent.includes('park') || 
+        lowerContent.includes('garden') || lowerContent.includes('hike') || lowerContent.includes('fresh air')) {
+      return {
+        icon: Mountain,
+        gradient: 'from-emerald-500 to-teal-500',
+        name: 'Nature'
+      };
+    }
+    
+    // Default category
+    return {
+      icon: Target,
+      gradient: 'from-slate-500 to-gray-500',
+      name: 'General'
+    };
+  };
+
+  const fetchTotalCompletionCount = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_analytics')
+        .select('completedantitodos')
+        .eq('user_id', userId)
+        .single();
+      
+      if (!error && data) {
+        setTotalCompletedCount(data.completedantitodos || 0);
+        console.log('Total completion count from analytics:', data.completedantitodos);
+      }
+    } catch (error) {
+      console.error('Error fetching total completion count:', error);
+    }
   };
 
   // Premium status configurations
@@ -230,6 +299,7 @@ export const AntiTodoList = ({ userId }) => {
 
     if (userId) {
       fetchAndInitializeAntiTodos();
+      fetchTotalCompletionCount(); // Fetch total completion count on load
     }
   }, [userId]);
 
@@ -248,8 +318,9 @@ export const AntiTodoList = ({ userId }) => {
           )
         );
         
-        // Show a simple completion message instead of points
+        // Refresh total completion count if item was completed
         if (action === 'completed') {
+          await fetchTotalCompletionCount();
           setToastMessage(`🎉 Anti-todo completed!`);
           setShowToast(true);
           setTimeout(() => setShowToast(false), 4000);
@@ -285,6 +356,9 @@ export const AntiTodoList = ({ userId }) => {
       if (result.success) {
         const newList = await getAntiTodoList(userId);
         setAntiTodoList(newList || []);
+        
+        // Refresh total completion count after regeneration
+        await fetchTotalCompletionCount();
         
         setTimeout(() => {
           gsap.fromTo(
@@ -433,7 +507,7 @@ export const AntiTodoList = ({ userId }) => {
     total: antiTodoList.length,
     available: antiTodoList.filter(item => item.status === 'not started').length,
     inProgress: antiTodoList.filter(item => item.status === 'ongoing').length,
-    completed: antiTodoList.filter(item => item.status === 'completed').length,
+    completed: totalCompletedCount, // Use total completion count from analytics
   };
 
   return (

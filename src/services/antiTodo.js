@@ -75,12 +75,13 @@ export const updateAntiTodoItemStatus = async (itemId, status) => {
     // If activity was completed, update analytics and check achievements
     if (status === 'completed' && updatedItem) {
       try {
-        const { updateUserAnalytics, checkAndUnlockAchievements, awardPoints, getUserPlant, updatePlantGrowth } = await import('./database');
+        const { updateUserAnalytics, awardPoints, getUserPlant, updatePlantGrowth, checkAndUnlockAchievements } = await import('./database');
+        const { supabase } = await import('../supabase');
         
         // Update user analytics (includes anti-todo stats)
         await updateUserAnalytics(updatedItem.user_id);
         
-        // Check for new achievements
+        // Check for new achievements using the proper function
         await checkAndUnlockAchievements(updatedItem.user_id);
         
         // Award points for anti-todo completion
@@ -327,6 +328,10 @@ export const regenerateAntiTodoList = async (userId) => {
       return { success: false, error: 'Failed to generate new activities' };
     }
 
+    // 6. Get current completion count before deleting items
+    const currentCompletionCount = completedItems?.length || 0;
+    console.log(`Current completion count before regeneration: ${currentCompletionCount}`);
+    
     // 6. Delete ONLY "not started" and "completed" items (preserve ongoing)
     const { error: deleteError } = await supabase
       .from('anti_todo_items')
@@ -340,6 +345,14 @@ export const regenerateAntiTodoList = async (userId) => {
       // Continue even if deletion fails, as adding new items is more critical
     } else {
       console.log('Deleted old "not started" and "completed" AI items');
+    }
+
+    // 7. Update user analytics to preserve the completion count
+    try {
+      const { updateUserAnalytics } = await import('./database');
+      await updateUserAnalytics(userId);
+    } catch (analyticsError) {
+      console.error('Error updating analytics after regeneration:', analyticsError);
     }
 
     // 7. Add new AI-generated items

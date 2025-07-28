@@ -899,7 +899,7 @@ export const saveAntiTodoList = async (uid, listData) => {
         list_id: list.id,
         user_id: uid,
         content: item.content,
-        is_completed: item.is_completed || false,
+        status: item.is_completed ? 'completed' : 'not started',
         created_at: new Date().toISOString(),
       }));
 
@@ -958,6 +958,7 @@ export const updateAntiTodoStatus = async (itemId, isCompleted) => {
 // Get anti-todo stats
 export const getAntiTodoStats = async (uid) => {
   return safeSupabaseOperation(async () => {
+    // Get current items for total count
     const { data: items, error } = await supabase
       .from("anti_todo_items")
       .select("*")
@@ -965,8 +966,19 @@ export const getAntiTodoStats = async (uid) => {
 
     if (error) throw error;
 
+    // Get cumulative completion count from user analytics
+    const { data: analytics, error: analyticsError } = await supabase
+      .from("user_analytics")
+      .select("completedantitodos")
+      .eq("user_id", uid)
+      .single();
+
+    if (analyticsError) {
+      console.error('Error fetching analytics for anti-todo stats:', analyticsError);
+    }
+
     const totalItems = items.length;
-    const completedItems = items.filter((item) => item.is_completed).length;
+    const completedItems = analytics?.completedantitodos || 0; // Use cumulative count from analytics
     const completionRate =
       totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
 
@@ -999,30 +1011,40 @@ export const getWeeklyAntiTodoInsights = async (uid) => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
+    // Get weekly completions from analytics
+    const { data: analytics, error: analyticsError } = await supabase
+      .from("user_analytics")
+      .select("weeklyantitodos")
+      .eq("user_id", uid)
+      .single();
+
+    if (analyticsError) {
+      console.error('Error fetching analytics for weekly insights:', analyticsError);
+    }
+
+    // Also get current items for total count
     const { data, error } = await supabase
       .from("anti_todo_items")
       .select("*")
       .eq("user_id", uid)
-      .gte("created_at", oneWeekAgo.toISOString());
+      .eq("status", "completed")
+      .gte("completed_at", oneWeekAgo.toISOString());
 
     if (error) throw error;
 
     const totalThisWeek = data.length;
-    const completedThisWeek = data.filter((item) => item.is_completed).length;
-    const weeklyCompletionRate =
-      totalThisWeek > 0 ? (completedThisWeek / totalThisWeek) * 100 : 0;
+    const completedThisWeek = analytics?.weeklyantitodos || 0; // Use analytics data
+    const weeklyCompletionRate = totalThisWeek > 0 ? (completedThisWeek / totalThisWeek) * 100 : 0;
 
     // Group by day
     const dailyStats = {};
     data.forEach((item) => {
-      const day = new Date(item.created_at).toLocaleDateString();
+      const day = new Date(item.completed_at).toLocaleDateString();
       if (!dailyStats[day]) {
         dailyStats[day] = { total: 0, completed: 0 };
       }
       dailyStats[day].total++;
-      if (item.is_completed) {
-        dailyStats[day].completed++;
-      }
+      dailyStats[day].completed++;
     });
 
     const insights = {
@@ -1086,6 +1108,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     icon: "🎯",
     category: "milestone",
     target: 1,
+    points_reward: 10,
     condition: (stats) => stats.totalCheckins >= 1,
   },
   streak_3: {
@@ -1095,6 +1118,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     icon: "🔥",
     category: "streak",
     target: 3,
+    points_reward: 15,
     condition: (stats) => stats.currentStreak >= 3,
   },
   streak_7: {
@@ -1104,6 +1128,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     icon: "⚡",
     category: "streak",
     target: 7,
+    points_reward: 25,
     condition: (stats) => stats.currentStreak >= 7,
   },
   streak_30: {
@@ -1113,6 +1138,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     icon: "👑",
     category: "streak",
     target: 30,
+    points_reward: 50,
     condition: (stats) => stats.currentStreak >= 30,
   },
   checkins_10: {
@@ -1122,6 +1148,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     icon: "📊",
     category: "milestone",
     target: 10,
+    points_reward: 20,
     condition: (stats) => stats.totalCheckins >= 10,
   },
   checkins_50: {
@@ -1131,6 +1158,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     icon: "🎓",
     category: "milestone",
     target: 50,
+    points_reward: 40,
     condition: (stats) => stats.totalCheckins >= 50,
   },
   checkins_100: {
@@ -1140,6 +1168,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     icon: "💯",
     category: "milestone",
     target: 100,
+    points_reward: 75,
     condition: (stats) => stats.totalCheckins >= 100,
   },
   // NEW: Anti-Todo Activity Achievements
@@ -1150,6 +1179,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     icon: "🌸",
     category: "wellness",
     target: 1,
+    points_reward: 15,
     condition: (stats) => stats.completedAntiTodos >= 1,
   },
   antitodo_5: {
@@ -1159,6 +1189,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     icon: "🌺",
     category: "wellness",
     target: 5,
+    points_reward: 25,
     condition: (stats) => stats.completedAntiTodos >= 5,
   },
   antitodo_15: {
@@ -1168,6 +1199,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     icon: "🧘‍♀️",
     category: "wellness",
     target: 15,
+    points_reward: 40,
     condition: (stats) => stats.completedAntiTodos >= 15,
   },
   antitodo_30: {
@@ -1177,6 +1209,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     icon: "🏆",
     category: "wellness",
     target: 30,
+    points_reward: 60,
     condition: (stats) => stats.completedAntiTodos >= 30,
   },
   wellness_week: {
@@ -1186,20 +1219,72 @@ export const ACHIEVEMENT_DEFINITIONS = {
     icon: "📅",
     category: "wellness",
     target: 3,
+    points_reward: 20,
     condition: (stats) => stats.weeklyAntiTodos >= 3,
   },
 };
 
-// Get user achievements
+// Get user achievements with current progress
 export const getUserAchievements = async (uid) => {
   return safeSupabaseOperation(async () => {
+    // Get current user analytics for accurate progress calculation
+    const analyticsResult = await getUserAnalytics(uid);
+    if (!analyticsResult.success) {
+      // Fallback to just getting achievements without progress update
+      const { data, error } = await supabase
+        .from("achievements")
+        .select("*")
+        .eq("user_id", uid);
+
+      if (error) throw error;
+      return { success: true, data };
+    }
+
+    const stats = analyticsResult.data;
+    
+    // Get existing achievements
     const { data, error } = await supabase
       .from("achievements")
       .select("*")
       .eq("user_id", uid);
 
     if (error) throw error;
-    return { success: true, data };
+
+    // Update progress for each achievement based on current stats
+    const updatedAchievements = await Promise.all(
+      data.map(async (achievement) => {
+        const progress = calculateAchievementProgress(achievement.achievement_id, stats);
+        
+        // Update the achievement in database if progress has changed
+        if (achievement.progress !== progress.progress || achievement.is_unlocked !== progress.isUnlocked) {
+          const updateData = {
+            progress: progress.progress,
+            updated_at: new Date().toISOString(),
+          };
+
+          if (progress.isUnlocked && !achievement.is_unlocked) {
+            updateData.is_unlocked = true;
+            updateData.unlocked_at = new Date().toISOString();
+          }
+
+          await supabaseHelpers.update("achievements", achievement.id, updateData);
+          
+          return {
+            ...achievement,
+            progress: progress.progress,
+            is_unlocked: progress.isUnlocked,
+            percentage: progress.percentage,
+          };
+        }
+
+        return {
+          ...achievement,
+          percentage: Math.round((achievement.progress / achievement.target) * 100),
+        };
+      })
+    );
+
+    return { success: true, data: updatedAchievements };
   });
 };
 
@@ -1281,6 +1366,7 @@ export const checkAndUnlockAchievements = async (uid) => {
             achievement_category: achievement.category,
             progress: progress.progress,
             target: progress.target,
+            points_reward: achievement.points_reward,
             is_unlocked: true,
             unlocked_at: new Date().toISOString(),
           });
@@ -1297,6 +1383,7 @@ export const checkAndUnlockAchievements = async (uid) => {
             achievement_category: achievement.category,
             progress: progress.progress,
             target: progress.target,
+            points_reward: achievement.points_reward,
             is_unlocked: false,
           });
         }
@@ -1461,6 +1548,33 @@ export const updateUserAnalytics = async (uid) => {
     // Calculate anti-todo activity stats
     const completedAntiTodos = antiTodoItems?.filter(item => item.status === 'completed').length || 0;
     
+    // Get the current cumulative count from analytics
+    const { data: currentAnalytics } = await supabase
+      .from('user_analytics')
+      .select('completedantitodos')
+      .eq('user_id', uid)
+      .single();
+    
+    const currentCumulativeCount = currentAnalytics?.completedantitodos || 0;
+    
+    // If we have fewer completed items than our stored count, it means items were deleted (regeneration)
+    // In this case, preserve the higher count to maintain achievement progress
+    let cumulativeCompletedAntiTodos;
+    if (completedAntiTodos < currentCumulativeCount) {
+      // Items were deleted, preserve the higher count
+      cumulativeCompletedAntiTodos = currentCumulativeCount;
+      console.log('Anti-todo items were deleted (regeneration), preserving cumulative count:', cumulativeCompletedAntiTodos);
+    } else {
+      // Normal case, use current count
+      cumulativeCompletedAntiTodos = completedAntiTodos;
+    }
+    
+    console.log('Anti-todo completion calculation:', {
+      currentCumulativeCount,
+      currentCompletedItems: completedAntiTodos,
+      finalCumulativeCount: cumulativeCompletedAntiTodos
+    });
+    
     // Calculate weekly anti-todo activities (completed in last 7 days)
     const weekAgoForAntiTodoWeekly = new Date();
     weekAgoForAntiTodoWeekly.setDate(weekAgoForAntiTodoWeekly.getDate() - 7);
@@ -1543,7 +1657,7 @@ export const updateUserAnalytics = async (uid) => {
       current_streak: currentStreak,
       weekly_unique_checkin_days: weeklyUniqueCheckinDays,
       last_checkin_date: checkins[0]?.checkin_date || null,
-      completedantitodos: completedAntiTodos,
+      completedantitodos: cumulativeCompletedAntiTodos,
       weeklyantitodos: weeklyAntiTodos,
       weekly_score: weeklyUniqueCheckinDays, // Set weekly_score to the count of unique checkin days
       updated_at: new Date().toISOString(),
@@ -1584,6 +1698,7 @@ export const initializeUserAchievements = async (uid) => {
           achievement_category: achievement.category,
           progress: 0,
           target: achievement.target,
+          points_reward: achievement.points_reward,
           is_unlocked: false,
           created_at: new Date().toISOString(),
         });

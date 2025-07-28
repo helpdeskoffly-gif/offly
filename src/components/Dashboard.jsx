@@ -16,6 +16,7 @@ import { ProfileCompletionModal } from "./ProfileCompletionModal";
 import { ProfileSettingsModal } from "./ProfileSettingsModal";
 import { AntiTodoList } from "./AntiTodoList";
 import { Community } from "./Community";
+import PlantGarden from "./PlantGarden";
 
 import { gsap } from "gsap";
 import { useAuth } from "../hooks/useAuth";
@@ -1382,16 +1383,15 @@ const Dashboard = () => {
           setWeeklyChartCheckins(Object.values(uniqueDailyCheckins));
         }
 
-        // Check for new achievements
+        // Check for new achievements using the new database function
         try {
-          const achievementResult = await checkAndUnlockAchievements(user.id);
-          if (
-            achievementResult.newlyUnlocked &&
-            achievementResult.newlyUnlocked.length > 0
-          ) {
+          const { checkAndUnlockAchievements } = await import('../services/database');
+          const result = await checkAndUnlockAchievements(user.id);
+          
+          if (result.success && result.newAchievements && result.newAchievements.length > 0) {
             // Show achievement notification
-            const achievementNames = achievementResult.newlyUnlocked
-              .map((a) => a.title)
+            const achievementNames = result.newAchievements
+              .map((a) => a.achievement_name)
               .join(", ");
             setSuccessMessage(
               `🏆 Achievement unlocked: ${achievementNames}! Check your Achievements tab to see your progress.`,
@@ -2043,35 +2043,7 @@ const Dashboard = () => {
         return <Community />;
 
       case "Achievements":
-        return (
-          <div className="space-y-4 sm:space-y-8 p-3 sm:p-6">
-            <div className="text-center py-12 sm:py-20">
-              <div className="mb-6 sm:mb-8">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center mb-4">
-                  <Trophy className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-                </div>
-                <h1 className={`text-2xl sm:text-3xl font-bold ${themeColors.text.primary} mb-2`}>
-                  Achievements
-                </h1>
-                <p className={`text-sm sm:text-base ${themeColors.text.secondary} max-w-md mx-auto`}>
-                  Track your accomplishments and milestones on your wellness journey
-                </p>
-              </div>
-              
-              <div className={`p-6 sm:p-8 rounded-xl ${theme === 'dark' ? 'bg-slate-800/50 border border-slate-700/50' : 'bg-white/70 border border-slate-200/60'} backdrop-blur-sm shadow-lg max-w-md mx-auto`}>
-                <div className="text-center space-y-4">
-                  <div className="text-4xl sm:text-5xl mb-4">🏆</div>
-                  <h2 className={`text-lg sm:text-xl font-semibold ${themeColors.text.primary}`}>
-                    Coming Soon
-                  </h2>
-                  <p className={`text-sm ${themeColors.text.secondary}`}>
-                    Achievement system will be available soon. Stay tuned for exciting rewards and milestones!
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+        return <Achievements />;
 
       default:
         return null;
@@ -2306,7 +2278,7 @@ const Dashboard = () => {
             </div>
             
             <div className="overflow-y-auto max-h-[calc(95vh-120px)]">
-              <Achievements />
+              <PlantGarden />
             </div>
           </div>
         </div>

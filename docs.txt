@@ -6,6 +6,7 @@ create table public.achievement_definitions (
   achievement_icon text null,
   achievement_category text null,
   target integer null default 1,
+  points_reward integer null default 10,
   created_at timestamp with time zone null default now(),
   constraint achievement_definitions_pkey primary key (id),
   constraint achievement_definitions_achievement_id_key unique (achievement_id)
