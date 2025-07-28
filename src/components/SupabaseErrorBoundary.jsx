@@ -38,7 +38,7 @@ class SupabaseErrorBoundary extends React.Component {
     };
 
     // Log to console in development
-    if (process.env.NODE_ENV === "development") {
+    if (import.meta.env.MODE === "development") {
       console.group("🔴 Supabase Error Details");
       console.error("Error:", error);
       console.error("Error Info:", errorInfo);
@@ -150,7 +150,7 @@ class SupabaseErrorBoundary extends React.Component {
               </p>
 
               {/* Error Details in Development */}
-              {process.env.NODE_ENV === "development" && (
+              {import.meta.env.MODE === "development" && (
                 <details className="mb-6 text-left">
                   <summary className="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     🔧 Debug Information

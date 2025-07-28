@@ -460,19 +460,6 @@ export function Auth() {
             </span>
           </div>
           
-          {/* Mobile Menu Button */}
-          <div className="lg:hidden">
-            <DrawerTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`${themeColors.text.secondary} hover:${themeColors.text.primary} p-2`}
-              >
-                <Menu className="w-5 h-5" />
-              </Button>
-            </DrawerTrigger>
-          </div>
-
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-4">
             <Button
@@ -488,6 +475,18 @@ export function Auth() {
 
         {/* Mobile Menu Drawer */}
         <Drawer open={showMobileMenu} onOpenChange={setShowMobileMenu}>
+          {/* Mobile Menu Button */}
+          <div className="lg:hidden">
+            <DrawerTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`${themeColors.text.secondary} hover:${themeColors.text.primary} p-2`}
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+            </DrawerTrigger>
+          </div>
           <DrawerContent className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-slate-200/50 dark:border-slate-700/50">
             <DrawerHeader className="text-center">
               <DrawerTitle className={`${themeColors.text.primary} text-lg`}>
