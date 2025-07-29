@@ -8,17 +8,43 @@ class OpenAIService {
     }
   }
 
-  async generateAINudge(userProfile, recentCheckins, currentMood) {
+  // Enhanced sentiment analysis using emoji + text
+  async analyzeCustomerSentiment(emoji, text, userProfile = null) {
     if (!OPENAI_API_KEY) {
-      return this.getFallbackNudge(currentMood);
+      return this.getFallbackSentimentAnalysis(emoji, text);
     }
 
     try {
-      const prompt = this.buildNudgePrompt(
-        userProfile,
-        recentCheckins,
-        currentMood,
-      );
+      // Convert emoji to mood score for context
+      const emojiScore = this.convertEmojiToScore(emoji);
+      
+      const prompt = `Analyze the customer sentiment based on:
+- Emoji: ${emoji} (mood score: ${emojiScore}/10)
+- User text: "${text || 'No text provided'}"
+- User context: ${userProfile ? `Streak: ${userProfile.currentStreak} days, Total checkins: ${userProfile.totalCheckins}` : 'No profile data'}
+
+IMPORTANT GUIDELINES FOR SENTIMENT ANALYSIS:
+- POSITIVE indicators: joy, happiness, satisfaction, pride, achievement, love, care, helping others, feeling powerful/strong, gratitude, excitement, contentment
+- NEGATIVE indicators: sadness, anger, frustration, stress, anxiety, depression, loneliness, disappointment, fear, helplessness
+- NEUTRAL indicators: routine activities, factual statements without emotional content, simple observations
+
+Pay special attention to:
+- Words like "enjoying", "powerful", "love", "care", "helping" = POSITIVE
+- Words like "stressing myself" can be complex - if they're doing it willingly and feeling good about it = POSITIVE
+- Achievement language = POSITIVE
+- Caregiving/helping others language = POSITIVE
+
+Provide a detailed sentiment analysis in JSON format:
+{
+  "sentiment_score": 1-5 (1=very negative, 5=very positive),
+  "sentiment_label": "very_negative|negative|neutral|positive|very_positive",
+  "emotional_state": "brief description of emotional state",
+  "key_emotions": ["array", "of", "primary", "emotions"],
+  "context_insights": "what the sentiment reveals about their current situation",
+  "support_needs": "what kind of support they might need"
+}
+
+Respond with only valid JSON.`;
 
       const response = await fetch(OPENAI_API_URL, {
         method: "POST",
@@ -31,24 +57,111 @@ class OpenAIService {
           messages: [
             {
               role: "system",
-              content: `You are Offly's AI companion, a supportive and empathetic assistant designed to help users improve their emotional well-being. Your role is to provide personalized nudges, encouragement, and actionable suggestions based on their mood and check-in patterns.
+              content: `You are an expert in emotional intelligence and sentiment analysis. Your role is to accurately identify and classify user emotions.
 
-Key guidelines:
-- Keep responses brief (1-2 sentences, max 150 characters)
-- Be supportive, not preachy
-- Use warm, friendly language
-- Provide actionable suggestions when appropriate
-- Acknowledge their current emotional state
-- Encourage consistency in check-ins
-- Use emojis sparingly but effectively
-- Focus on small, achievable actions`,
+KEY PRINCIPLES:
+1. POSITIVE emotions include: joy, happiness, satisfaction, pride, achievement, love, care, helping others, feeling powerful/strong, gratitude, excitement, contentment
+2. NEGATIVE emotions include: sadness, anger, frustration, stress, anxiety, depression, loneliness, disappointment, fear, helplessness
+3. Pay special attention to achievement language, caregiving language, and expressions of personal strength
+4. When someone mentions "stressing myself" but follows with positive outcomes like "feeling powerful" or "enjoying helping others", this is POSITIVE
+5. Helping others and feeling good about it is POSITIVE, even if it involves some stress
+6. Personal growth and achievement language is POSITIVE
+
+Analyze user emotions accurately and provide actionable insights.`
             },
             {
               role: "user",
               content: prompt,
             },
           ],
-          max_tokens: 100,
+          max_tokens: 300,
+          temperature: 0.3,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const responseText = data.choices[0].message.content.trim();
+      
+      try {
+        const sentimentData = JSON.parse(responseText);
+        return {
+          success: true,
+          sentiment_score: sentimentData.sentiment_score,
+          sentiment_label: sentimentData.sentiment_label,
+          emotional_state: sentimentData.emotional_state,
+          key_emotions: sentimentData.key_emotions,
+          context_insights: sentimentData.context_insights,
+          support_needs: sentimentData.support_needs,
+          type: "ai_analyzed"
+        };
+      } catch (parseError) {
+        console.error("Error parsing sentiment response:", parseError);
+        return this.getFallbackSentimentAnalysis(emoji, text);
+      }
+    } catch (error) {
+      console.error("Error analyzing customer sentiment:", error);
+      return this.getFallbackSentimentAnalysis(emoji, text);
+    }
+  }
+
+  // Generate personalized AI nudges based on sentiment analysis
+  async generatePersonalizedNudge(sentimentAnalysis, userProfile, recentCheckins) {
+    if (!OPENAI_API_KEY) {
+      return this.getFallbackNudge(sentimentAnalysis.sentiment_label);
+    }
+
+    try {
+      const prompt = `Generate a personalized, supportive nudge based on this sentiment analysis:
+
+SENTIMENT DATA:
+- Score: ${sentimentAnalysis.sentiment_score}/5
+- Label: ${sentimentAnalysis.sentiment_label}
+- Emotional State: ${sentimentAnalysis.emotional_state}
+- Key Emotions: ${sentimentAnalysis.key_emotions.join(', ')}
+- Context: ${sentimentAnalysis.context_insights}
+- Support Needs: ${sentimentAnalysis.support_needs}
+
+USER CONTEXT:
+- Username: ${userProfile?.username || 'User'}
+- Current Streak: ${userProfile?.currentStreak || 0} days
+- Total Checkins: ${userProfile?.totalCheckins || 0}
+- Recent Moods: ${recentCheckins?.slice(0, 3).map(c => c.mood_emoji).join(', ') || 'None'}
+
+GUIDELINES:
+- Keep response under 120 characters
+- Be empathetic and supportive
+- Provide actionable, gentle suggestions
+- Acknowledge their emotional state
+- Use warm, encouraging language
+- Include 1-2 relevant emojis
+- Focus on small, achievable actions
+- Don't be preachy or dismissive
+
+Generate a personalized nudge that addresses their specific emotional needs.`;
+
+      const response = await fetch(OPENAI_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: "You are Offly's empathetic AI companion. Generate supportive, personalized nudges that help users feel understood and encouraged."
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          max_tokens: 150,
           temperature: 0.7,
         }),
       });
@@ -62,64 +175,112 @@ Key guidelines:
         success: true,
         nudge: data.choices[0].message.content.trim(),
         type: "ai_generated",
+        sentiment_based: true,
+        emotional_context: sentimentAnalysis.emotional_state
       };
     } catch (error) {
-      console.error("Error generating AI nudge:", error);
-      return this.getFallbackNudge(currentMood);
+      console.error("Error generating personalized nudge:", error);
+      return this.getFallbackNudge(sentimentAnalysis.sentiment_label);
     }
   }
 
+  // Legacy method for backward compatibility
+  async generateAINudge(userProfile, recentCheckins, currentMood) {
+    // Use the new personalized approach
+    const sentimentAnalysis = await this.analyzeCustomerSentiment(currentMood, "", userProfile);
+    return this.generatePersonalizedNudge(sentimentAnalysis, userProfile, recentCheckins);
+  }
+
+  // Legacy sentiment analysis for backward compatibility
   async analyzeSentiment(text) {
-    if (!OPENAI_API_KEY || !text) {
-      return this.getFallbackSentiment(text);
-    }
+    const sentimentAnalysis = await this.analyzeCustomerSentiment("🙂", text);
+    return {
+      success: sentimentAnalysis.success,
+      score: sentimentAnalysis.sentiment_score,
+      type: sentimentAnalysis.type
+    };
+  }
 
-    try {
-      const response = await fetch(OPENAI_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are a sentiment analysis expert. Analyze the emotional tone of the given text and return a sentiment score between 1.0 (very negative) and 5.0 (very positive). Respond with only a number between 1.0 and 5.0.",
-            },
-            {
-              role: "user",
-              content: `Analyze the sentiment of this text: "${text}"`,
-            },
-          ],
-          max_tokens: 10,
-          temperature: 0.1,
-        }),
+  // Helper method to convert emoji to score
+  convertEmojiToScore(emoji) {
+    const emojiScoreMap = {
+      '😭': 1, '😢': 2, '😔': 3, '😐': 4, '🙂': 5,
+      '😊': 6, '😄': 7, '😁': 8, '🤩': 9, '🥳': 10,
+      '😢': 2, '😔': 3, '😐': 4, '🙂': 5, '😊': 6,
+      '😄': 7, '🥰': 8, '😎': 7, '🤗': 8, '🥳': 10
+    };
+    return emojiScoreMap[emoji] || 5;
+  }
+
+  // Enhanced fallback sentiment analysis
+  getFallbackSentimentAnalysis(emoji, text) {
+    const emojiScore = this.convertEmojiToScore(emoji);
+    let textScore = 3; // Neutral base
+    
+    if (text) {
+      const positiveWords = [
+        'good', 'great', 'happy', 'amazing', 'wonderful', 'love', 'perfect', 'awesome',
+        'enjoying', 'enjoy', 'powerful', 'strong', 'care', 'helping', 'help', 'achieve',
+        'achievement', 'proud', 'pride', 'satisfied', 'content', 'grateful', 'excited',
+        'thrilled', 'blessed', 'fulfilled', 'accomplished', 'successful', 'victory'
+      ];
+      const negativeWords = [
+        'bad', 'terrible', 'sad', 'awful', 'hate', 'horrible', 'depressed', 'angry',
+        'frustrated', 'lonely', 'scared', 'fear', 'worried', 'anxious', 'stressed',
+        'overwhelmed', 'hopeless', 'miserable', 'disappointed', 'upset'
+      ];
+      
+      const lowerText = text.toLowerCase();
+      let positiveCount = 0;
+      let negativeCount = 0;
+      
+      positiveWords.forEach(word => {
+        if (lowerText.includes(word)) positiveCount++;
       });
-
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+      
+      negativeWords.forEach(word => {
+        if (lowerText.includes(word)) negativeCount++;
+      });
+      
+      // Special handling for complex positive statements
+      if (lowerText.includes('enjoying') && lowerText.includes('powerful')) {
+        positiveCount += 2; // Boost for achievement language
       }
-
-      const data = await response.json();
-      const scoreText = data.choices[0].message.content.trim();
-      const score = parseFloat(scoreText);
-
-      if (isNaN(score) || score < 1.0 || score > 5.0) {
-        return this.getFallbackSentiment(text);
+      if (lowerText.includes('care') && lowerText.includes('people')) {
+        positiveCount += 2; // Boost for caregiving language
       }
-
-      return {
-        success: true,
-        score: Math.round(score * 10) / 10,
-        type: "ai_analyzed",
-      };
-    } catch (error) {
-      console.error("Error analyzing sentiment:", error);
-      return this.getFallbackSentiment(text);
+      if (lowerText.includes('stressing') && lowerText.includes('enjoying')) {
+        positiveCount += 1; // Positive if they enjoy the stress
+      }
+      
+      if (positiveCount > negativeCount) {
+        textScore = 4;
+      } else if (negativeCount > positiveCount) {
+        textScore = 2;
+      }
     }
+    
+    // Combine emoji and text scores
+    const combinedScore = Math.round((emojiScore * 0.6 + textScore * 0.4) / 2);
+    
+    const sentimentLabels = {
+      1: 'very_negative',
+      2: 'negative', 
+      3: 'neutral',
+      4: 'positive',
+      5: 'very_positive'
+    };
+    
+    return {
+      success: true,
+      sentiment_score: combinedScore,
+      sentiment_label: sentimentLabels[combinedScore] || 'neutral',
+      emotional_state: `Based on ${emoji} emoji and text analysis`,
+      key_emotions: ['analyzed'],
+      context_insights: 'Fallback analysis based on emoji and text',
+      support_needs: 'General support based on mood indicators',
+      type: "fallback"
+    };
   }
 
   buildNudgePrompt(userProfile, recentCheckins, currentMood) {
@@ -273,7 +434,6 @@ Key guidelines:
     };
   }
 
-  // Generate motivational content for streaks
   async generateStreakCelebration(streakDays) {
     if (!OPENAI_API_KEY) {
       return this.getFallbackStreakMessage(streakDays);
@@ -291,15 +451,14 @@ Key guidelines:
           messages: [
             {
               role: "system",
-              content:
-                "You are celebrating a user's check-in streak. Generate a brief, enthusiastic message (max 100 characters) that acknowledges their consistency and motivates them to continue.",
+              content: "You are Offly's celebration assistant. Generate exciting, motivational messages for user achievements and streaks. Keep messages under 100 characters and include relevant emojis.",
             },
             {
               role: "user",
-              content: `The user has maintained a ${streakDays}-day check-in streak. Generate a celebratory message.`,
+              content: `Generate a celebration message for a ${streakDays}-day check-in streak. Make it exciting and motivating!`,
             },
           ],
-          max_tokens: 50,
+          max_tokens: 100,
           temperature: 0.8,
         }),
       });
@@ -321,45 +480,33 @@ Key guidelines:
   }
 
   getFallbackStreakMessage(streakDays) {
-    if (streakDays === 1) {
-      return {
-        success: true,
-        message: "Great start! Day 1 of your journey! 🌟",
-        type: "fallback",
-      };
-    } else if (streakDays <= 7) {
-      return {
-        success: true,
-        message: `${streakDays} days strong! You're building momentum! 🔥`,
-        type: "fallback",
-      };
-    } else if (streakDays <= 30) {
-      return {
-        success: true,
-        message: `${streakDays} days! You're creating a beautiful habit! ✨`,
-        type: "fallback",
-      };
-    } else {
-      return {
-        success: true,
-        message: `${streakDays} days! You're an inspiration! Keep going! 🏆`,
-        type: "fallback",
-      };
-    }
+    const messages = {
+      1: "🎉 First day of your wellness journey! Keep going!",
+      2: "🔥 Two days strong! You're building amazing habits!",
+      3: "💪 Three days in a row! You're unstoppable!",
+      4: "🌟 Four days of consistency! You're doing great!",
+      5: "🏆 Five days! You're creating positive change!",
+      7: "🎊 A full week! You're absolutely crushing it!",
+      10: "🚀 Double digits! You're a wellness warrior!",
+      14: "💎 Two weeks strong! You're building lasting habits!",
+      21: "👑 Three weeks! You're forming incredible routines!",
+      30: "🏅 A full month! You're absolutely incredible!",
+    };
+
+    return {
+      success: true,
+      message: messages[streakDays] || `🎉 ${streakDays} days strong! Keep up the amazing work!`,
+      type: "fallback",
+    };
   }
 
-  // Generate personalized anti-to-do activities
   async generateAntiToDoActivities(userPreferences, completedActivities = [], count = 5) {
     if (!OPENAI_API_KEY) {
       return this.getFallbackAntiTodoActivities(userPreferences);
     }
 
     try {
-      const prompt = this.buildAntiToDoPrompt(
-        userPreferences,
-        completedActivities,
-        count,
-      );
+      const prompt = this.buildAntiToDoPrompt(userPreferences, completedActivities, count);
 
       const response = await fetch(OPENAI_API_URL, {
         method: "POST",
@@ -372,32 +519,24 @@ Key guidelines:
           messages: [
             {
               role: "system",
-              content: `You are Offly's anti-todo activity generator. Generate mindful, experience-focused activities that help users break away from productivity culture and focus on present-moment awareness and joy.
+              content: `You are Offly's activity suggestion assistant. Generate personalized, enjoyable activities that help users improve their well-being and mood.
 
-Response format: Return ONLY a JSON array without any markdown formatting:
-[
-  {"content": "Activity description here"},
-  {"content": "Another activity description"},
-  ...
-]
-
-Guidelines:
-- Activities should be about BEING, not DOING
-- Focus on mindfulness, presence, and sensory experiences
-- NO productivity, tasks, or goal-oriented activities
-- Activities should be simple and immediately doable
-- Use warm, inviting language
-- Consider user's hobbies and preferences when relevant
-- Avoid activities they've recently completed
-- Examples: "Notice 5 different sounds around you right now", "Feel the texture of 3 different objects", "Watch clouds move for 10 minutes"`,
+Key guidelines:
+- Suggest activities that are easy to start and complete
+- Focus on activities that bring joy and relaxation
+- Consider user preferences and interests
+- Avoid suggesting activities they've recently completed
+- Keep descriptions brief but engaging
+- Include a variety of activity types (physical, creative, social, etc.)
+- Make suggestions feel personal and achievable`,
             },
             {
               role: "user",
               content: prompt,
             },
           ],
-          max_tokens: 600,
-          temperature: 0.8,
+          max_tokens: 500,
+          temperature: 0.7,
         }),
       });
 
@@ -406,35 +545,14 @@ Guidelines:
       }
 
       const data = await response.json();
-      let activitiesText = data.choices[0].message.content.trim();
-      
-      // Remove markdown formatting if present
-      activitiesText = activitiesText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+      const responseText = data.choices[0].message.content.trim();
 
-      // Parse JSON response
-      let activities;
-      try {
-        activities = JSON.parse(activitiesText);
-      } catch (parseError) {
-        console.error("Failed to parse AI activities:", parseError);
-        console.error("Raw AI response:", activitiesText);
-        return this.getFallbackAntiTodoActivities(userPreferences);
-      }
-
-      // Ensure we have the right format
-      if (!Array.isArray(activities)) {
-        console.error("AI response is not an array:", activities);
-        return this.getFallbackAntiTodoActivities(userPreferences);
-      }
-
-      // Format activities for our system
-      const formattedActivities = activities.slice(0, count).map((activity) => ({
-        content: activity.content || activity.title || activity.description || activity,
-      }));
+      // Parse the response to extract activities
+      const activities = this.parseAntiToDoResponse(responseText, count);
 
       return {
         success: true,
-        activities: formattedActivities,
+        activities: activities,
         type: "ai_generated",
       };
     } catch (error) {
@@ -444,61 +562,146 @@ Guidelines:
   }
 
   buildAntiToDoPrompt(userPreferences, completedActivities, count) {
-    const { hobbies = [], username = 'User', isInitial = false, isRegeneration = false } = userPreferences;
-    
-    let prompt = `Generate ${count} personalized anti-todo activities for ${username}. `;
+    let prompt = `Generate ${count} personalized activity suggestions for a user with these preferences:`;
 
-    if (isInitial) {
-      prompt += `This is their first set of activities. `;
-    } else if (isRegeneration) {
-      prompt += `This is a regeneration - create fresh, different activities. `;
+    if (userPreferences.hobbies && userPreferences.hobbies.length > 0) {
+      prompt += `\n- Hobbies: ${userPreferences.hobbies.join(", ")}`;
     }
 
-    if (hobbies && hobbies.length > 0) {
-      prompt += `User's interests include: ${hobbies.join(', ')}. `;
-      prompt += `Incorporate these interests into mindful, present-moment activities. `;
+    if (userPreferences.goals && userPreferences.goals.length > 0) {
+      prompt += `\n- Goals: ${userPreferences.goals.join(", ")}`;
     }
 
     if (completedActivities && completedActivities.length > 0) {
-      prompt += `They have previously completed these activities, so generate completely different ones: ${completedActivities.slice(0, 10).join('; ')}. `;
+      prompt += `\n- Recently completed activities: ${completedActivities.join(", ")}`;
+      prompt += `\n(Avoid suggesting these activities again)`;
     }
 
-    prompt += `Generate ${count} unique anti-todo activities focused on mindful presence and sensory awareness. `;
-    prompt += `Each activity should help them slow down and connect with the present moment. `;
-    prompt += `Avoid any goal-oriented or productive activities.`;
+    prompt += `\n\nGenerate ${count} activities in this JSON format:
+[
+  {
+    "title": "Activity name",
+    "description": "Brief description",
+    "category": "physical|creative|social|mindfulness|learning|fun",
+    "icon": "Coffee|Book|Music|Camera|Heart|Palette|Sun|Lightbulb|Target|Smile|Sparkles"
+  }
+]`;
 
     return prompt;
   }
 
+  parseAntiToDoResponse(responseText, expectedCount) {
+    try {
+      // Try to parse as JSON first
+      const activities = JSON.parse(responseText);
+      if (Array.isArray(activities)) {
+        return activities.slice(0, expectedCount);
+      }
+    } catch (error) {
+      // If JSON parsing fails, try to extract activities from text
+      console.log("Failed to parse JSON, trying text extraction");
+    }
+
+    // Fallback: return default activities
+    return this.getFallbackAntiTodoActivities().activities;
+  }
+
   getIconFromName(iconName) {
-    // Import statements should be at component level, so we'll just return the icon name
-    // The Dashboard component will handle the actual icon mapping
-    return iconName || "Sparkles";
+    const iconMap = {
+      Coffee: "☕",
+      Book: "📚",
+      Music: "🎵",
+      Camera: "📸",
+      Heart: "❤️",
+      Palette: "🎨",
+      Sun: "☀️",
+      Lightbulb: "💡",
+      Target: "🎯",
+      Smile: "😊",
+      Sparkles: "✨",
+    };
+    return iconMap[iconName] || "✨";
   }
 
   getFallbackAntiTodoActivities(userPreferences = {}) {
-    const fallbackActivities = [
-      { content: "Feel the temperature of the air on your skin for 2 minutes" },
-      { content: "Listen to the sounds around you without trying to identify them" },
-      { content: "Notice 5 different textures within arm's reach" },
-      { content: "Watch your breath naturally flow in and out for 10 breaths" },
-      { content: "Look out a window and simply observe what you see" },
-      { content: "Feel your feet touching the ground or floor" },
-      { content: "Notice the weight of your body in your current position" },
-      { content: "Observe the play of light and shadow in your space" },
-      { content: "Count backward from 100 without rushing" },
-      { content: "Hold an object and explore its temperature, weight, and texture" },
+    const defaultActivities = [
+      {
+        title: "Take a mindful walk",
+        description: "Step outside and notice the world around you",
+        category: "physical",
+        icon: "Sun",
+      },
+      {
+        title: "Listen to your favorite music",
+        description: "Put on some tunes that make you feel good",
+        category: "fun",
+        icon: "Music",
+      },
+      {
+        title: "Write in a journal",
+        description: "Express your thoughts and feelings on paper",
+        category: "creative",
+        icon: "Book",
+      },
+      {
+        title: "Call a friend",
+        description: "Reach out to someone you care about",
+        category: "social",
+        icon: "Heart",
+      },
+      {
+        title: "Try a new hobby",
+        description: "Explore something that interests you",
+        category: "learning",
+        icon: "Lightbulb",
+      },
     ];
-
-    // Shuffle and select a subset
-    const shuffled = fallbackActivities.sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, 5);
 
     return {
       success: true,
-      activities: selected,
+      activities: defaultActivities,
       type: "fallback",
     };
+  }
+
+  async generateResponse(prompt) {
+    if (!OPENAI_API_KEY) {
+      return { success: false, response: "AI features are currently unavailable." };
+    }
+
+    try {
+      const response = await fetch(OPENAI_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          max_tokens: 200,
+          temperature: 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return {
+        success: true,
+        response: data.choices[0].message.content.trim(),
+      };
+    } catch (error) {
+      console.error("Error generating response:", error);
+      return { success: false, response: "Sorry, I'm having trouble generating a response right now." };
+    }
   }
 }
 

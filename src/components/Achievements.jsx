@@ -92,6 +92,40 @@ function Achievements() {
     initializeComponent();
   }, []);
 
+  // Add a refresh function that can be called from parent components
+  const refreshAchievements = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      await loadUserData(user.id);
+    } catch (error) {
+      console.error('Error refreshing achievements:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Expose refresh function to parent components
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.refreshAchievements = refreshAchievements;
+    }
+  }, [user]);
+
+  // Add periodic refresh to keep achievements up to date
+  useEffect(() => {
+    if (!user) return;
+
+    // Refresh achievements every 30 seconds to keep them current
+    const interval = setInterval(() => {
+      console.log('Periodic achievement refresh...');
+      refreshAchievements();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [user]);
+
   const checkForNewAchievements = async () => {
     console.log('Check for new achievements clicked');
     if (!user) return;
@@ -122,6 +156,27 @@ function Achievements() {
       alert("Error checking for achievements. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Debug function to show current analytics data
+  const debugAnalytics = async () => {
+    if (!user) return;
+    
+    try {
+      const { getUserAnalytics } = await import('../services/database');
+      const analyticsResult = await getUserAnalytics(user.id);
+      
+      if (analyticsResult.success) {
+        console.log('Current analytics data:', analyticsResult.data);
+        alert(`Analytics Debug:\nTotal Checkins: ${analyticsResult.data.total_checkins}\nCurrent Streak: ${analyticsResult.data.current_streak}\nCompleted Anti-Todos: ${analyticsResult.data.completedantitodos}\nWeekly Anti-Todos: ${analyticsResult.data.weeklyantitodos}`);
+      } else {
+        console.error('Failed to get analytics:', analyticsResult.error);
+        alert('Failed to get analytics data');
+      }
+    } catch (error) {
+      console.error('Error debugging analytics:', error);
+      alert('Error debugging analytics');
     }
   };
 
@@ -197,6 +252,14 @@ function Achievements() {
         >
           <Sparkles className="w-4 h-4 mr-2" />
           Check for New Achievements
+        </Button>
+        <Button
+          onClick={debugAnalytics}
+          variant="outline"
+          className="border-slate-300 dark:border-slate-600"
+        >
+          <Target className="w-4 h-4 mr-2" />
+          Debug Analytics
         </Button>
       </div>
 

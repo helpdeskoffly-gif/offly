@@ -211,6 +211,8 @@ const Dashboard = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [toastType, setToastType] = useState("success"); // "success" or "error"
   const [calendarRefreshTrigger, setCalendarRefreshTrigger] = useState(0);
+  const [lastAINudge, setLastAINudge] = useState("");
+  const [showAINudge, setShowAINudge] = useState(false);
 
   const containerRef = useRef(null);
   const contentRef = useRef(null);
@@ -1241,17 +1243,53 @@ const Dashboard = () => {
     return emojiScoreMap[emoji] || 5; // Default to neutral if emoji not found
   };
 
-  // Helper function to get AI score from OpenAI
-  const getAIScore = async (emoji, text) => {
+  // Enhanced AI sentiment analysis and nudge generation
+  const getAISentimentAndNudge = async (emoji, text) => {
     try {
-      // For now, return a placeholder score based on emoji and text length
-      // TODO: Implement actual OpenAI integration
-      const baseScore = convertEmojiToScore(emoji);
-      const textBonus = text.length > 50 ? 1 : 0; // Bonus for detailed entries
-      return Math.min(10, baseScore + textBonus);
+      // Calculate sentiment score purely from mood score (conditional logic)
+      const moodScore = convertEmojiToScore(emoji);
+      const sentimentScore = calculateSentimentFromScore(moodScore);
+      const aiScore = moodScore; // Use mood score directly as AI score
+      
+      // Generate personalized nudge using full AI analysis with text and checkins
+      const sentimentAnalysis = await openaiService.analyzeCustomerSentiment(emoji, text, userProfile);
+      const nudgeResult = await openaiService.generatePersonalizedNudge(sentimentAnalysis, userProfile, recentCheckins);
+      
+      return {
+        sentimentScore: sentimentScore,
+        aiScore: aiScore,
+        nudge: nudgeResult.nudge,
+        emotionalState: sentimentAnalysis.emotional_state,
+        supportNeeds: sentimentAnalysis.support_needs
+      };
     } catch (error) {
-      console.error('Error getting AI score:', error);
-      return convertEmojiToScore(emoji); // Fallback to emoji score
+      console.error('Error getting AI sentiment and nudge:', error);
+      // Fallback to basic emoji score
+      const baseScore = convertEmojiToScore(emoji);
+      const sentimentScore = calculateSentimentFromScore(baseScore);
+      return {
+        sentimentScore: sentimentScore,
+        aiScore: baseScore,
+        nudge: "Thanks for checking in! Every moment of self-awareness is a step toward growth. 🌱",
+        emotionalState: "Based on emoji analysis",
+        supportNeeds: "General support"
+      };
+    }
+  };
+
+  // Calculate sentiment score purely from mood score using conditional logic
+  const calculateSentimentFromScore = (moodScore) => {
+    // Convert 1-10 mood score to 1-5 sentiment score using conditional logic
+    if (moodScore >= 9) {
+      return 5; // Very Positive
+    } else if (moodScore >= 7) {
+      return 4; // Positive
+    } else if (moodScore >= 5) {
+      return 3; // Neutral
+    } else if (moodScore >= 3) {
+      return 2; // Negative
+    } else {
+      return 1; // Very Negative
     }
   };
 
@@ -1318,13 +1356,14 @@ const Dashboard = () => {
       // Convert emoji to mood score (1-10 scale)
       const moodScore = convertEmojiToScore(moodEmoji);
       
-      // Get AI score from OpenAI (placeholder for now, will implement)
-      const aiScore = await getAIScore(moodEmoji, notes);
+      // Get AI sentiment analysis and personalized nudge
+      const aiResult = await getAISentimentAndNudge(moodEmoji, notes);
       
       const checkinPayload = {
         moodScore: moodScore,
         moodText: notes,
-        aiScore: aiScore,
+        aiScore: aiResult.aiScore,
+        sentimentScore: aiResult.sentimentScore,
         moodEmoji: moodEmoji, // Keep original emoji for display
         hashtags: hashtags,
       };
@@ -1334,6 +1373,17 @@ const Dashboard = () => {
       
       const result = await submitCheckin(user.id, checkinPayload);
       console.log('Checkin submit result:', result);
+
+      // Store the AI nudge for display
+      if (aiResult.nudge) {
+        setLastAINudge(aiResult.nudge);
+        setShowAINudge(true);
+        
+        // Auto-hide after 10 seconds
+        setTimeout(() => {
+          setShowAINudge(false);
+        }, 10000);
+      }
 
       if (result.success) {
         // Store the checkin data for potential sharing
@@ -1398,6 +1448,11 @@ const Dashboard = () => {
               `🏆 Achievement unlocked: ${achievementNames}! Check your Achievements tab to see your progress.`,
             );
             setToastType("achievement");
+          }
+          
+          // Refresh achievements UI if the function is available
+          if (typeof window !== 'undefined' && window.refreshAchievements) {
+            window.refreshAchievements();
           }
         } catch (error) {
           console.error("Error checking achievements:", error);
@@ -2207,6 +2262,39 @@ const Dashboard = () => {
           currentMood={lastCheckinMood}
           onClose={() => setShowAINudges(false)}
         />
+      )}
+
+      {/* Personalized AI Nudge Display */}
+      {showAINudge && lastAINudge && (
+        <div className="fixed bottom-4 right-4 z-50 max-w-sm">
+          <Card className={`${themeColors.card} border-emerald-500/20 shadow-lg backdrop-blur-md`}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-1">
+                      <Brain className="h-4 w-4 text-emerald-500" />
+                      <span className={`text-xs font-medium ${themeColors.text.secondary}`}>
+                        AI Insight
+                      </span>
+                    </div>
+                  </div>
+                  <p className={`text-sm leading-relaxed ${themeColors.text.primary}`}>
+                    {lastAINudge}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAINudge(false)}
+                  className="h-6 w-6 p-0 flex-shrink-0"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* Profile Completion Modal */}

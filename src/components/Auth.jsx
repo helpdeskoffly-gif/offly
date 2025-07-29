@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../contexts/ThemeContext.jsx";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "./ui/Button";
 import Logo from "./Logo";
 import { Card } from "./ui/Card";
@@ -760,7 +760,13 @@ export function Auth() {
                           className="mt-1"
                         />
                         <Label htmlFor="terms" className={`text-sm ${themeColors.text.muted} leading-relaxed flex-1`}>
-                          I agree to the Terms of Service and Privacy Policy
+                          I agree to the{" "}
+                          <Link 
+                            to="/terms" 
+                            className="text-emerald-500 hover:text-emerald-400 underline transition-colors"
+                          >
+                            Terms & Conditions and Privacy Policy
+                          </Link>
                         </Label>
                       </div>
 

@@ -525,27 +525,31 @@ export const submitCheckin = async (uid, checkinData) => {
 
     console.log("User exists, proceeding with checkin...");
 
-    const { moodScore, moodText, aiScore, moodEmoji, hashtags } = checkinData;
+    const { moodScore, moodText, aiScore, sentimentScore, moodEmoji, hashtags } = checkinData;
 
     // Validate and provide defaults for required fields
     const validMoodScore = typeof moodScore === "number" ? moodScore : 5; // Default to neutral mood
     const validMoodText = typeof moodText === "string" ? moodText : "";
     const validAiScore = typeof aiScore === "number" ? aiScore : 0;
+    const validSentimentScore = typeof sentimentScore === "number" ? sentimentScore : 3; // Default to neutral
     const validMoodEmoji = typeof moodEmoji === "string" ? moodEmoji : "🙂";
     const validHashtags = Array.isArray(hashtags) ? hashtags : [];
 
-    // Calculate sentiment score based on moodScore (1-10 scale) to 1-5 scale
-    let sentimentScore;
-    if (validMoodScore >= 9) {
-      sentimentScore = 5; // Very Positive
-    } else if (validMoodScore >= 7) {
-      sentimentScore = 4; // Positive
-    } else if (validMoodScore >= 5) {
-      sentimentScore = 3; // Neutral
-    } else if (validMoodScore >= 3) {
-      sentimentScore = 2; // Negative
-    } else {
-      sentimentScore = 1; // Very Negative
+    // Use AI-provided sentiment score if available, otherwise calculate from mood score
+    let finalSentimentScore = validSentimentScore;
+    if (!sentimentScore || sentimentScore === 0) {
+      // Fallback calculation based on moodScore (1-10 scale) to 1-5 scale
+      if (validMoodScore >= 9) {
+        finalSentimentScore = 5; // Very Positive
+      } else if (validMoodScore >= 7) {
+        finalSentimentScore = 4; // Positive
+      } else if (validMoodScore >= 5) {
+        finalSentimentScore = 3; // Neutral
+      } else if (validMoodScore >= 3) {
+        finalSentimentScore = 2; // Negative
+      } else {
+        finalSentimentScore = 1; // Very Negative
+      }
     }
 
     // Create base checkin record with required fields only
@@ -554,7 +558,7 @@ export const submitCheckin = async (uid, checkinData) => {
       mood_score: validMoodScore, // Use validated value
       mood_text: validMoodText, // Use validated value
       ai_score: validAiScore, // Use validated value
-      sentiment_score: sentimentScore,
+      sentiment_score: finalSentimentScore, // Use AI-analyzed sentiment score
       checkin_date: new Date().toISOString().split("T")[0], // YYYY-MM-DD format
       checkin_time: new Date().toTimeString().split(" ")[0], // HH:MM:SS format
       created_at: new Date().toISOString(),
@@ -1109,7 +1113,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     category: "milestone",
     target: 1,
     points_reward: 10,
-    condition: (stats) => stats.totalCheckins >= 1,
+    condition: (stats) => stats.total_checkins >= 1,
   },
   streak_3: {
     id: "streak_3",
@@ -1119,7 +1123,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     category: "streak",
     target: 3,
     points_reward: 15,
-    condition: (stats) => stats.currentStreak >= 3,
+    condition: (stats) => stats.current_streak >= 3,
   },
   streak_7: {
     id: "streak_7",
@@ -1129,7 +1133,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     category: "streak",
     target: 7,
     points_reward: 25,
-    condition: (stats) => stats.currentStreak >= 7,
+    condition: (stats) => stats.current_streak >= 7,
   },
   streak_30: {
     id: "streak_30",
@@ -1139,7 +1143,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     category: "streak",
     target: 30,
     points_reward: 50,
-    condition: (stats) => stats.currentStreak >= 30,
+    condition: (stats) => stats.current_streak >= 30,
   },
   checkins_10: {
     id: "checkins_10",
@@ -1149,7 +1153,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     category: "milestone",
     target: 10,
     points_reward: 20,
-    condition: (stats) => stats.totalCheckins >= 10,
+    condition: (stats) => stats.total_checkins >= 10,
   },
   checkins_50: {
     id: "checkins_50",
@@ -1159,7 +1163,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     category: "milestone",
     target: 50,
     points_reward: 40,
-    condition: (stats) => stats.totalCheckins >= 50,
+    condition: (stats) => stats.total_checkins >= 50,
   },
   checkins_100: {
     id: "checkins_100",
@@ -1169,7 +1173,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     category: "milestone",
     target: 100,
     points_reward: 75,
-    condition: (stats) => stats.totalCheckins >= 100,
+    condition: (stats) => stats.total_checkins >= 100,
   },
   // NEW: Anti-Todo Activity Achievements
   first_antitodo: {
@@ -1180,7 +1184,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     category: "wellness",
     target: 1,
     points_reward: 15,
-    condition: (stats) => stats.completedAntiTodos >= 1,
+    condition: (stats) => stats.completedantitodos >= 1,
   },
   antitodo_5: {
     id: "antitodo_5",
@@ -1190,7 +1194,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     category: "wellness",
     target: 5,
     points_reward: 25,
-    condition: (stats) => stats.completedAntiTodos >= 5,
+    condition: (stats) => stats.completedantitodos >= 5,
   },
   antitodo_15: {
     id: "antitodo_15",
@@ -1200,7 +1204,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     category: "wellness",
     target: 15,
     points_reward: 40,
-    condition: (stats) => stats.completedAntiTodos >= 15,
+    condition: (stats) => stats.completedantitodos >= 15,
   },
   antitodo_30: {
     id: "antitodo_30",
@@ -1210,7 +1214,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     category: "wellness",
     target: 30,
     points_reward: 60,
-    condition: (stats) => stats.completedAntiTodos >= 30,
+    condition: (stats) => stats.completedantitodos >= 30,
   },
   wellness_week: {
     id: "wellness_week",
@@ -1220,7 +1224,7 @@ export const ACHIEVEMENT_DEFINITIONS = {
     category: "wellness",
     target: 3,
     points_reward: 20,
-    condition: (stats) => stats.weeklyAntiTodos >= 3,
+    condition: (stats) => stats.weeklyantitodos >= 3,
   },
 };
 
@@ -1301,22 +1305,22 @@ export const calculateAchievementProgress = (achievementId, stats) => {
     case "checkins_10":
     case "checkins_50":
     case "checkins_100":
-      progress = Math.min(stats.totalCheckins || 0, achievement.target);
+      progress = Math.min(stats.total_checkins || 0, achievement.target);
       break;
     case "streak_3":
     case "streak_7":
     case "streak_30":
-      progress = Math.min(stats.currentStreak || 0, achievement.target);
+      progress = Math.min(stats.current_streak || 0, achievement.target);
       break;
     // NEW: Anti-Todo Achievement Progress
     case "first_antitodo":
     case "antitodo_5":
     case "antitodo_15":
     case "antitodo_30":
-      progress = Math.min(stats.completedAntiTodos || 0, achievement.target);
+      progress = Math.min(stats.completedantitodos || 0, achievement.target);
       break;
     case "wellness_week":
-      progress = Math.min(stats.weeklyAntiTodos || 0, achievement.target);
+      progress = Math.min(stats.weeklyantitodos || 0, achievement.target);
       break;
     default:
       progress = 0;

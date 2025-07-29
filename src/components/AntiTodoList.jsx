@@ -324,6 +324,11 @@ export const AntiTodoList = ({ userId }) => {
           setToastMessage(`🎉 Anti-todo completed!`);
           setShowToast(true);
           setTimeout(() => setShowToast(false), 4000);
+          
+          // Refresh achievements UI if the function is available
+          if (typeof window !== 'undefined' && window.refreshAchievements) {
+            window.refreshAchievements();
+          }
         }
         
         // Elegant feedback animation

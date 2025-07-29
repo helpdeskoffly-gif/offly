@@ -9,6 +9,7 @@ import Dashboard from "./components/Dashboard";
 import AuthTest from "./components/AuthTest";
 import { Loading } from "./components/Loading";
 import SupabaseErrorBoundary from "./components/SupabaseErrorBoundary";
+import TermsAndConditions from "./components/TermsAndConditions";
 
 function App() {
   const { loading } = useAuth();
@@ -30,6 +31,7 @@ function App() {
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth-test" element={<AuthTest />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
           </Routes>
         </Router>
       </ThemeProvider>
