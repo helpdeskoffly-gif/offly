@@ -43,9 +43,11 @@ const AINudges = ({
             mood: currentMood,
           };
 
-          setNudges([newNudge]);
+          if (newNudge.type === "ai_generated") {
+            setNudges([newNudge]);
+          }
         }
-      } catch (error) {
+      } catch (e) {
         // Error generating nudge
       } finally {
         if (mounted) {
@@ -59,7 +61,7 @@ const AINudges = ({
     return () => {
       mounted = false;
     };
-  }, [user?.uid, userProfile?.currentStreak, currentMood]); // Only depend on stable values
+  }, [user, userProfile, recentCheckins, currentMood, isGenerating]);
 
   // Show nudges with animation
   useEffect(() => {
@@ -99,7 +101,7 @@ const AINudges = ({
         currentMood,
       );
 
-      if (result.success) {
+      if (result.success && result.type === "ai_generated") {
         const newNudge = {
           id: Date.now(),
           content: result.nudge,
@@ -110,7 +112,7 @@ const AINudges = ({
 
         setNudges((prev) => [newNudge, ...prev.slice(0, 2)]); // Keep max 3 nudges
       }
-    } catch (error) {
+    } catch (e) {
       // Error generating nudge
     } finally {
       setIsGenerating(false);
@@ -160,7 +162,7 @@ const AINudges = ({
 
       return () => clearTimeout(timer);
     }
-  }, [nudges.length]);
+  }, [nudges.length, dismissAll]);
 
   const themeColors = {
     background:
@@ -185,7 +187,7 @@ const AINudges = ({
       className="fixed bottom-4 right-4 z-50 max-w-sm space-y-3"
       style={{ maxHeight: "400px", overflowY: "auto" }}
     >
-      {nudges.map((nudge, index) => (
+      {nudges.filter(nudge => nudge.type === "ai_generated").map((nudge, index) => (
         <Card
           key={nudge.id}
           data-nudge-id={nudge.id}
@@ -197,17 +199,11 @@ const AINudges = ({
                 {/* Header */}
                 <div className="flex items-center gap-2 mb-2">
                   <div className="flex items-center gap-1">
-                    {nudge.type === "ai_generated" ? (
-                      <Brain className="h-4 w-4 text-purple-500" />
-                    ) : (
-                      <Heart className="h-4 w-4 text-pink-500" />
-                    )}
+                    <Brain className="h-4 w-4 text-purple-500" />
                     <span
                       className={`text-xs font-medium ${themeColors.text.secondary}`}
                     >
-                      {nudge.type === "ai_generated"
-                        ? "AI Nudge"
-                        : "Offly Cares"}
+                      AI Nudge
                     </span>
                   </div>
 

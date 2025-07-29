@@ -21,7 +21,6 @@ export function Navbar() {
   const navRef = useRef(null);
   const logoRef = useRef(null);
   const dropdownMenuRef = useRef(null);
-  const signInButtonRef = useRef(null);
   const mobileMenuRef = useRef(null);
 
   useEffect(() => {
@@ -34,24 +33,55 @@ export function Navbar() {
   }, []);
 
   useEffect(() => {
-    // Dropdown menu animations
+    // Dropdown menu animations - only on click, not hover
     if (isDropdownOpen && dropdownMenuRef.current) {
+      // Kill any existing animations first
+      gsap.killTweensOf(dropdownMenuRef.current);
+      
       gsap.fromTo(
         dropdownMenuRef.current,
         { opacity: 0, scale: 0.95, y: -10 },
         { opacity: 1, scale: 1, y: 0, duration: 0.2, ease: "power2.out" },
       );
+    } else if (!isDropdownOpen && dropdownMenuRef.current) {
+      // Animate out when closing
+      gsap.killTweensOf(dropdownMenuRef.current);
+      
+      gsap.to(dropdownMenuRef.current, {
+        opacity: 0,
+        scale: 0.95,
+        y: -10,
+        duration: 0.15,
+        ease: "power2.in",
+        onComplete: () => {
+          // Ensure dropdown is hidden after animation
+          if (dropdownMenuRef.current) {
+            dropdownMenuRef.current.style.display = 'none';
+          }
+        }
+      });
     }
   }, [isDropdownOpen]);
 
   useEffect(() => {
     // Mobile menu animations
     if (isMobileMenuOpen && mobileMenuRef.current) {
+      gsap.killTweensOf(mobileMenuRef.current);
+      
       gsap.fromTo(
         mobileMenuRef.current,
         { opacity: 0, height: 0 },
         { opacity: 1, height: "auto", duration: 0.3, ease: "power2.out" },
       );
+    } else if (!isMobileMenuOpen && mobileMenuRef.current) {
+      gsap.killTweensOf(mobileMenuRef.current);
+      
+      gsap.to(mobileMenuRef.current, {
+        opacity: 0,
+        height: 0,
+        duration: 0.2,
+        ease: "power2.in"
+      });
     }
   }, [isMobileMenuOpen]);
 
@@ -170,21 +200,12 @@ export function Navbar() {
       >
         <div className="px-4 lg:px-6 py-3 lg:py-4">
           <div className="flex justify-between items-center">
-            {/* Logo */}
-            <div
-              ref={logoRef}
-              className="flex items-center"
-              onMouseEnter={() =>
-                gsap.to(logoRef.current, { scale: 1.05, duration: 0.2 })
-              }
-              onMouseLeave={() =>
-                gsap.to(logoRef.current, { scale: 1, duration: 0.2 })
-              }
-            >
+            {/* Logo - Removed hover animations */}
+            <div ref={logoRef} className="flex items-center">
               <Logo 
                 size="md" 
                 onClick={() => navigate("/")}
-                className="cursor-pointer hover:opacity-80 transition-opacity"
+                className="cursor-pointer transition-opacity duration-200 hover:opacity-80"
               />
             </div>
 
@@ -215,7 +236,7 @@ export function Navbar() {
                         theme === "dark"
                           ? "hover:bg-slate-700/50"
                           : "hover:bg-orange-100/50"
-                      } transition-colors`}
+                      } transition-colors duration-200`}
                     >
                       <img
                         className="h-8 w-8 rounded-full ring-2 ring-violet-400/30 object-cover"
@@ -305,7 +326,7 @@ export function Navbar() {
                             theme === "dark"
                               ? "hover:bg-slate-700/50"
                               : "hover:bg-orange-100/50"
-                          } transition-colors`}
+                          } transition-colors duration-200`}
                         >
                           <svg
                             className="h-4 w-4 mr-3"
@@ -332,7 +353,7 @@ export function Navbar() {
                             theme === "dark"
                               ? "hover:bg-slate-700/50"
                               : "hover:bg-orange-100/50"
-                          } transition-colors`}
+                          } transition-colors duration-200`}
                         >
                           <svg
                             className="h-4 w-4 mr-3"
@@ -362,7 +383,7 @@ export function Navbar() {
                             theme === "dark"
                               ? "hover:bg-slate-700/50"
                               : "hover:bg-orange-100/50"
-                          } transition-colors`}
+                          } transition-colors duration-200`}
                         >
                           <svg
                             className="h-4 w-4 mr-3"
@@ -396,7 +417,7 @@ export function Navbar() {
                         <Button
                           variant="ghost"
                           onClick={handleSignOut}
-                          className={`w-full justify-start px-4 py-2 text-sm rounded-none hover:bg-red-500/10 hover:text-red-400 transition-colors`}
+                          className={`w-full justify-start px-4 py-2 text-sm rounded-none hover:bg-red-500/10 hover:text-red-400 transition-colors duration-200`}
                         >
                           <svg
                             className="h-4 w-4 mr-3"
@@ -418,21 +439,7 @@ export function Navbar() {
                   )}
                 </div>
               ) : (
-                <div
-                  ref={signInButtonRef}
-                  onMouseEnter={() =>
-                    gsap.to(signInButtonRef.current, {
-                      scale: 1.02,
-                      duration: 0.2,
-                    })
-                  }
-                  onMouseLeave={() =>
-                    gsap.to(signInButtonRef.current, {
-                      scale: 1,
-                      duration: 0.2,
-                    })
-                  }
-                >
+                <div ref={signInButtonRef}>
                   <Button
                     onClick={() => navigate("/auth")}
                     className={`bg-gradient-to-r ${premiumGradients.secondary} hover:shadow-xl hover:shadow-emerald-500/25 text-gray-900 font-semibold transition-all duration-300`}

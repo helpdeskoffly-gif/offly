@@ -205,9 +205,8 @@ Generate a personalized nudge that addresses their specific emotional needs.`;
   convertEmojiToScore(emoji) {
     const emojiScoreMap = {
       '😭': 1, '😢': 2, '😔': 3, '😐': 4, '🙂': 5,
-      '😊': 6, '😄': 7, '😁': 8, '🤩': 9, '🥳': 10,
-      '😢': 2, '😔': 3, '😐': 4, '🙂': 5, '😊': 6,
-      '😄': 7, '🥰': 8, '😎': 7, '🤗': 8, '🥳': 10
+      '😊': 6, '😄': 7, '🥰': 8, '😎': 9, '🤗': 10,
+      '🥳': 10
     };
     return emojiScoreMap[emoji] || 5;
   }
