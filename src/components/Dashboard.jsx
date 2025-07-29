@@ -1456,9 +1456,9 @@ const Dashboard = () => {
   const TabNavigation = () => (
     <div className="mb-4 sm:mb-8">
       <div
-        className={`p-1 sm:p-2 ${themeColors.card} rounded-2xl sm:rounded-3xl border shadow-lg backdrop-blur-xl`}
+        className={`p-2 sm:p-3 lg:p-4 ${themeColors.card} rounded-2xl sm:rounded-3xl border shadow-lg backdrop-blur-xl`}
       >
-        <div className="grid grid-cols-5 gap-1 sm:gap-2">
+        <div className="grid grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
           {navigationTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -2116,7 +2116,7 @@ const Dashboard = () => {
 
       {/* Main Content with Tab Navigation */}
       <main
-        className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6"
+        className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-4 sm:py-6"
         ref={containerRef}
       >
         {/* Tab Navigation */}

@@ -98,7 +98,7 @@ const FooterSection = memo(() => {
                 <a
                   key={social}
                   href="#"
-                  className="text-slate-400 hover:text-white transition-colors"
+                  className="text-slate-400"
                 >
                   <span className="sr-only">{social}</span>
                   <div className="w-6 h-6 bg-slate-600 rounded"></div>
@@ -115,7 +115,7 @@ const FooterSection = memo(() => {
                 <li key={item}>
                   <a
                     href="#"
-                    className="text-slate-400 hover:text-white transition-colors"
+                    className="text-slate-400"
                   >
                     {item}
                   </a>
@@ -132,7 +132,7 @@ const FooterSection = memo(() => {
                 <li key={item}>
                   <a
                     href="#"
-                    className="text-slate-400 hover:text-white transition-colors"
+                    className="text-slate-400"
                   >
                     {item}
                   </a>
@@ -155,7 +155,7 @@ const FooterSection = memo(() => {
               <a
                 key={item}
                 href="#"
-                className="text-slate-400 hover:text-white transition-colors text-sm"
+                className="text-slate-400 text-sm"
               >
                 {item}
               </a>

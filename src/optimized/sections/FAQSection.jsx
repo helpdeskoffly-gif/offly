@@ -49,27 +49,27 @@ const FAQItem = memo(({ question, answer, isOpen, onToggle, index }) => {
   return (
     <div 
       ref={cardRef}
-      className="group relative bg-gradient-to-br from-gray-900/80 via-gray-800/60 to-gray-900/80 border border-gray-700/50 rounded-2xl overflow-hidden hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-500/20"
+      className="group relative bg-gradient-to-br from-gray-900/80 via-gray-800/60 to-gray-900/80 border border-gray-700/50 rounded-2xl overflow-hidden"
     >
       {/* Animated background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-teal-500/5 opacity-0"></div>
       
       {/* Glow effect on hover */}
-      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/8 via-pink-500/6 to-violet-500/8 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-xl"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/8 via-pink-500/6 to-violet-500/8 opacity-0 blur-xl"></div>
       
       {/* Content */}
       <div className="relative z-10">
         <button
           onClick={onToggle}
-          className="w-full px-8 py-6 text-left flex items-center justify-between hover:bg-gradient-to-r hover:from-emerald-500/10 hover:to-teal-500/10 transition-all duration-300 group"
+          className="w-full px-8 py-6 text-left flex items-center justify-between group"
         >
           <div className="flex items-center space-x-4">
-            <div className="w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <h3 className="text-lg font-semibold text-white group-hover:text-purple-300 transition-colors duration-300">{question}</h3>
+            <div className="w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full opacity-60"></div>
+            <h3 className="text-lg font-semibold text-white">{question}</h3>
           </div>
                       <div
               ref={iconRef}
-              className="flex-shrink-0 w-6 h-6 text-gray-400 group-hover:text-purple-400 transition-all duration-300 group-hover:scale-110"
+              className="flex-shrink-0 w-6 h-6 text-gray-400"
             >
             <svg
               fill="none"
@@ -109,6 +109,10 @@ const FAQSection = memo(() => {
   const titleRef = useRef(null);
   const descriptionRef = useRef(null);
   const faqRef = useRef(null);
+  const bgElement1Ref = useRef(null);
+  const bgElement2Ref = useRef(null);
+  const bgElement3Ref = useRef(null);
+  const bgElement4Ref = useRef(null);
 
   const [openItems, setOpenItems] = useState(new Set([0])); // Open first item by default
 
@@ -128,6 +132,43 @@ const FAQSection = memo(() => {
       animateItem(titleRef.current, { delay: 0.2 });
       animateItem(descriptionRef.current, { delay: 0.3 });
       animateItem(faqRef.current, { delay: 0.4 });
+      
+      // Animate background elements with GSAP
+      if (bgElement1Ref.current) {
+        gsap.to(bgElement1Ref.current, {
+          opacity: [0.3, 0.8, 0.3],
+          duration: 2,
+          repeat: -1,
+          ease: "power2.inOut"
+        });
+      }
+      if (bgElement2Ref.current) {
+        gsap.to(bgElement2Ref.current, {
+          opacity: [0.2, 0.6, 0.2],
+          duration: 2.5,
+          repeat: -1,
+          ease: "power2.inOut",
+          delay: 0.5
+        });
+      }
+      if (bgElement3Ref.current) {
+        gsap.to(bgElement3Ref.current, {
+          opacity: [0.25, 0.7, 0.25],
+          duration: 3,
+          repeat: -1,
+          ease: "power2.inOut",
+          delay: 1
+        });
+      }
+      if (bgElement4Ref.current) {
+        gsap.to(bgElement4Ref.current, {
+          opacity: [0.15, 0.5, 0.15],
+          duration: 2.8,
+          repeat: -1,
+          ease: "power2.inOut",
+          delay: 1.5
+        });
+      }
     }
   }, [inView]);
 
@@ -178,10 +219,10 @@ const FAQSection = memo(() => {
     <div className="py-32 bg-gradient-to-br from-gray-950 via-gray-900 to-black relative overflow-hidden" ref={ref}>
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-10 w-2 h-2 bg-emerald-400 rounded-full opacity-60 animate-pulse"></div>
-        <div className="absolute top-40 right-20 w-1 h-1 bg-teal-400 rounded-full opacity-40 animate-pulse delay-1000"></div>
-        <div className="absolute bottom-40 left-20 w-1.5 h-1.5 bg-purple-400 rounded-full opacity-50 animate-pulse delay-2000"></div>
-        <div className="absolute bottom-20 right-10 w-1 h-1 bg-emerald-300 rounded-full opacity-30 animate-pulse delay-3000"></div>
+        <div ref={bgElement1Ref} className="absolute top-20 left-10 w-2 h-2 bg-emerald-400 rounded-full opacity-30"></div>
+        <div ref={bgElement2Ref} className="absolute top-40 right-20 w-1 h-1 bg-teal-400 rounded-full opacity-20"></div>
+        <div ref={bgElement3Ref} className="absolute bottom-40 left-20 w-1.5 h-1.5 bg-purple-400 rounded-full opacity-25"></div>
+        <div ref={bgElement4Ref} className="absolute bottom-20 right-10 w-1 h-1 bg-emerald-300 rounded-full opacity-15"></div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -237,7 +278,7 @@ const FAQSection = memo(() => {
                 Reach out to us directly via{" "}
                 <a
                   href="mailto:support@offly.app"
-                  className="text-emerald-400 hover:text-emerald-300 transition-colors duration-200 font-semibold"
+                  className="text-emerald-400 font-semibold"
                 >
                   support@offly.app
                 </a>{" "}

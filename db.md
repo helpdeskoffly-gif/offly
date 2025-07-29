@@ -1,3 +1,4 @@
+
 | schemaname | tablename               | indexname                                    | indexdef                                                                                                                           |
 | ---------- | ----------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | public     | achievement_definitions | achievement_definitions_achievement_id_key   | CREATE UNIQUE INDEX achievement_definitions_achievement_id_key ON public.achievement_definitions USING btree (achievement_id)      |

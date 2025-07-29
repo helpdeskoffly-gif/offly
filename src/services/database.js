@@ -280,7 +280,7 @@ export const createActiveUser = async (uid, username) => {
     console.log("Creating active user:", { uid, username });
 
     // First ensure user exists in public.users table
-    const { data: existingUser, error: userCheckError } = await supabase
+    const { error: userCheckError } = await supabase
       .from("users")
       .select("id")
       .eq("id", uid)
@@ -450,7 +450,7 @@ export const submitCheckin = async (uid, checkinData) => {
 
     // CRITICAL FIX: Ensure user exists in public.users before creating checkin
     console.log("Checking if user exists before creating checkin...");
-    const { data: userExists, error: userCheckError } = await supabase
+    const { error: userCheckError } = await supabase
       .from("users")
       .select("id")
       .eq("id", uid)
@@ -1301,27 +1301,55 @@ export const calculateAchievementProgress = (achievementId, stats) => {
   let progress = 0;
 
   switch (achievementId) {
-    case "first_checkin":
-    case "checkins_10":
-    case "checkins_50":
-    case "checkins_100":
+    case "first_checkin": {
       progress = Math.min(stats.total_checkins || 0, achievement.target);
       break;
-    case "streak_3":
-    case "streak_7":
-    case "streak_30":
+    }
+    case "checkins_10": {
+      progress = Math.min(stats.total_checkins || 0, achievement.target);
+      break;
+    }
+    case "checkins_50": {
+      progress = Math.min(stats.total_checkins || 0, achievement.target);
+      break;
+    }
+    case "checkins_100": {
+      progress = Math.min(stats.total_checkins || 0, achievement.target);
+      break;
+    }
+    case "streak_3": {
       progress = Math.min(stats.current_streak || 0, achievement.target);
       break;
+    }
+    case "streak_7": {
+      progress = Math.min(stats.current_streak || 0, achievement.target);
+      break;
+    }
+    case "streak_30": {
+      progress = Math.min(stats.current_streak || 0, achievement.target);
+      break;
+    }
     // NEW: Anti-Todo Achievement Progress
-    case "first_antitodo":
-    case "antitodo_5":
-    case "antitodo_15":
-    case "antitodo_30":
+    case "first_antitodo": {
       progress = Math.min(stats.completedantitodos || 0, achievement.target);
       break;
-    case "wellness_week":
+    }
+    case "antitodo_5": {
+      progress = Math.min(stats.completedantitodos || 0, achievement.target);
+      break;
+    }
+    case "antitodo_15": {
+      progress = Math.min(stats.completedantitodos || 0, achievement.target);
+      break;
+    }
+    case "antitodo_30": {
+      progress = Math.min(stats.completedantitodos || 0, achievement.target);
+      break;
+    }
+    case "wellness_week": {
       progress = Math.min(stats.weeklyantitodos || 0, achievement.target);
       break;
+    }
     default:
       progress = 0;
   }
@@ -1360,8 +1388,8 @@ export const checkAndUnlockAchievements = async (uid) => {
         const progress = calculateAchievementProgress(achievementId, stats);
 
         if (progress.isUnlocked) {
-          // Unlock the achievement
-          const newAchievement = await supabaseHelpers.insert("achievements", {
+          // Unlock the achievement - use upsert to handle duplicates
+          const achievementData = {
             user_id: uid,
             achievement_id: achievementId,
             achievement_name: achievement.name,
@@ -1373,29 +1401,80 @@ export const checkAndUnlockAchievements = async (uid) => {
             points_reward: achievement.points_reward,
             is_unlocked: true,
             unlocked_at: new Date().toISOString(),
-          });
+          };
 
-          // Award points for unlocking the achievement
+          // Try to insert, if it fails due to duplicate, update instead
+          let newAchievement;
           try {
-            const pointsResult = await awardPoints(
-              uid,
-              achievement.points_reward,
-              'achievement',
-              newAchievement[0].id,
-              `Achievement unlocked: ${achievement.name}`
-            );
-            
-            if (pointsResult.success) {
-              console.log(`Awarded ${achievement.points_reward} points for achievement: ${achievement.name}`);
+            newAchievement = await supabaseHelpers.insert("achievements", achievementData);
+          } catch (insertError) {
+            if (insertError.code === '23505') { // Duplicate key error
+              // Achievement already exists, update it
+              const { data: existing } = await supabase
+                .from("achievements")
+                .select("*")
+                .eq("user_id", uid)
+                .eq("achievement_id", achievementId)
+                .single();
+              
+              if (existing && !existing.is_unlocked) {
+                // Only award points if it wasn't already unlocked
+                try {
+                  const pointsResult = await awardPoints(
+                    uid,
+                    achievement.points_reward,
+                    'achievement',
+                    existing.id,
+                    `Achievement unlocked: ${achievement.name}`
+                  );
+                  
+                  if (pointsResult.success) {
+                    console.log(`Awarded ${achievement.points_reward} points for achievement: ${achievement.name}`);
+                  }
+                } catch (pointsError) {
+                  console.error(`Failed to award points for achievement ${achievement.name}:`, pointsError);
+                }
+              }
+              
+              // Update the existing achievement
+              await supabaseHelpers.update("achievements", existing.id, {
+                progress: progress.progress,
+                is_unlocked: true,
+                unlocked_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              });
+              
+              newAchievement = [{ ...existing, ...achievementData }];
+            } else {
+              throw insertError;
             }
-          } catch (pointsError) {
-            console.error(`Failed to award points for achievement ${achievement.name}:`, pointsError);
           }
 
-          newAchievements.push(newAchievement[0]);
+          // Award points for new achievements only
+          if (newAchievement && newAchievement[0]) {
+            try {
+              const pointsResult = await awardPoints(
+                uid,
+                achievement.points_reward,
+                'achievement',
+                newAchievement[0].id,
+                `Achievement unlocked: ${achievement.name}`
+              );
+              
+              if (pointsResult.success) {
+                console.log(`Awarded ${achievement.points_reward} points for achievement: ${achievement.name}`);
+              }
+            } catch (pointsError) {
+              console.error(`Failed to award points for achievement ${achievement.name}:`, pointsError);
+            }
+          }
+
+          if (newAchievement && newAchievement[0]) {
+            newAchievements.push(newAchievement[0]);
+          }
         } else {
-          // Create progress record
-          await supabaseHelpers.insert("achievements", {
+          // Create progress record - use upsert to handle duplicates
+          const achievementData = {
             user_id: uid,
             achievement_id: achievementId,
             achievement_name: achievement.name,
@@ -1406,7 +1485,30 @@ export const checkAndUnlockAchievements = async (uid) => {
             target: progress.target,
             points_reward: achievement.points_reward,
             is_unlocked: false,
-          });
+          };
+
+          try {
+            await supabaseHelpers.insert("achievements", achievementData);
+          } catch (insertError) {
+            if (insertError.code === '23505') { // Duplicate key error
+              // Achievement already exists, update progress only
+              const { data: existing } = await supabase
+                .from("achievements")
+                .select("*")
+                .eq("user_id", uid)
+                .eq("achievement_id", achievementId)
+                .single();
+              
+              if (existing) {
+                await supabaseHelpers.update("achievements", existing.id, {
+                  progress: progress.progress,
+                  updated_at: new Date().toISOString(),
+                });
+              }
+            } else {
+              throw insertError;
+            }
+          }
         }
       } else {
         // Update existing achievement progress
@@ -2072,7 +2174,7 @@ export const completePlant = async (userId, plantData) => {
   });
 };
 
-export const waterPlant = async (plantId, userId) => {
+export const waterPlant = async (plantId) => {
   return safeSupabaseOperation(async () => {
     // Add growth XP directly
     const growthResult = await updatePlantGrowth(plantId, 10);
@@ -2085,7 +2187,7 @@ export const waterPlant = async (plantId, userId) => {
   });
 };
 
-export const fertilizePlant = async (plantId, userId, fertilizerValue = 25) => {
+export const fertilizePlant = async (plantId, fertilizerValue = 25) => {
   return safeSupabaseOperation(async () => {
     // Add significant growth XP directly
     const growthResult = await updatePlantGrowth(plantId, fertilizerValue);
@@ -2200,13 +2302,15 @@ export const useInventoryItem = async (userId, purchaseId, plantId) => {
 
     // Apply item effect based on item_type
     switch (item.item_type) {
-      case 'water':
-        result = await waterPlant(plantId, userId);
+      case 'water': {
+        result = await waterPlant(plantId);
         break;
-      case 'fertilizer':
-        result = await fertilizePlant(plantId, userId, item.effect_value);
+      }
+      case 'fertilizer': {
+        result = await fertilizePlant(plantId, item.effect_value);
         break;
-      case 'decoration':
+      }
+      case 'decoration': {
         // Add decoration to plant
         const { data: plant, error: plantError } = await supabase
           .from("user_plants")
@@ -2234,6 +2338,7 @@ export const useInventoryItem = async (userId, purchaseId, plantId) => {
         if (updateError) throw updateError;
         result = { success: true, data: updatedPlant };
         break;
+      }
     }
 
     if (result.success) {

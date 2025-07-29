@@ -125,7 +125,7 @@ const TeamsSection = memo(({ theme, themeColors }) => {
           <MemoizedButton
             variant="outline"
             size="lg"
-            className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-400 px-8 py-4 text-lg transition-all duration-300"
+            className="border-emerald-500/50 text-emerald-400 px-8 py-4 text-lg"
           >
             Learn about Teams
           </MemoizedButton>

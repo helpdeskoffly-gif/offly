@@ -211,10 +211,10 @@ function Achievements() {
   
 
   return (
-    <div className="space-y-4 sm:space-y-8 p-3 sm:p-6">
+    <div className="space-y-4 sm:space-y-8 p-4 sm:p-6 lg:p-8">
       
       {/* Stats Header */}
-      <div className="grid grid-cols-1 gap-4 mb-6">
+      <div className="grid grid-cols-1 gap-4 mb-6 mx-2 sm:mx-4">
         <Card className="bg-white/70 dark:bg-slate-800/50 border-slate-200/60 dark:border-slate-700/50 backdrop-blur-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -233,7 +233,7 @@ function Achievements() {
 
 
       {/* Achievements Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mx-2 sm:mx-4">
         {achievements.length === 0 ? (
           <div className="col-span-full text-center py-8">
             <p className="text-lg text-slate-600 dark:text-slate-400">No achievements found</p>

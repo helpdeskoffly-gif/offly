@@ -145,7 +145,7 @@ export function HomeOptimized() {
 
   return (
     <div
-      className={`min-h-screen ${themeColors.background} relative overflow-hidden transition-colors duration-500`}
+      className={`min-h-screen ${themeColors.background} relative overflow-hidden`}
     >
       {/* Optimized background with reduced particles */}
       <OptimizedBackground theme={theme} />
@@ -243,7 +243,7 @@ const HeroSection = React.memo(
                 }}
                 className="mb-4 lg:mb-6"
               >
-                <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-violet-300 border-violet-500/30 backdrop-blur-sm">
+                <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-violet-300 border-violet-500/30 backdrop-blur-sm">
                   ✨ Your emotional wellness companion
                 </div>
               </div>
@@ -302,7 +302,7 @@ const HeroSection = React.memo(
                       );
                     }
                   }}
-                  className={`bg-gradient-to-r ${premiumGradients.secondary} hover:shadow-2xl hover:shadow-emerald-500/25 text-gray-900 font-semibold px-4 py-2 text-sm transition-all duration-300 w-full sm:w-auto rounded-md inline-flex items-center justify-center whitespace-nowrap font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50`}
+                  className={`bg-gradient-to-r ${premiumGradients.secondary} text-gray-900 font-semibold px-4 py-2 text-sm w-full sm:w-auto rounded-md inline-flex items-center justify-center whitespace-nowrap font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50`}
                   onClick={handleJoinWaitlist}
                 >
                   {user ? "Go to Dashboard" : "Try Offly Free"}
@@ -319,7 +319,7 @@ const HeroSection = React.memo(
                       );
                     }
                   }}
-                  className={`px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg border-2 ${theme === "dark" ? "border-slate-700 text-slate-300 hover:bg-violet-500/10 hover:border-violet-500/50" : "border-orange-200 text-gray-700 hover:bg-orange-50 hover:border-orange-300"} backdrop-blur-sm transition-all duration-300 w-full sm:w-auto rounded-md inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-transparent`}
+                  className={`px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg border-2 ${theme === "dark" ? "border-slate-700 text-slate-300" : "border-orange-200 text-gray-700"} backdrop-blur-sm w-full sm:w-auto rounded-md inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-transparent`}
                   onClick={handleWatchDemo}
                 >
                   Watch Demo
@@ -551,7 +551,7 @@ const FeaturesSection = React.memo(
               }}
             >
               <div
-                className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 mb-4 md:mb-6 bg-gradient-to-r ${
+                className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 mb-4 md:mb-6 bg-gradient-to-r ${
                   theme === "dark"
                     ? `${premiumGradients.primary}/20 text-violet-300 border-violet-500/30`
                     : `${premiumGradients.primary}/20 text-violet-600 border-violet-400/50`
@@ -910,7 +910,7 @@ const CelebrateStreaksSection = React.memo(
                           );
                         }
                       }}
-                      className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
+                      className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background h-9 px-3 border-amber-500/50 text-amber-400"
                     >
                       Share
                     </button>
@@ -925,7 +925,7 @@ const CelebrateStreaksSection = React.memo(
                           );
                         }
                       }}
-                      className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3 text-slate-400 hover:text-white"
+                      className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9 px-3 text-slate-400"
                     >
                       Keep private
                     </button>

@@ -1,6 +1,6 @@
 import { supabase } from '../supabase';
 import { openaiService } from './openai';
-import { saveAntiTodoList } from './database';
+
 
 export const getAntiTodoList = async (userId) => {
   try {
@@ -57,6 +57,7 @@ export const updateAntiTodoItemStatus = async (itemId, status) => {
     // Add completion timestamp if marking as completed
     if (status === 'completed') {
       updateData.completed_at = new Date().toISOString();
+      updateData.is_completed = true;
     }
 
     const { data, error } = await supabase
@@ -76,16 +77,15 @@ export const updateAntiTodoItemStatus = async (itemId, status) => {
     if (status === 'completed' && updatedItem) {
       try {
         const { updateUserAnalytics, awardPoints, getUserPlant, updatePlantGrowth, checkAndUnlockAchievements } = await import('./database');
-        const { supabase } = await import('../supabase');
         
-        // Update user analytics (includes anti-todo stats)
+        console.log('🎯 Anti-todo item completed, processing rewards...');
+        
+        // Update user analytics (includes anti-todo stats) - MUST be done first
         await updateUserAnalytics(updatedItem.user_id);
-        
-        // Check for new achievements using the proper function
-        await checkAndUnlockAchievements(updatedItem.user_id);
+        console.log('✅ User analytics updated');
         
         // Award points for anti-todo completion
-        /* try {
+        try {
           const activityPoints = 10; // Simple 10 points for activity completion
 
           const pointsResult = await awardPoints(
@@ -97,7 +97,7 @@ export const updateAntiTodoItemStatus = async (itemId, status) => {
           );
           
           if (pointsResult.success) {
-            console.log(`Awarded ${activityPoints} points for anti-todo completion`);
+            console.log(`✅ Awarded ${activityPoints} points for anti-todo completion`);
             
             // Update plant growth with earned points
             let plantXp = 0;
@@ -106,10 +106,20 @@ export const updateAntiTodoItemStatus = async (itemId, status) => {
               if (plantResult.success && plantResult.data) {
                 plantXp = Math.floor(activityPoints / 2); // 1 XP per 2 points
                 await updatePlantGrowth(plantResult.data.id, plantXp);
-                console.log(`Added ${plantXp} XP to user's plant`);
+                console.log(`✅ Added ${plantXp} XP to user's plant`);
               }
             } catch (plantError) {
               console.error("Failed to update plant growth:", plantError);
+            }
+            
+            // Check for new achievements using the proper function - AFTER analytics update
+            await checkAndUnlockAchievements(updatedItem.user_id);
+            console.log('✅ Achievements checked and updated');
+            
+            // Trigger UI refresh for points
+            if (typeof window !== 'undefined' && window.fetchUserPoints) {
+              window.fetchUserPoints();
+              console.log('✅ UI points refreshed');
             }
             
             // Return updated item with points information
@@ -120,10 +130,12 @@ export const updateAntiTodoItemStatus = async (itemId, status) => {
                 plantXp: plantXp
               }
             };
+          } else {
+            console.error('Failed to award points:', pointsResult.error);
           }
         } catch (pointsError) {
           console.error("Failed to award points for anti-todo completion:", pointsError);
-        } */
+        }
         
         console.log('✅ Analytics, achievements, and gamification updated after anti-todo completion');
       } catch (achievementError) {

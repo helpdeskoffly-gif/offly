@@ -207,6 +207,7 @@ export function PlantGarden() {
     try {
       const spendResult = await spendPoints(user.id, waterCost, 'plant_care', userPlant.id, 'Watered plant');
       if (spendResult.success) {
+        console.log(`✅ Spent ${waterCost} points for watering plant. New balance: ${spendResult.data.new_total}`);
         updatePoints(spendResult.data.new_total);
         
         const growthResult = await updatePlantGrowth(userPlant.id, 5);
@@ -238,6 +239,9 @@ export function PlantGarden() {
         } catch (achievementError) {
           console.error("Error tracking plant care:", achievementError);
         }
+      } else {
+        console.error('Failed to spend points for watering:', spendResult.error);
+        showToast("❌ Failed to water plant - insufficient points");
       }
     } catch (error) {
       console.error("Error in handleWaterPlant:", error);
@@ -259,6 +263,7 @@ export function PlantGarden() {
     try {
       const spendResult = await spendPoints(user.id, fertilizeCost, 'plant_care', userPlant.id, 'Fertilized plant');
       if (spendResult.success) {
+        console.log(`✅ Spent ${fertilizeCost} points for fertilizing plant. New balance: ${spendResult.data.new_total}`);
         updatePoints(spendResult.data.new_total);
         
         const growthResult = await updatePlantGrowth(userPlant.id, 25);
@@ -290,6 +295,9 @@ export function PlantGarden() {
         } catch (achievementError) {
           console.error("Error tracking plant care:", achievementError);
         }
+      } else {
+        console.error('Failed to spend points for fertilizing:', spendResult.error);
+        showToast("❌ Failed to fertilize plant - insufficient points");
       }
     } catch (error) {
       console.error("Error in handleFertilizePlant:", error);
@@ -311,6 +319,7 @@ export function PlantGarden() {
     try {
       const spendResult = await spendPoints(user.id, superCost, 'plant_care', userPlant.id, 'Super fertilized plant');
       if (spendResult.success) {
+        console.log(`✅ Spent ${superCost} points for super fertilizing plant. New balance: ${spendResult.data.new_total}`);
         updatePoints(spendResult.data.new_total);
         
         const growthResult = await updatePlantGrowth(userPlant.id, 100);
@@ -342,6 +351,9 @@ export function PlantGarden() {
         } catch (achievementError) {
           console.error("Error tracking plant care:", achievementError);
         }
+      } else {
+        console.error('Failed to spend points for super fertilizing:', spendResult.error);
+        showToast("❌ Failed to super fertilize plant - insufficient points");
       }
     } catch (error) {
       console.error("Error in handleSuperFertilize:", error);
@@ -351,8 +363,10 @@ export function PlantGarden() {
 
   const handleStorePurchase = async (item) => {
     try {
+      console.log(`🛍️ Attempting to purchase ${item.name} for ${item.price} points`);
       const result = await purchaseStoreItem(user.id, item.id);
       if (result.success) {
+        console.log(`✅ Successfully purchased ${item.name}. New balance: ${result.data.remainingPoints}`);
         updatePoints(result.data.remainingPoints);
         showToast(`✅ Purchased ${item.name}!`);
         
@@ -365,8 +379,15 @@ export function PlantGarden() {
             handleUseItem(newItem.id, item);
           }
         }
+        
+        // Refresh points to ensure UI is synced
+        fetchUserPoints();
+      } else {
+        console.error('Purchase failed:', result.error);
+        showToast(`❌ Purchase failed: ${result.error || 'Unknown error'}`);
       }
     } catch (error) {
+      console.error('Purchase error:', error);
       showToast("❌ Purchase failed!");
     }
   };

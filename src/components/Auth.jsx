@@ -655,7 +655,7 @@ export function Auth() {
                           id="terms"
                           checked={termsAccepted}
                           onCheckedChange={setTermsAccepted}
-                          className="mt-1"
+                          className="mt-1 !w-4 !h-4 min-w-0"
                         />
                         <Label htmlFor="terms" className={`text-sm ${themeColors.text.muted} leading-relaxed flex-1`}>
                           I agree to the{" "}

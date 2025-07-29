@@ -618,33 +618,30 @@ export const Community = () => {
         {/* Tab Content */}
         <TabsContent value={activeTab} className="mt-6">
           {/* Posts Feed */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             {posts.map((post, index) => (
               <Card
                 key={post.community_post_id}
-                className={`community-post ${themeColors.card} ${themeColors.cardHover} rounded-2xl border-0 shadow-xl transition-all duration-300 transform hover:scale-[1.01] overflow-hidden`}
+                className={`community-post ${themeColors.card} rounded-xl border-0 shadow-lg transition-all duration-200 overflow-hidden`}
               >
-                <CardContent className="p-4 sm:p-6 lg:p-8">
+                <CardContent className="p-4 sm:p-5">
                   {/* Post Header */}
-                  <div className="flex items-start justify-between mb-6">
-                                      <div className="flex items-center gap-3 min-w-0">
-                    <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-white/20 flex-shrink-0">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Avatar className="w-8 h-8 sm:w-10 sm:h-10 border-2 border-white/20 flex-shrink-0">
                       <AvatarImage 
                         src={getUserAvatarUrl({ id: post.user_id }, { avatar_url: post.avatar_url })} 
                         alt={post.username || post.full_name} 
                       />
-                      <AvatarFallback className={`bg-gradient-to-br ${premiumGradients.secondary} text-white font-semibold text-sm sm:text-base`}>
+                      <AvatarFallback className={`bg-gradient-to-br ${premiumGradients.secondary} text-white font-semibold text-xs sm:text-sm`}>
                         {(post.username || post.full_name || 'U').charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className={`font-semibold ${themeColors.text.primary} text-sm sm:text-base truncate`}>
-                          {post.username || post.full_name || 'Anonymous'}
-                        </h4>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs sm:text-sm">
+                      <h4 className={`font-semibold ${themeColors.text.primary} text-sm truncate`}>
+                        {post.username || post.full_name || 'Anonymous'}
+                      </h4>
+                      <div className="flex items-center gap-1 text-xs">
                         <Clock className={`w-3 h-3 ${themeColors.text.muted} flex-shrink-0`} />
                         <span className={`${themeColors.text.muted} truncate`}>
                           {formatTimeAgo(post.created_at)}
@@ -652,128 +649,51 @@ export const Community = () => {
                       </div>
                     </div>
                   </div>
-                    
-                    {post.user_id === user.id && (
-                      <Popover 
-                        open={openMenus.has(post.community_post_id)}
-                        onOpenChange={(open) => {
-                          if (open) {
-                            toggleMenu(post.community_post_id);
-                          } else {
-                            setOpenMenus(prev => {
-                              const newSet = new Set(prev);
-                              newSet.delete(post.community_post_id);
-                              return newSet;
-                            });
-                          }
-                        }}
-                      >
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`${themeColors.text.muted} hover:${themeColors.text.primary} h-8 w-8 rounded-lg`}
-                            disabled={deletingPosts.has(post.community_post_id)}
-                          >
-                            {deletingPosts.has(post.community_post_id) ? (
-                              <Sparkles className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <MoreVertical className="w-4 h-4" />
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent 
-                          align="end" 
-                          className={`${themeColors.card} border shadow-lg p-1 w-40`}
-                          side="bottom"
-                        >
-                          <Button
-                            onClick={() => handleDeletePost(post.community_post_id)}
-                            disabled={deletingPosts.has(post.community_post_id)}
-                            variant="ghost"
-                            className={`w-full flex items-center gap-2 px-3 py-2 text-sm justify-start hover:bg-red-500/10 text-red-600 dark:text-red-400 focus:bg-red-500/10 rounded-md`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete Post
-                          </Button>
-                        </PopoverContent>
-                      </Popover>
-                    )}
-                  </div>
-
-                  {/* Post Title */}
-                  {post.title && (
-                    <h3 className={`text-lg sm:text-xl font-semibold ${themeColors.text.primary} mb-4 break-words`}>
-                      {post.title}
-                    </h3>
-                  )}
 
                   {/* Post Content */}
-                  <div className={`text-base sm:text-lg ${themeColors.text.primary} mb-6 leading-relaxed break-words`}>
-                    {post.content.length > 200 ? (
-                      <div>
-                        <div className="line-clamp-3">
-                          {post.content.substring(0, 200)}...
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="mt-2 text-blue-500 hover:text-blue-600 p-0 h-auto"
-                          onClick={() => {
-                            // Toggle full content view
-                            const contentElement = document.querySelector(`[data-post-content="${post.community_post_id}"]`);
-                            if (contentElement) {
-                              contentElement.classList.toggle('line-clamp-3');
-                            }
-                          }}
-                        >
-                          Read more
-                        </Button>
-                      </div>
-                    ) : (
-                      <div data-post-content={post.community_post_id}>
-                        {post.content}
-                      </div>
-                    )}
+                  <div className={`text-sm sm:text-base ${themeColors.text.primary} mb-4 leading-relaxed break-words`}>
+                    {post.content}
                   </div>
 
-                  {/* Hashtags */}
-                  {post.hashtags && post.hashtags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 sm:gap-2 mb-6">
-                      {post.hashtags.map((hashtag, idx) => (
-                        <Button
-                          key={idx}
-                          onClick={() => handleHashtagClick(hashtag)}
-                          variant="outline"
-                          size="sm"
-                          className={`rounded-full text-xs border-2 px-2 py-1 ${theme === 'dark' ? 'hover:bg-slate-700/50' : 'hover:bg-slate-100/50'}`}
-                        >
-                          #{hashtag}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
-
                   {/* Post Actions */}
-                  <div className="flex items-center justify-between pt-6 border-t border-slate-200/10">
-                    <div className="flex items-center gap-4 sm:gap-6">
-                      <Button
-                        onClick={() => handleLikePost(post.community_post_id, post.user_has_liked)}
-                        variant="ghost"
-                        size="sm"
-                        data-like-btn={post.community_post_id}
-                        className={`flex items-center gap-2 h-8 sm:h-10 px-3 sm:px-4 rounded-xl transition-all duration-300 ${
-                          post.user_has_liked
-                            ? `text-red-500 bg-red-500/10 hover:bg-red-500/20`
-                            : `${themeColors.text.muted} hover:${themeColors.text.primary} hover:bg-red-500/10`
-                        }`}
-                      >
-                        <Heart 
-                          className={`w-4 h-4 ${post.user_has_liked ? 'fill-current' : ''}`} 
-                        />
-                        <span className="font-medium text-sm sm:text-base">{post.like_count || 0}</span>
-                      </Button>
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-200/10">
+                    <div className="flex items-center gap-2">
+                      {/* Hashtags (compact) */}
+                      {post.hashtags && post.hashtags.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {post.hashtags.slice(0, 2).map((hashtag, idx) => (
+                            <span
+                              key={idx}
+                              className={`text-xs px-2 py-1 rounded-full ${themeColors.text.muted} bg-slate-100 dark:bg-slate-700/50`}
+                            >
+                              #{hashtag}
+                            </span>
+                          ))}
+                          {post.hashtags.length > 2 && (
+                            <span className={`text-xs ${themeColors.text.muted}`}>
+                              +{post.hashtags.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
+                    
+                    <Button
+                      onClick={() => handleLikePost(post.community_post_id, post.user_has_liked)}
+                      variant="ghost"
+                      size="sm"
+                      data-like-btn={post.community_post_id}
+                      className={`flex items-center gap-1 h-8 px-3 rounded-lg transition-all duration-300 ${
+                        post.user_has_liked
+                          ? `text-red-500 bg-red-500/10 hover:bg-red-500/20`
+                          : `${themeColors.text.muted} hover:${themeColors.text.primary} hover:bg-red-500/10`
+                      }`}
+                    >
+                      <Heart 
+                        className={`w-4 h-4 ${post.user_has_liked ? 'fill-current' : ''}`} 
+                      />
+                      <span className="font-medium text-sm">{post.like_count || 0}</span>
+                    </Button>
                   </div>
 
 

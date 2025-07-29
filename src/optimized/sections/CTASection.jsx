@@ -58,7 +58,7 @@ const CTASection = memo(({ handleJoinWaitlist, user }) => {
           >
             <MemoizedButton
               size="lg"
-              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-12 py-4 text-lg shadow-lg hover:shadow-emerald-500/25 transition-all duration-300"
+              className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-12 py-4 text-lg shadow-lg"
               onClick={handleJoinWaitlist}
             >
               {user ? "Go to Dashboard" : "Try Offly Free"}
@@ -67,7 +67,7 @@ const CTASection = memo(({ handleJoinWaitlist, user }) => {
             <MemoizedButton
               variant="outline"
               size="lg"
-              className="px-8 py-4 text-lg border-2 border-gray-700 text-gray-300 hover:bg-purple-500/10 hover:border-purple-500/50 transition-all duration-300"
+              className="px-8 py-4 text-lg border-2 border-gray-700 text-gray-300"
             >
               Learn More
             </MemoizedButton>
