@@ -593,7 +593,7 @@ export const submitCheckin = async (uid, checkinData) => {
     }
 
     // Award points for checkin completion
-    try {
+    /* try {
       const checkinPoints = 5; // Simple 5 points for checkin
 
       const pointsResult = await awardPoints(
@@ -634,7 +634,7 @@ export const submitCheckin = async (uid, checkinData) => {
       }
     } catch (pointsError) {
       console.error("Failed to award points for checkin:", pointsError);
-    }
+    } */
 
     return { success: true, data: result[0] };
   });
@@ -1874,21 +1874,26 @@ export const getPointTransactions = async (userId, limit = 20) => {
 // Plant System Functions
 export const getUserPlant = async (userId) => {
   return safeSupabaseOperation(async () => {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("user_plants")
       .select("*")
       .eq("user_id", userId)
       .eq("is_active", true)
       .single();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
       throw error;
     }
 
-    // Create a new plant if none exists
+    // If no active plant found, create a new one
     if (!data) {
-      const newPlant = await createNewPlant(userId);
-      return newPlant;
+      console.log("No active plant found for user, creating a new one...");
+      const newPlantResult = await createNewPlant(userId);
+      if (newPlantResult.success) {
+        data = newPlantResult.data; // Use the newly created plant data
+      } else {
+        throw new Error("Failed to create new plant: " + newPlantResult.error);
+      }
     }
 
     return { success: true, data };

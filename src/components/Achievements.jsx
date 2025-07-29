@@ -7,25 +7,20 @@ import { Trophy, Target, RefreshCw, Sparkles, Coins, CheckCircle, Lock, Flame, H
 import { supabase } from "../supabase";
 import { getUserAchievements, getUserPoints, checkAndUnlockAchievements, initializeUserAchievements, getAllAchievementDefinitions } from "../services/database";
 
+import { usePoints } from "../contexts/PointsContext.jsx";
+
 function Achievements() {
-  console.log('Achievements component function called');
-  
   const [achievements, setAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [userPoints, setUserPoints] = useState(0);
+  const { points, fetchUserPoints } = usePoints();
   const [user, setUser] = useState(null);
-
-  console.log('Achievements component rendering, loading state:', loading);
 
   const loadUserData = async (userId) => {
     try {
-      console.log('Loading user data for:', userId);
+      
       
       // Load user points
-      const pointsResult = await getUserPoints(userId);
-      if (pointsResult.success) {
-        setUserPoints(pointsResult.data?.total_points || 0);
-      }
+      fetchUserPoints();
 
       // Initialize user achievements if needed
       await initializeUserAchievements(userId);
@@ -36,7 +31,7 @@ function Achievements() {
       // Load user achievements with current progress
       const achievementsResult = await getUserAchievements(userId);
       if (achievementsResult.success) {
-        console.log('Loaded achievements:', achievementsResult.data);
+        
         
         // Get achievement definitions to add points_reward if missing
         const achievementDefinitions = getAllAchievementDefinitions();
@@ -55,7 +50,7 @@ function Achievements() {
         
         setAchievements(achievementsWithPoints);
       } else {
-        console.error('Failed to load achievements:', achievementsResult.error);
+        
         setAchievements([]);
       }
     } catch (error) {
@@ -65,22 +60,21 @@ function Achievements() {
   };
 
   useEffect(() => {
-    console.log('Achievements useEffect running');
+    
     
     const initializeComponent = async () => {
       try {
-        console.log('Getting user...');
+        
         const { data: { user } } = await supabase.auth.getUser();
-        console.log('User found:', user);
+        
         
         if (user) {
-          console.log('Setting user and loading data...');
+          
           setUser(user);
           await loadUserData(user.id);
-          console.log('Data loaded, setting loading to false');
+          
           setLoading(false);
-        } else {
-          console.log('No user found, setting loading to false');
+        
           setLoading(false);
         }
       } catch (error) {
@@ -113,21 +107,10 @@ function Achievements() {
     }
   }, [user]);
 
-  // Add periodic refresh to keep achievements up to date
-  useEffect(() => {
-    if (!user) return;
-
-    // Refresh achievements every 30 seconds to keep them current
-    const interval = setInterval(() => {
-      console.log('Periodic achievement refresh...');
-      refreshAchievements();
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(interval);
-  }, [user]);
+  
 
   const checkForNewAchievements = async () => {
-    console.log('Check for new achievements clicked');
+    
     if (!user) return;
     
     try {
@@ -168,7 +151,7 @@ function Achievements() {
       const analyticsResult = await getUserAnalytics(user.id);
       
       if (analyticsResult.success) {
-        console.log('Current analytics data:', analyticsResult.data);
+        
         alert(`Analytics Debug:\nTotal Checkins: ${analyticsResult.data.total_checkins}\nCurrent Streak: ${analyticsResult.data.current_streak}\nCompleted Anti-Todos: ${analyticsResult.data.completedantitodos}\nWeekly Anti-Todos: ${analyticsResult.data.weeklyantitodos}`);
       } else {
         console.error('Failed to get analytics:', analyticsResult.error);
@@ -213,7 +196,7 @@ function Achievements() {
   };
 
   if (loading) {
-    console.log('Achievements component is in loading state');
+    
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500" />
@@ -222,7 +205,7 @@ function Achievements() {
     );
   }
 
-  console.log('Achievements component rendering with achievements:', achievements.length);
+  
 
   return (
     <div className="space-y-4 sm:space-y-8 p-3 sm:p-6">
@@ -237,7 +220,7 @@ function Achievements() {
               </div>
               <div>
                 <p className="text-sm text-slate-600 dark:text-slate-400">Available Points</p>
-                <p className="text-2xl font-bold text-slate-800 dark:text-slate-200">{userPoints}</p>
+                <p className="text-2xl font-bold text-slate-800 dark:text-slate-200">{points}</p>
               </div>
             </div>
           </CardContent>

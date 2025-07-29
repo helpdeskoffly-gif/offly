@@ -678,7 +678,7 @@ export const AntiTodoList = ({ userId }) => {
                           {/* Activity Content */}
                           <div className="space-y-3">
                             <h3 className={`text-xl font-semibold ${themeColors.text.primary} leading-relaxed group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-300`}>
-                              {item.content}
+                              {item.content.replace(/\(.*?\)\s*/, '')}
                             </h3>
                             
                             {/* Category and timing */}
@@ -688,7 +688,7 @@ export const AntiTodoList = ({ userId }) => {
                               </Badge>
                               <div className={`flex items-center gap-2 ${themeColors.text.muted} px-3 py-1 rounded-lg bg-white/5`}>
                                 <Clock className="w-4 h-4" />
-                                15 min
+                                {item.content.match(/\((.*?)\)/)?.[1] || '15 min'}
                               </div>
                             </div>
                           </div>

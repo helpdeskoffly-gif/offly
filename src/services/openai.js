@@ -501,12 +501,15 @@ Generate a personalized nudge that addresses their specific emotional needs.`;
   }
 
   async generateAntiToDoActivities(userPreferences, completedActivities = [], count = 5) {
+    console.log('generateAntiToDoActivities called'); // Gemini-added log
     if (!OPENAI_API_KEY) {
+      console.log("No OpenAI API key found, using fallback activities");
       return this.getFallbackAntiTodoActivities(userPreferences);
     }
 
     try {
       const prompt = this.buildAntiToDoPrompt(userPreferences, completedActivities, count);
+      console.log("Generated prompt for AI:", prompt);
 
       const response = await fetch(OPENAI_API_URL, {
         method: "POST",
@@ -535,20 +538,24 @@ Key guidelines:
               content: prompt,
             },
           ],
-          max_tokens: 500,
+          max_tokens: 800,
           temperature: 0.7,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+        const errorText = await response.text();
+        console.error(`OpenAI API error: ${response.status} - ${errorText}`);
+        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
       const responseText = data.choices[0].message.content.trim();
+      console.log("AI Response:", responseText);
 
       // Parse the response to extract activities
       const activities = this.parseAntiToDoResponse(responseText, count);
+      console.log("Parsed activities:", activities);
 
       return {
         success: true,
@@ -562,7 +569,7 @@ Key guidelines:
   }
 
   buildAntiToDoPrompt(userPreferences, completedActivities, count) {
-    let prompt = `Generate ${count} personalized activity suggestions for a user with these preferences:`;
+    let prompt = `Generate ${count} personalized, detailed activity suggestions for a user with these preferences:`;
 
     if (userPreferences.hobbies && userPreferences.hobbies.length > 0) {
       prompt += `\n- Hobbies: ${userPreferences.hobbies.join(", ")}`;
@@ -577,15 +584,28 @@ Key guidelines:
       prompt += `\n(Avoid suggesting these activities again)`;
     }
 
-    prompt += `\n\nGenerate ${count} activities in this JSON format:
+    prompt += `\n\nIMPORTANT GUIDELINES:
+- Make activities specific and actionable (not generic)
+- Include 1-2 lines of detailed description explaining the "why" and "how"
+- Consider the user's hobbies and interests when relevant
+- Mix different types: physical, creative, social, mindfulness, learning, fun
+- Make activities feel personal and achievable
+- Include specific details like duration, location, or method when helpful
+
+Generate ${count} activities in this JSON format:
 [
   {
-    "title": "Activity name",
-    "description": "Brief description",
+    "description": "Detailed 2 line description explaining what to do, why it's beneficial, and how to approach it. Make it engaging and specific to the user's interests when possible.",
+    "time": "e.g., 15 min",
     "category": "physical|creative|social|mindfulness|learning|fun",
     "icon": "Coffee|Book|Music|Camera|Heart|Palette|Sun|Lightbulb|Target|Smile|Sparkles"
   }
-]`;
+]
+
+Examples of good descriptions:
+- "Take a 20-minute walk in your neighborhood and notice 5 things you've never seen before. This mindfulness practice helps you stay present and discover beauty in familiar places."
+- "Create a 5-song playlist of songs that remind you of happy memories, then listen to it while doing something you enjoy. Music has powerful mood-lifting effects."
+- "Call a friend or family member you haven't spoken to in over a week and have a genuine conversation about their life. Social connections are vital for mental well-being."`;
 
     return prompt;
   }
@@ -595,13 +615,43 @@ Key guidelines:
       // Try to parse as JSON first
       const activities = JSON.parse(responseText);
       if (Array.isArray(activities)) {
+        console.log("Successfully parsed JSON activities");
         return activities.slice(0, expectedCount);
       }
     } catch (error) {
-      // If JSON parsing fails, try to extract activities from text
-      console.log("Failed to parse JSON, trying text extraction");
+      console.log("Failed to parse JSON, trying text extraction. Error:", error.message);
+      console.log("Response text:", responseText);
     }
 
+    // Try to extract JSON from markdown code blocks
+    try {
+      const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        const activities = JSON.parse(jsonMatch[1]);
+        if (Array.isArray(activities)) {
+          console.log("Successfully parsed JSON from markdown code block");
+          return activities.slice(0, expectedCount);
+        }
+      }
+    } catch (error) {
+      console.log("Failed to parse JSON from markdown:", error.message);
+    }
+
+    // Try to extract JSON array from the text
+    try {
+      const arrayMatch = responseText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+      if (arrayMatch) {
+        const activities = JSON.parse(arrayMatch[0]);
+        if (Array.isArray(activities)) {
+          console.log("Successfully parsed JSON array from text");
+          return activities.slice(0, expectedCount);
+        }
+      }
+    } catch (error) {
+      console.log("Failed to parse JSON array from text:", error.message);
+    }
+
+    console.log("All parsing attempts failed, using fallback activities");
     // Fallback: return default activities
     return this.getFallbackAntiTodoActivities().activities;
   }
@@ -627,31 +677,31 @@ Key guidelines:
     const defaultActivities = [
       {
         title: "Take a mindful walk",
-        description: "Step outside and notice the world around you",
+        description: "Step outside for a 15-minute walk and notice 3 things you've never seen before. This simple mindfulness practice helps you stay present and discover beauty in familiar places.",
         category: "physical",
         icon: "Sun",
       },
       {
-        title: "Listen to your favorite music",
-        description: "Put on some tunes that make you feel good",
+        title: "Create a mood-boosting playlist",
+        description: "Make a 5-song playlist of tracks that remind you of happy memories, then listen to it while doing something you enjoy. Music has powerful mood-lifting effects.",
         category: "fun",
         icon: "Music",
       },
       {
-        title: "Write in a journal",
-        description: "Express your thoughts and feelings on paper",
+        title: "Write a gratitude journal entry",
+        description: "Spend 10 minutes writing about 3 things you're thankful for today, no matter how small. This practice helps shift your focus to positive aspects of life.",
         category: "creative",
         icon: "Book",
       },
       {
-        title: "Call a friend",
-        description: "Reach out to someone you care about",
+        title: "Reach out to someone special",
+        description: "Call a friend or family member you haven't spoken to in over a week and have a genuine conversation about their life. Social connections are vital for mental well-being.",
         category: "social",
         icon: "Heart",
       },
       {
-        title: "Try a new hobby",
-        description: "Explore something that interests you",
+        title: "Learn something new",
+        description: "Spend 20 minutes exploring a topic that interests you - watch a tutorial, read an article, or try a new skill. Learning keeps your mind active and engaged.",
         category: "learning",
         icon: "Lightbulb",
       },

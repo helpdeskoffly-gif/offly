@@ -85,7 +85,7 @@ export const updateAntiTodoItemStatus = async (itemId, status) => {
         await checkAndUnlockAchievements(updatedItem.user_id);
         
         // Award points for anti-todo completion
-        try {
+        /* try {
           const activityPoints = 10; // Simple 10 points for activity completion
 
           const pointsResult = await awardPoints(
@@ -123,7 +123,7 @@ export const updateAntiTodoItemStatus = async (itemId, status) => {
           }
         } catch (pointsError) {
           console.error("Failed to award points for anti-todo completion:", pointsError);
-        }
+        } */
         
         console.log('✅ Analytics, achievements, and gamification updated after anti-todo completion');
       } catch (achievementError) {
@@ -249,7 +249,8 @@ export const generateInitialAntiTodos = async (userId) => {
     // Add AI-generated items to database
     const newItems = [];
     for (const activity of aiResult.activities) {
-      const item = await addAntiTodoItem(userId, activity.content, 'ai');
+      const content = activity.time ? `(${activity.time}) ${activity.description}` : activity.description;
+      const item = await addAntiTodoItem(userId, content, 'ai');
       if (item) newItems.push(item);
     }
 
@@ -332,7 +333,15 @@ export const regenerateAntiTodoList = async (userId) => {
     const currentCompletionCount = completedItems?.length || 0;
     console.log(`Current completion count before regeneration: ${currentCompletionCount}`);
     
-    // 6. Delete ONLY "not started" and "completed" items (preserve ongoing)
+    // 7. Update user analytics to preserve the completion count before deletion
+    try {
+      const { updateUserAnalytics } = await import('./database');
+      await updateUserAnalytics(userId);
+    } catch (analyticsError) {
+      console.error('Error updating analytics during regeneration:', analyticsError);
+    }
+
+    // 8. Delete ONLY "not started" and "completed" items (preserve ongoing)
     const { error: deleteError } = await supabase
       .from('anti_todo_items')
       .delete()
@@ -347,18 +356,11 @@ export const regenerateAntiTodoList = async (userId) => {
       console.log('Deleted old "not started" and "completed" AI items');
     }
 
-    // 7. Update user analytics to preserve the completion count
-    try {
-      const { updateUserAnalytics } = await import('./database');
-      await updateUserAnalytics(userId);
-    } catch (analyticsError) {
-      console.error('Error updating analytics after regeneration:', analyticsError);
-    }
-
-    // 7. Add new AI-generated items
+    // 9. Add new AI-generated items
     const newItems = [];
     for (const activity of aiResult.activities) {
-      const item = await addAntiTodoItem(userId, activity.content, 'ai');
+      const content = activity.time ? `(${activity.time}) ${activity.description}` : activity.description;
+      const item = await addAntiTodoItem(userId, content, 'ai');
       if (item) newItems.push(item);
     }
 

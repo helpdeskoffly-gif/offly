@@ -39,25 +39,26 @@ import {
   ArrowRight,
   Palette,
 } from "lucide-react";
-import {
-  getUserPoints,
-  getUserPlant,
-  getStoreItems,
-  purchaseStoreItem,
-  getUserInventory,
-  useInventoryItem,
-  spendPoints,
+import { usePoints } from "../contexts/PointsContext.jsx";
+import { 
+  getUserPlant, 
+  getStoreItems, 
+  getUserInventory, 
+  spendPoints, 
   updatePlantGrowth,
-  checkAndUnlockAchievements,
-} from "../services/database";
+  purchaseStoreItem,
+  useInventoryItem
+} from "../services/database.js";
 
 export function PlantGarden() {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const { points, updatePoints, fetchUserPoints } = usePoints();
   
   // State management
-  const [userPoints, setUserPoints] = useState(0);
+  
   const [userPlant, setUserPlant] = useState(null);
+  const [isPlantLoaded, setIsPlantLoaded] = useState(false);
   const [storeItems, setStoreItems] = useState([]);
   const [cosmeticItems, setCosmeticItems] = useState([]);
   const [userInventory, setUserInventory] = useState([]);
@@ -134,17 +135,7 @@ export function PlantGarden() {
     }
   };
 
-  const refreshPoints = async () => {
-    if (!user) return;
-    try {
-      const pointsResult = await getUserPoints(user.id);
-      if (pointsResult.success) {
-        setUserPoints(pointsResult.data?.total_points || 0);
-      }
-    } catch (error) {
-      console.error("Error refreshing points:", error);
-    }
-  };
+  
 
   // Load all data
   useEffect(() => {
@@ -155,17 +146,20 @@ export function PlantGarden() {
     if (!user) return;
 
     setLoading(true);
+    console.log("PlantGarden: Starting loadAllData for user:", user.id);
     try {
-      const [pointsResult, plantResult, storeResult, inventoryResult] = await Promise.all([
-        getUserPoints(user.id),
+      const [plantResult, storeResult, inventoryResult] = await Promise.all([
         getUserPlant(user.id),
         getStoreItems(),
         getUserInventory(user.id),
       ]);
 
-      console.log("Points result:", pointsResult);
-      setUserPoints(pointsResult.data?.total_points || 0);
+      console.log("PlantGarden: getUserPlant result:", plantResult);
+      // Points are now managed by context, just fetch them
+      fetchUserPoints();
       setUserPlant(plantResult.data);
+      console.log("PlantGarden: userPlant state set to:", plantResult.data);
+      setIsPlantLoaded(true);
       
       // Load trees planted count and achievements
       const treesPlantedCount = localStorage.getItem(`trees_planted_${user.id}`) || 0;
@@ -190,20 +184,22 @@ export function PlantGarden() {
         setShowLifecycleComplete(true);
       }
     } catch (error) {
-      console.error("Error loading plant data:", error);
+      console.error("PlantGarden: Error loading plant data:", error);
     } finally {
       setLoading(false);
+      console.log("PlantGarden: loadAllData finished.");
     }
   };
 
   // Plant care handlers
   const handleWaterPlant = async () => {
-    if (!userPlant || !userPlant.id) {
+    console.log("PlantGarden: handleWaterPlant called. Current userPlant:", userPlant);
+    if (!isPlantLoaded || !userPlant || !userPlant.id) {
       showToast("❌ Could not find your plant. Please refresh.");
       return;
     }
     const waterCost = 5;
-    if (userPoints < waterCost) {
+    if (points < waterCost) {
       showToast("❌ Not enough points to water!");
       return;
     }
@@ -211,16 +207,13 @@ export function PlantGarden() {
     try {
       const spendResult = await spendPoints(user.id, waterCost, 'plant_care', userPlant.id, 'Watered plant');
       if (spendResult.success) {
-        setUserPoints(spendResult.data.new_total);
+        updatePoints(spendResult.data.new_total);
         
         const growthResult = await updatePlantGrowth(userPlant.id, 5);
         if (growthResult.success) {
           setUserPlant(growthResult.data);
           showToast("💧 Plant watered! +5 XP");
         }
-        
-        // Refresh points from database to ensure accuracy
-        await refreshPoints();
 
         // Track plant care action for achievements
         try {
@@ -250,12 +243,12 @@ export function PlantGarden() {
   };
 
   const handleFertilizePlant = async () => {
-    if (!userPlant || !userPlant.id) {
+    if (!isPlantLoaded || !userPlant || !userPlant.id) {
       showToast("❌ Could not find your plant. Please refresh.");
       return;
     }
     const fertilizeCost = 15;
-    if (userPoints < fertilizeCost) {
+    if (points < fertilizeCost) {
       showToast("❌ Not enough points to fertilize!");
       return;
     }
@@ -263,16 +256,13 @@ export function PlantGarden() {
     try {
       const spendResult = await spendPoints(user.id, fertilizeCost, 'plant_care', userPlant.id, 'Fertilized plant');
       if (spendResult.success) {
-        setUserPoints(spendResult.data.new_total);
+        updatePoints(spendResult.data.new_total);
         
         const growthResult = await updatePlantGrowth(userPlant.id, 25);
         if (growthResult.success) {
           setUserPlant(growthResult.data);
           showToast("🌱 Plant fertilized! +25 XP");
         }
-        
-        // Refresh points from database to ensure accuracy
-        await refreshPoints();
 
         // Track plant care action for achievements
         try {
@@ -302,12 +292,12 @@ export function PlantGarden() {
   };
 
   const handleSuperFertilize = async () => {
-    if (!userPlant || !userPlant.id) {
+    if (!isPlantLoaded || !userPlant || !userPlant.id) {
       showToast("❌ Could not find your plant. Please refresh.");
       return;
     }
     const superCost = 50;
-    if (userPoints < superCost) {
+    if (points < superCost) {
       showToast("❌ Not enough points!");
       return;
     }
@@ -315,16 +305,13 @@ export function PlantGarden() {
     try {
       const spendResult = await spendPoints(user.id, superCost, 'plant_care', userPlant.id, 'Super fertilized plant');
       if (spendResult.success) {
-        setUserPoints(spendResult.data.new_total);
+        updatePoints(spendResult.data.new_total);
         
         const growthResult = await updatePlantGrowth(userPlant.id, 100);
         if (growthResult.success) {
           setUserPlant(growthResult.data);
           showToast("⚡ Super fertilized! +100 XP");
         }
-        
-        // Refresh points from database to ensure accuracy
-        await refreshPoints();
 
         // Track plant care action for achievements
         try {
@@ -355,19 +342,13 @@ export function PlantGarden() {
 
   const handleStorePurchase = async (item) => {
     try {
-      const result = await purchaseStoreItem(user.id, item.id, 1);
+      const result = await purchaseStoreItem(user.id, item.id);
       if (result.success) {
-        setUserPoints(result.data.remainingPoints);
+        updatePoints(result.data.remainingPoints);
         showToast(`✅ Purchased ${item.name}!`);
         
         const inventoryResult = await getUserInventory(user.id);
         setUserInventory(inventoryResult.data || []);
-        
-        // Refresh points from database to ensure accuracy
-        const pointsResult = await getUserPoints(user.id);
-        if (pointsResult.success) {
-          setUserPoints(pointsResult.data?.total_points || 0);
-        }
         
         if (inventoryResult.data?.length > 0) {
           const newItem = inventoryResult.data.find(inv => inv.item_id === item.id && inv.used_quantity < inv.quantity);
@@ -382,6 +363,10 @@ export function PlantGarden() {
   };
 
   const handleUseItem = async (purchaseId, item) => {
+    if (!isPlantLoaded || !userPlant || !userPlant.id) {
+      showToast("❌ Could not find your plant. Please refresh.");
+      return;
+    }
     try {
       const result = await useInventoryItem(user.id, purchaseId, userPlant.id);
       if (result.success) {
@@ -392,7 +377,7 @@ export function PlantGarden() {
         setUserInventory(inventoryResult.data || []);
         
         // Refresh points from database to ensure accuracy
-        await refreshPoints();
+        fetchUserPoints();
       }
     } catch (error) {
       console.error("Failed to use item:", error);
@@ -405,7 +390,7 @@ export function PlantGarden() {
     setTimeout(() => setShowSuccessToast(false), 3000);
   };
 
-  const canAfford = (price) => userPoints >= price;
+  const canAfford = (price) => points >= price;
 
   if (loading) {
     return (
@@ -427,7 +412,7 @@ export function PlantGarden() {
             <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full flex items-center justify-center">
               <Coins className="w-3 h-3 text-white" />
             </div>
-            <span className={`text-lg font-bold ${themeColors.text.primary}`}>{userPoints}</span>
+            <span className={`text-lg font-bold ${themeColors.text.primary}`}>{points}</span>
             <span className={`text-xs ${themeColors.text.muted}`}>pts</span>
           </div>
 
@@ -448,7 +433,7 @@ export function PlantGarden() {
               <div className="w-8 h-8 bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full flex items-center justify-center">
                 <Coins className="w-5 h-5 text-white" />
               </div>
-              <span className={`text-2xl font-bold ${themeColors.text.primary}`}>{userPoints}</span>
+              <span className={`text-2xl font-bold ${themeColors.text.primary}`}>{points}</span>
               <span className={`text-sm ${themeColors.text.muted}`}>points</span>
             </div>
           </div>
@@ -587,15 +572,15 @@ export function PlantGarden() {
             {/* Water - Mobile Optimized */}
             <button
               onClick={handleWaterPlant}
-              disabled={userPoints < 5}
+              disabled={points < 5}
               className={`w-full p-4 sm:p-6 rounded-xl transition-all duration-300 ${
-                userPoints >= 5 
+                points >= 5 
                   ? `${theme === 'dark' ? 'bg-slate-800/40 hover:bg-slate-700/60 border border-blue-500/30 hover:border-blue-400/60' : 'bg-white/40 hover:bg-white/80 border border-blue-300/50 hover:border-blue-400/80'} hover:scale-105 hover:shadow-xl cursor-pointer` 
                   : `${theme === 'dark' ? 'bg-slate-800/20 border border-gray-600/30' : 'bg-gray-100/20 border border-gray-300/30'} opacity-60 cursor-not-allowed`
               } backdrop-blur-sm`}
             >
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${userPoints >= 5 ? 'bg-gradient-to-br from-blue-400 to-cyan-500' : 'bg-gray-400'}`}>
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${points >= 5 ? 'bg-gradient-to-br from-blue-400 to-cyan-500' : 'bg-gray-400'}`}>
                   <Droplets className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
                 <div className="flex-1 text-left">
@@ -612,15 +597,15 @@ export function PlantGarden() {
             {/* Fertilize - Mobile Optimized */}
             <button
               onClick={handleFertilizePlant}
-              disabled={userPoints < 15}
+              disabled={points < 15}
               className={`w-full p-4 sm:p-6 rounded-xl transition-all duration-300 ${
-                userPoints >= 15 
+                points >= 15 
                   ? `${theme === 'dark' ? 'bg-slate-800/40 hover:bg-slate-700/60 border border-green-500/30 hover:border-green-400/60' : 'bg-white/40 hover:bg-white/80 border border-green-300/50 hover:border-green-400/80'} hover:scale-105 hover:shadow-xl cursor-pointer` 
                   : `${theme === 'dark' ? 'bg-slate-800/20 border border-gray-600/30' : 'bg-gray-100/20 border border-gray-300/30'} opacity-60 cursor-not-allowed`
               } backdrop-blur-sm`}
             >
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${userPoints >= 15 ? 'bg-gradient-to-br from-green-400 to-emerald-500' : 'bg-gray-400'}`}>
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${points >= 15 ? 'bg-gradient-to-br from-green-400 to-emerald-500' : 'bg-gray-400'}`}>
                   <Sprout className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
                 <div className="flex-1 text-left">
@@ -637,15 +622,15 @@ export function PlantGarden() {
             {/* Super Fertilize - Mobile Optimized */}
             <button
               onClick={handleSuperFertilize}
-              disabled={userPoints < 50}
+              disabled={points < 50}
               className={`w-full p-4 sm:p-6 rounded-xl transition-all duration-300 ${
-                userPoints >= 50 
+                points >= 50 
                   ? `${theme === 'dark' ? 'bg-slate-800/40 hover:bg-slate-700/60 border border-purple-500/30 hover:border-purple-400/60' : 'bg-white/40 hover:bg-white/80 border border-purple-300/50 hover:border-purple-400/80'} hover:scale-105 hover:shadow-xl cursor-pointer` 
                   : `${theme === 'dark' ? 'bg-slate-800/20 border border-gray-600/30' : 'bg-gray-100/20 border border-gray-300/30'} opacity-60 cursor-not-allowed`
               } backdrop-blur-sm`}
             >
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${userPoints >= 50 ? 'bg-gradient-to-br from-purple-400 to-pink-500' : 'bg-gray-400'}`}>
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${points >= 50 ? 'bg-gradient-to-br from-purple-400 to-pink-500' : 'bg-gray-400'}`}>
                   <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
                 <div className="flex-1 text-left">
