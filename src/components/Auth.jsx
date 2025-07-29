@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../contexts/ThemeContext.jsx";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/Button";
+import Logo from "./Logo";
 import { Card } from "./ui/Card";
 import { Input } from "./ui/input";
 import { Checkbox } from "./ui/checkbox";
@@ -451,14 +452,7 @@ export function Auth() {
       {/* Mobile Header */}
       <div className="relative z-10 w-full p-4 lg:p-6">
         <div className="flex items-center justify-between max-w-6xl mx-auto">
-          <div className="flex items-center space-x-3">
-            <div className={`w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-r ${premiumGradients.primary} rounded-xl flex items-center justify-center shadow-lg`}>
-              <span className="text-white font-bold text-sm lg:text-lg">O</span>
-            </div>
-            <span className={`text-xl lg:text-2xl font-bold bg-gradient-to-r ${premiumGradients.primary} bg-clip-text text-transparent`}>
-              OFFLY
-            </span>
-          </div>
+          <Logo size="lg" />
           
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-4">

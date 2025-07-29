@@ -23,6 +23,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../contexts/ThemeContext.jsx";
 import { useNavigate } from "react-router-dom";
 import { useCheckinCooldown } from "../hooks/useCheckinCooldown";
+import Logo from "./Logo";
 import {
   submitCheckin,
   getUserCheckins,
@@ -2098,18 +2099,7 @@ const Dashboard = () => {
         <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 sm:py-3">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <div className="flex items-center space-x-2">
-              <div
-                className={`w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r ${premiumGradients.secondary} rounded-lg sm:rounded-xl flex items-center justify-center shadow-sm`}
-              >
-                <span className="text-white font-semibold text-xs sm:text-sm">O</span>
-              </div>
-              <span
-                className={`text-lg sm:text-xl font-semibold bg-gradient-to-r ${premiumGradients.secondary} bg-clip-text text-transparent`}
-              >
-                OFFLY
-              </span>
-            </div>
+            <Logo size="md" />
 
             {/* User Actions */}
             <div className="flex items-center space-x-2 sm:space-x-3">

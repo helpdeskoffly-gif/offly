@@ -1,6 +1,7 @@
 import React, { memo, useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { useOptimizedInView } from "../../hooks/useOptimizedInView.js";
+import Logo from "../../components/Logo";
 
 const FooterSection = memo(() => {
   const { ref, inView } = useOptimizedInView();
@@ -85,8 +86,7 @@ const FooterSection = memo(() => {
           {/* Logo and description */}
           <div ref={logoRef} className="col-span-1 md:col-span-2">
             <div className="flex items-center mb-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-lg mr-3"></div>
-              <h3 className="text-2xl font-bold text-white">Offly</h3>
+              <Logo size="lg" />
             </div>
             <p className="text-slate-400 mb-6 max-w-md">
               Your emotional wellness companion. Track your joy, build

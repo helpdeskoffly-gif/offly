@@ -29,6 +29,7 @@ import {
   LazyCTASection,
   LazyFooterSection,
 } from "./optimized/LazyLoadedSections";
+import FAQSection from "./optimized/sections/FAQSection";
 
 // Import other required components
 import { Switch } from "./components/ui/switch";
@@ -188,6 +189,9 @@ export function HomeOptimized() {
 
       {/* Waitlist Section - Only for logged out users */}
       {!user && <WaitlistSection />}
+
+      {/* FAQ Section */}
+      <FAQSection />
 
       <Suspense fallback={<SectionSkeleton />}>
         <LazyFooterSection />

@@ -5,6 +5,7 @@ import { useTheme } from "../contexts/ThemeContext.jsx";
 import { Button } from "./ui/Button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getUserAvatarUrl } from "../services/avatars";
+import Logo from "./Logo";
 
 export function Navbar() {
   const { user, userProfile, signOut } = useAuth();
@@ -180,12 +181,11 @@ export function Navbar() {
                 gsap.to(logoRef.current, { scale: 1, duration: 0.2 })
               }
             >
-              <button
+              <Logo 
+                size="md" 
                 onClick={() => navigate("/")}
-                className={`text-2xl font-bold bg-gradient-to-r ${premiumGradients.secondary} bg-clip-text text-transparent hover:opacity-80 transition-opacity`}
-              >
-                Offly
-              </button>
+                className="cursor-pointer hover:opacity-80 transition-opacity"
+              />
             </div>
 
             {/* Desktop Navigation - Centered */}
