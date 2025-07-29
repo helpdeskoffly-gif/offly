@@ -227,24 +227,7 @@ function Achievements() {
         </Card>
       </div>
 
-      {/* Manual Achievement Check Button */}
-      <div className="flex justify-center mb-6 gap-4">
-        <Button
-          onClick={checkForNewAchievements}
-          className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-300"
-        >
-          <Sparkles className="w-4 h-4 mr-2" />
-          Check for New Achievements
-        </Button>
-        <Button
-          onClick={debugAnalytics}
-          variant="outline"
-          className="border-slate-300 dark:border-slate-600"
-        >
-          <Target className="w-4 h-4 mr-2" />
-          Debug Analytics
-        </Button>
-      </div>
+
 
       {/* Achievements Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { gsap } from "gsap";
+
 import { useTheme } from "../contexts/ThemeContext.jsx";
 import { Button } from "./ui/Button";
 import { Card } from "./ui/Card";
@@ -35,7 +35,7 @@ export function ProfileCompletionModal({ user, isOpen, onClose, onComplete }) {
   const { theme } = useTheme();
 
   // Modal animation refs
-  const modalRef = useRef(null);
+
   const contentRef = useRef(null);
 
   // Form states
@@ -130,22 +130,7 @@ export function ProfileCompletionModal({ user, isOpen, onClose, onComplete }) {
     },
   };
 
-  // Animation effects
-  useEffect(() => {
-    if (isOpen && modalRef.current) {
-      gsap.fromTo(
-        modalRef.current,
-        { opacity: 0, scale: 0.95, y: 20 },
-        { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: "power2.out" },
-      );
-
-      gsap.fromTo(
-        ".hobby-category",
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.2 },
-      );
-    }
-  }, [isOpen]);
+  // No animation effects
 
   // Handle hobby selection
   const toggleHobby = (hobbyId) => {
@@ -220,7 +205,7 @@ export function ProfileCompletionModal({ user, isOpen, onClose, onComplete }) {
 
       {/* Modal */}
       <div
-        ref={modalRef}
+
         className={`relative w-full max-w-6xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden ${themeColors.modal} shadow-2xl rounded-xl sm:rounded-2xl border`}
       >
         {/* Header */}

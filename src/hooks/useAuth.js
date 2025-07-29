@@ -4,8 +4,18 @@ import { getUserAnalytics, createActiveUser, initializeOrUpdateUserAnalytics } f
 import { getUserAvatarUrl } from "../services/avatars";
 
 export const useAuth = () => {
-  const [user, setUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
+  const [user, setUserState] = useState(null);
+  const [userProfile, setUserProfileState] = useState(null);
+
+  const setUser = (newUser) => {
+    console.log("setUser called:", newUser ? newUser.id : "null");
+    setUserState(newUser);
+  };
+
+  const setUserProfile = (newProfile) => {
+    console.log("setUserProfile called:", newProfile ? newProfile.username : "null");
+    setUserProfileState(newProfile);
+  };
   const [loading, setLoading] = useState(true);
   const [analyticsLoaded, setAnalyticsLoaded] = useState(false);
 
@@ -32,8 +42,8 @@ export const useAuth = () => {
       } else {
         console.log("Auth state change: No session, clearing user state");
         lastProcessedUserId = null;
-        setUser(null);
-        setUserProfile(null);
+        setUserState(null);
+        setUserProfileState(null);
         setAnalyticsLoaded(false); // Reset analytics loaded state
         setLoading(false);
       }
@@ -100,24 +110,28 @@ export const useAuth = () => {
         weekly_score: 0,
       };
 
-      // Set user and basic profile immediately - NO TIMEOUTS
-      setUser(supabaseUser);
-      setUserProfile(basicProfile);
+      // Set user immediately
+      setUserState(supabaseUser);
       setLoading(false); // Set loading false immediately
 
-      // Load analytics in the background WITHOUT blocking auth
+      // Load analytics and full profile in the background
       if (!analyticsLoaded) {
-        console.log("Loading analytics in background...");
+        console.log("Loading analytics and full profile in background...");
         setAnalyticsLoaded(true);
-        
         // Fire and forget - don't await this
+        loadAnalyticsInBackground(supabaseUser.id);
+      } else {
+        // If analytics already loaded, ensure userProfile is up-to-date
+        // This handles cases where userProfile might be null on subsequent auth changes
+        // without a full reload, but analytics are already loaded.
+        // We'll re-fetch the profile to ensure it's current.
         loadAnalyticsInBackground(supabaseUser.id);
       }
     } catch (error) {
       console.error("Critical error handling user session:", error);
       // Always set a basic user profile to prevent infinite loading
-      setUser(supabaseUser);
-      setUserProfile({
+      setUserState(supabaseUser);
+      setUserProfileState({
         username:
           supabaseUser.user_metadata?.full_name || supabaseUser.email || "User",
         level: 1,
@@ -193,7 +207,7 @@ export const useAuth = () => {
         console.log("Background: Analytics data found, updating profile");
         const analytics = analyticsResult.data;
         console.log("Background: Analytics data received:", analytics);
-        setUserProfile({
+        setUserProfileState({
           username: userUsername,
           full_name: userFullName,
           bio: userBio,
@@ -268,16 +282,16 @@ export const useAuth = () => {
 
       // Clear all user-related state immediately
       console.log("Clearing user state after signOut");
-      setUser(null);
-      setUserProfile(null);
+      setUserState(null);
+      setUserProfileState(null);
       setAnalyticsLoaded(false);
       setLoading(false);
       
       // Force a small delay to ensure state updates are processed
       setTimeout(() => {
         console.log("SignOut: Forcing state refresh");
-        setUser(null);
-        setUserProfile(null);
+        setUserState(null);
+        setUserProfileState(null);
       }, 100);
       
       console.log("Successfully signed out");
@@ -313,8 +327,8 @@ export const useAuth = () => {
         sessionStorage.removeItem(key);
       });
       
-      setUser(null);
-      setUserProfile(null);
+      setUserState(null);
+      setUserProfileState(null);
       setAnalyticsLoaded(false);
     }
   };
@@ -398,7 +412,7 @@ export const useAuth = () => {
           console.log("refreshUserProfile: New userProfile object:", newUserProfile);
           console.log("refreshUserProfile: weeklyUniqueCheckinDays mapped to:", newUserProfile.weeklyUniqueCheckinDays);
           
-          setUserProfile(newUserProfile);
+          setUserProfileState(newUserProfile);
           console.log("User profile refreshed successfully");
           console.log("=== refreshUserProfile DEBUG END ===");
         } else {

@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import { gsap } from "gsap";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../contexts/ThemeContext.jsx";
 import { Button } from "./ui/Button";
@@ -16,75 +15,6 @@ export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [profileImageError, setProfileImageError] = useState(false);
   const dropdownRef = useRef(null);
-
-  // GSAP refs
-  const navRef = useRef(null);
-  const logoRef = useRef(null);
-  const dropdownMenuRef = useRef(null);
-  const signInButtonRef = useRef(null);
-  const mobileMenuRef = useRef(null);
-
-  useEffect(() => {
-    // Initial navbar slide down animation
-    gsap.fromTo(
-      navRef.current,
-      { y: -100, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" },
-    );
-  }, []);
-
-  useEffect(() => {
-    // Dropdown menu animations - only on click, not hover
-    if (isDropdownOpen && dropdownMenuRef.current) {
-      // Kill any existing animations first
-      gsap.killTweensOf(dropdownMenuRef.current);
-      
-      gsap.fromTo(
-        dropdownMenuRef.current,
-        { opacity: 0, scale: 0.95, y: -10 },
-        { opacity: 1, scale: 1, y: 0, duration: 0.2, ease: "power2.out" },
-      );
-    } else if (!isDropdownOpen && dropdownMenuRef.current) {
-      // Animate out when closing
-      gsap.killTweensOf(dropdownMenuRef.current);
-      
-      gsap.to(dropdownMenuRef.current, {
-        opacity: 0,
-        scale: 0.95,
-        y: -10,
-        duration: 0.15,
-        ease: "power2.in",
-        onComplete: () => {
-          // Ensure dropdown is hidden after animation
-          if (dropdownMenuRef.current) {
-            dropdownMenuRef.current.style.display = 'none';
-          }
-        }
-      });
-    }
-  }, [isDropdownOpen]);
-
-  useEffect(() => {
-    // Mobile menu animations
-    if (isMobileMenuOpen && mobileMenuRef.current) {
-      gsap.killTweensOf(mobileMenuRef.current);
-      
-      gsap.fromTo(
-        mobileMenuRef.current,
-        { opacity: 0, height: 0 },
-        { opacity: 1, height: "auto", duration: 0.3, ease: "power2.out" },
-      );
-    } else if (!isMobileMenuOpen && mobileMenuRef.current) {
-      gsap.killTweensOf(mobileMenuRef.current);
-      
-      gsap.to(mobileMenuRef.current, {
-        opacity: 0,
-        height: 0,
-        duration: 0.2,
-        ease: "power2.in"
-      });
-    }
-  }, [isMobileMenuOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -195,14 +125,14 @@ export function Navbar() {
   };
 
   return (
-    <nav ref={navRef} className="fixed top-4 left-4 right-4 z-50">
+    <nav className="fixed top-4 left-4 right-4 z-50">
       <div
         className={`${themeColors.navbar} backdrop-blur-2xl border rounded-2xl shadow-2xl transition-colors duration-300`}
       >
         <div className="px-4 lg:px-6 py-3 lg:py-4">
           <div className="flex justify-between items-center">
-            {/* Logo - Removed hover animations */}
-            <div ref={logoRef} className="flex items-center">
+            {/* Logo */}
+            <div className="flex items-center">
               <Logo 
                 size="md" 
                 onClick={() => navigate("/")}
@@ -273,12 +203,11 @@ export function Navbar() {
 
                   {isDropdownOpen && (
                     <div
-                      ref={dropdownMenuRef}
                       className={`absolute right-0 mt-2 w-56 ${themeColors.navbar} backdrop-blur-lg rounded-xl shadow-2xl border ${
                         theme === "dark"
                           ? "border-slate-700/50"
                           : "border-orange-200/50"
-                      } py-2 z-50`}
+                      } py-2 z-50 transition-all duration-200 ease-out`}
                     >
                       <div
                         className={`px-4 py-3 border-b ${
@@ -440,7 +369,7 @@ export function Navbar() {
                   )}
                 </div>
               ) : (
-                <div ref={signInButtonRef}>
+                <div>
                   <Button
                     onClick={() => navigate("/auth")}
                     className={`bg-gradient-to-r ${premiumGradients.secondary} hover:shadow-xl hover:shadow-emerald-500/25 text-gray-900 font-semibold transition-all duration-300`}
@@ -479,8 +408,7 @@ export function Navbar() {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div
-            ref={mobileMenuRef}
-            className={`lg:hidden border-t ${theme === "dark" ? "border-slate-700/50" : "border-orange-200/50"} px-4 py-4`}
+            className={`lg:hidden border-t ${theme === "dark" ? "border-slate-700/50" : "border-orange-200/50"} px-4 py-4 transition-all duration-200 ease-out`}
           >
             <div className="space-y-2">
               {!user &&

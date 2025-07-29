@@ -702,7 +702,7 @@ export const AntiTodoList = ({ userId }) => {
                         <Button
                           onClick={() => handleItemAction(item.id, 'ongoing')}
                           disabled={loadingItems.has(item.id)}
-                          className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white px-4 py-2 h-10 rounded-lg font-medium transition-all duration-300 min-w-[100px]`}
+                          className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white px-4 py-2 h-10 rounded-lg font-medium transition-all duration-300 w-full lg:min-w-[100px]`}
                         >
                           {loadingItems.has(item.id) ? (
                             <>
@@ -723,7 +723,7 @@ export const AntiTodoList = ({ userId }) => {
                           <Button
                             onClick={() => handleItemAction(item.id, 'completed')}
                             disabled={loadingItems.has(item.id)}
-                            className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white px-4 py-2 h-10 rounded-lg font-medium transition-all duration-300 min-w-[100px]`}
+                            className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white px-4 py-2 h-10 rounded-lg font-medium transition-all duration-300 w-full lg:min-w-[100px]`}
                           >
                             {loadingItems.has(item.id) ? (
                               <>
@@ -741,7 +741,7 @@ export const AntiTodoList = ({ userId }) => {
                           <Button
                             onClick={() => handleItemAction(item.id, 'stopped')}
                             disabled={loadingItems.has(item.id)}
-                            className={`bg-gradient-to-r ${premiumGradients.tertiary} hover:shadow-lg hover:scale-105 text-white px-4 py-2 h-10 rounded-lg font-medium transition-all duration-300 min-w-[100px]`}
+                            className={`bg-gradient-to-r ${premiumGradients.tertiary} hover:shadow-lg hover:scale-105 text-white px-4 py-2 h-10 rounded-lg font-medium transition-all duration-300 w-full lg:min-w-[100px]`}
                           >
                             {loadingItems.has(item.id) ? (
                               <>
@@ -759,8 +759,8 @@ export const AntiTodoList = ({ userId }) => {
                       )}
 
                       {(item.status === 'completed' || item.status === 'stopped') && (
-                        <div className="flex gap-3">
-                          <div className={`bg-gradient-to-r ${premiumGradients.tertiary} px-4 py-2 rounded-lg flex items-center justify-center h-10 font-medium text-white shadow-lg min-w-[100px]`}>
+                        <div className="flex gap-3 w-full lg:w-auto">
+                          <div className={`bg-gradient-to-r ${premiumGradients.tertiary} px-4 py-2 rounded-lg flex items-center justify-center h-10 font-medium text-white shadow-lg flex-1 lg:min-w-[100px]`}>
                             <CheckCircle className="w-4 h-4 mr-2" />
                             {item.status === 'completed' ? 'Completed' : 'Stopped'}
                           </div>
@@ -769,7 +769,7 @@ export const AntiTodoList = ({ userId }) => {
                             <Button
                               onClick={() => handleItemAction(item.id, 'ongoing')}
                               disabled={loadingItems.has(item.id)}
-                              className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white h-10 px-4 rounded-lg transition-all duration-300 min-w-[80px]`}
+                              className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white h-10 px-4 rounded-lg transition-all duration-300 flex-1 lg:min-w-[80px]`}
                             >
                               <Play className="w-4 h-4" />
                             </Button>

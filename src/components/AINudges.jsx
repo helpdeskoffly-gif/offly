@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { gsap } from "gsap";
 import { useTheme } from "../contexts/ThemeContext";
 import { Button } from "./ui/Button";
 import { Card, CardContent } from "./ui/Card";
@@ -17,7 +16,6 @@ const AINudges = ({
   const [nudges, setNudges] = useState([]);
   const [isVisible, setIsVisible] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const containerRef = useRef(null);
 
   // Generate initial nudge when component mounts or key props change
   useEffect(() => {
@@ -63,29 +61,10 @@ const AINudges = ({
     };
   }, [user, userProfile, recentCheckins, currentMood, isGenerating]);
 
-  // Show nudges with animation
+  // Show nudges
   useEffect(() => {
     if (nudges.length > 0 && !isVisible) {
       setIsVisible(true);
-
-      // Animate in
-      if (containerRef.current) {
-        gsap.fromTo(
-          containerRef.current,
-          {
-            opacity: 0,
-            x: 100,
-            scale: 0.8,
-          },
-          {
-            opacity: 1,
-            x: 0,
-            scale: 1,
-            duration: 0.6,
-            ease: "back.out(1.7)",
-          },
-        );
-      }
     }
   }, [nudges.length, isVisible]);
 
@@ -120,37 +99,13 @@ const AINudges = ({
   };
 
   const dismissNudge = (nudgeId) => {
-    const nudgeElement = document.querySelector(`[data-nudge-id="${nudgeId}"]`);
-
-    if (nudgeElement) {
-      gsap.to(nudgeElement, {
-        opacity: 0,
-        x: 100,
-        scale: 0.8,
-        duration: 0.3,
-        ease: "power2.in",
-        onComplete: () => {
-          setNudges((prev) => prev.filter((nudge) => nudge.id !== nudgeId));
-        },
-      });
-    }
+    setNudges((prev) => prev.filter((nudge) => nudge.id !== nudgeId));
   };
 
   const dismissAll = () => {
-    if (containerRef.current) {
-      gsap.to(containerRef.current, {
-        opacity: 0,
-        x: 100,
-        scale: 0.8,
-        duration: 0.4,
-        ease: "power2.in",
-        onComplete: () => {
-          setNudges([]);
-          setIsVisible(false);
-          if (onClose) onClose();
-        },
-      });
-    }
+    setNudges([]);
+    setIsVisible(false);
+    if (onClose) onClose();
   };
 
   // Auto-dismiss after 10 seconds
@@ -183,7 +138,6 @@ const AINudges = ({
 
   return (
     <div
-      ref={containerRef}
       className="fixed bottom-4 right-4 z-50 max-w-sm space-y-3"
       style={{ maxHeight: "400px", overflowY: "auto" }}
     >

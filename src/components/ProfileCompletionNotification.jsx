@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useTheme } from "../contexts/ThemeContext.jsx";
 import { Button } from "./ui/Button";
 import { X, User, Sparkles, CheckCircle } from "lucide-react";
-import { gsap } from "gsap";
 
 export function ProfileCompletionNotification({
   isVisible,
@@ -11,7 +10,6 @@ export function ProfileCompletionNotification({
   onRemindLater,
 }) {
   const { theme } = useTheme();
-  const [isAnimating, setIsAnimating] = useState(false);
 
   // Theme colors
   const themeColors = {
@@ -33,51 +31,6 @@ export function ProfileCompletionNotification({
           ? "text-violet-300 hover:text-white"
           : "text-violet-600 hover:text-violet-800",
     },
-  };
-
-  // Animation on mount
-  useEffect(() => {
-    if (isVisible && !isAnimating) {
-      setIsAnimating(true);
-      const element = document.getElementById("profile-notification");
-      if (element) {
-        gsap.fromTo(
-          element,
-          {
-            opacity: 0,
-            y: -50,
-            scale: 0.95,
-          },
-          {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 0.5,
-            ease: "power2.out",
-            onComplete: () => setIsAnimating(false),
-          },
-        );
-      }
-    }
-  }, [isVisible, isAnimating]);
-
-  // Auto-hide animation
-  const handleHide = (callback) => {
-    const element = document.getElementById("profile-notification");
-    if (element) {
-      gsap.to(element, {
-        opacity: 0,
-        y: -30,
-        scale: 0.95,
-        duration: 0.3,
-        ease: "power2.in",
-        onComplete: () => {
-          callback?.();
-        },
-      });
-    } else {
-      callback?.();
-    }
   };
 
   if (!isVisible) return null;
@@ -113,10 +66,10 @@ export function ProfileCompletionNotification({
               >
                 Complete Your Profile
               </h4>
-              <button
-                onClick={() => handleHide(onDismiss)}
-                className={`${themeColors.button.secondary} p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors`}
-              >
+                              <button
+                  onClick={onDismiss}
+                  className={`${themeColors.button.secondary} p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors`}
+                >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -130,21 +83,21 @@ export function ProfileCompletionNotification({
 
             {/* Action buttons */}
             <div className="flex items-center space-x-2 mt-3">
-              <Button
-                size="sm"
-                onClick={() => handleHide(onComplete)}
-                className={`${themeColors.button.primary} text-xs px-3 py-1.5 h-auto`}
-              >
+                              <Button
+                  size="sm"
+                  onClick={onComplete}
+                  className={`${themeColors.button.primary} text-xs px-3 py-1.5 h-auto`}
+                >
                 <CheckCircle className="w-3 h-3 mr-1" />
                 Complete Now
               </Button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleHide(onRemindLater)}
-                className={`${themeColors.button.secondary} text-xs px-2 py-1.5 h-auto`}
-              >
+                              <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onRemindLater}
+                  className={`${themeColors.button.secondary} text-xs px-2 py-1.5 h-auto`}
+                >
                 Remind Later
               </Button>
             </div>

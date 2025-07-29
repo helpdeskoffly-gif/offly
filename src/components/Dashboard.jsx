@@ -18,7 +18,6 @@ import { AntiTodoList } from "./AntiTodoList";
 import { Community } from "./Community";
 import PlantGarden from "./PlantGarden";
 
-import { gsap } from "gsap";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../contexts/ThemeContext.jsx";
 import { useNavigate } from "react-router-dom";
@@ -449,19 +448,32 @@ const Dashboard = () => {
       );
 
       if (result.success) {
-        setNotifications(result.data || []);
+        // Only update state if the new data is different to prevent unnecessary re-renders
+        if (JSON.stringify(result.data) !== JSON.stringify(notifications)) {
+          setNotifications(result.data || []);
+          console.log("Notifications updated:", result.data);
+        } else {
+          console.log("Notifications data unchanged, skipping update.");
+        }
       } else {
         // Fallback to empty notifications if service fails
         setNotifications([]);
+        console.error("Failed to load notifications:", result.error);
       }
 
       const countResult = await notificationService.getNotificationCount(
         user.id,
       );
       if (countResult.success) {
-        setNotificationCount(countResult.count);
+        if (countResult.count !== notificationCount) {
+          setNotificationCount(countResult.count);
+          console.log("Notification count updated:", countResult.count);
+        } else {
+          console.log("Notification count unchanged, skipping update.");
+        }
       } else {
         setNotificationCount(0);
+        console.error("Failed to get notification count:", countResult.error);
       }
     } catch {
       // Set fallback values
@@ -504,9 +516,9 @@ const Dashboard = () => {
 
         console.log("Profile completion result:", result);
 
-        // Show modal directly if not completed
-        if (!result.isCompleted) {
-          console.log("Profile incomplete, showing modal");
+        // Show modal directly if not completed and not already shown
+        if (!result.isCompleted && !showProfileModal) {
+          console.log("Profile incomplete, showing modal for the first time or after being closed");
           setShowProfileModal(true);
         }
 
@@ -570,7 +582,18 @@ const Dashboard = () => {
         }
       };
     }
-  }, [user?.id, userProfile, loadNotifications, loadWeeklyInsights, checkProfileCompletionStatus]);
+  }, [user?.id]); // Only depend on user.id, not userProfile
+
+  // Update notification service when userProfile changes
+  useEffect(() => {
+    if (user?.id && userProfile) {
+      try {
+        notificationService.startPeriodicCheck(user.id, userProfile, 30);
+      } catch {
+        // Periodic notifications unavailable
+      }
+    }
+  }, [user?.id, userProfile?.id]); // Only depend on userProfile.id, not the entire object
 
   // Handle notification click to open profile modal for profile completion notifications
   const handleNotificationAction = async (notification) => {
@@ -640,22 +663,6 @@ const Dashboard = () => {
     return `${days} day${days > 1 ? "s" : ""} ago`;
   };
 
-  useEffect(() => {
-    // GSAP animations on mount
-    const ctx = gsap.context(() => {
-      gsap.set(".fade-in", { opacity: 0, y: 30 });
-      gsap.to(".fade-in", {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        stagger: 0.1,
-        ease: "power2.out",
-      });
-    }, containerRef);
-
-    return () => ctx.revert();
-  }, [activeTab]);
-
   // Save settings modal state to localStorage whenever it changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -669,83 +676,22 @@ const Dashboard = () => {
     // localStorage is saved in the useEffect above
   };
 
-  // Animate tab changes
+  // Simple tab change without animations
   const animateTabChange = (newTab) => {
     // Save to localStorage (only if it's a valid tab)
     if (typeof window !== 'undefined' && validTabs.includes(newTab)) {
       localStorage.setItem('dashboard-active-tab', newTab);
     }
-    
-    if (contentRef.current) {
-      gsap.to(contentRef.current, {
-        opacity: 0,
-        y: 20,
-        duration: 0.2,
-        ease: "power2.in",
-        onComplete: () => {
-          setActiveTab(newTab);
-          gsap.to(contentRef.current, {
-            opacity: 1,
-            y: 0,
-            duration: 0.3,
-            ease: "power2.out",
-          });
-        },
-      });
-    } else {
-      setActiveTab(newTab);
-    }
+    setActiveTab(newTab);
   };
 
-  // Professional floating background
+  // Simple background without animations
   const FloatingBackground = () => {
-    const bgRef = useRef(null);
-
-    useEffect(() => {
-      const ctx = gsap.context(() => {
-        // Subtle floating orbs
-        gsap.to(".floating-orb-1", {
-          x: 50,
-          y: -25,
-          scale: 1.1,
-          rotation: 180,
-          duration: 30,
-          repeat: -1,
-          ease: "none",
-        });
-
-        gsap.to(".floating-orb-2", {
-          x: -40,
-          y: 30,
-          scale: 0.9,
-          rotation: -180,
-          duration: 25,
-          repeat: -1,
-          ease: "none",
-        });
-
-        gsap.to(".floating-orb-3", {
-          x: 30,
-          y: -20,
-          scale: 1.2,
-          rotation: 180,
-          duration: 35,
-          repeat: -1,
-          ease: "none",
-        });
-      }, bgRef);
-
-      return () => ctx.revert();
-    }, []);
-
     return (
-      <div
-        ref={bgRef}
-        className="fixed inset-0 overflow-hidden pointer-events-none z-0"
-      >
-        {/* Subtle floating orbs for texture */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        {/* Static background orbs for texture */}
         <div
-          className={`floating-orb-1 absolute top-20 left-10 w-96 h-96 ${
+          className={`absolute top-20 left-10 w-96 h-96 ${
             theme === "dark"
               ? "bg-gradient-to-r from-slate-800/10 to-gray-800/10"
               : "bg-gradient-to-r from-indigo-200/15 to-blue-200/10"
@@ -753,7 +699,7 @@ const Dashboard = () => {
         />
 
         <div
-          className={`floating-orb-2 absolute top-40 right-20 w-80 h-80 ${
+          className={`absolute top-40 right-20 w-80 h-80 ${
             theme === "dark"
               ? "bg-gradient-to-r from-indigo-800/8 to-purple-800/8"
               : "bg-gradient-to-r from-violet-200/12 to-purple-200/8"
@@ -761,7 +707,7 @@ const Dashboard = () => {
         />
 
         <div
-          className={`floating-orb-3 absolute bottom-20 left-1/3 w-72 h-72 ${
+          className={`absolute bottom-20 left-1/3 w-72 h-72 ${
             theme === "dark"
               ? "bg-gradient-to-r from-gray-800/5 to-slate-800/5"
               : "bg-gradient-to-r from-slate-200/10 to-gray-200/8"
@@ -773,18 +719,6 @@ const Dashboard = () => {
 
   // Generate Activities Modal
   const GenerateModal = () => {
-    const modalRef = useRef(null);
-
-    useEffect(() => {
-      if (showGenerateModal && modalRef.current) {
-        gsap.fromTo(
-          modalRef.current,
-          { scale: 0.8, opacity: 0, y: 20 },
-          { scale: 1, opacity: 1, y: 0, duration: 0.3, ease: "back.out(1.7)" },
-        );
-      }
-    }, []);
-
     if (!showGenerateModal) return null;
 
     return (
@@ -793,7 +727,6 @@ const Dashboard = () => {
         onClick={() => setShowGenerateModal(false)}
       >
         <div
-          ref={modalRef}
           className={`${themeColors.card} rounded-2xl p-8 border shadow-xl max-w-md w-full relative overflow-hidden`}
           onClick={(e) => e.stopPropagation()}
         >
