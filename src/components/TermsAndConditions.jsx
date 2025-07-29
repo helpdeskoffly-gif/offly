@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
-import { Badge } from './ui/Badge';
+import { Badge } from './ui/badge';
 import { ArrowLeft, Mail, Shield, Users, FileText, AlertTriangle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 
