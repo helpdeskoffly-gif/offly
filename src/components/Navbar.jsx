@@ -21,6 +21,7 @@ export function Navbar() {
   const navRef = useRef(null);
   const logoRef = useRef(null);
   const dropdownMenuRef = useRef(null);
+  const signInButtonRef = useRef(null);
   const mobileMenuRef = useRef(null);
 
   useEffect(() => {
