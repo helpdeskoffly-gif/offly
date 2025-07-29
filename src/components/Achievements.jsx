@@ -28,6 +28,9 @@ function Achievements() {
       // Check for new achievements first
       await checkAndUnlockAchievements(userId);
 
+      // Refresh points after checking achievements (in case new ones were unlocked)
+      fetchUserPoints();
+
       // Load user achievements with current progress
       const achievementsResult = await getUserAchievements(userId);
       if (achievementsResult.success) {

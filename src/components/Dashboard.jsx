@@ -1387,6 +1387,11 @@ const Dashboard = () => {
           if (typeof window !== 'undefined' && window.refreshAchievements) {
             window.refreshAchievements();
           }
+          
+          // Refresh points after checking achievements (in case new ones were unlocked)
+          if (typeof window !== 'undefined' && window.fetchUserPoints) {
+            window.fetchUserPoints();
+          }
         } catch (error) {
           console.error("Error checking achievements:", error);
         }

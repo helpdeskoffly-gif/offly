@@ -232,6 +232,9 @@ export function PlantGarden() {
           
           // Check for achievements using the proper function
           await checkAndUnlockAchievements(user.id);
+          
+          // Refresh points after checking achievements (in case new ones were unlocked)
+          fetchUserPoints();
         } catch (achievementError) {
           console.error("Error tracking plant care:", achievementError);
         }
@@ -281,6 +284,9 @@ export function PlantGarden() {
           
           // Check for achievements using the proper function
           await checkAndUnlockAchievements(user.id);
+          
+          // Refresh points after checking achievements (in case new ones were unlocked)
+          fetchUserPoints();
         } catch (achievementError) {
           console.error("Error tracking plant care:", achievementError);
         }
@@ -330,6 +336,9 @@ export function PlantGarden() {
           
           // Check for achievements using the proper function
           await checkAndUnlockAchievements(user.id);
+          
+          // Refresh points after checking achievements (in case new ones were unlocked)
+          fetchUserPoints();
         } catch (achievementError) {
           console.error("Error tracking plant care:", achievementError);
         }

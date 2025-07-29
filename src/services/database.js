@@ -1375,6 +1375,23 @@ export const checkAndUnlockAchievements = async (uid) => {
             unlocked_at: new Date().toISOString(),
           });
 
+          // Award points for unlocking the achievement
+          try {
+            const pointsResult = await awardPoints(
+              uid,
+              achievement.points_reward,
+              'achievement',
+              newAchievement[0].id,
+              `Achievement unlocked: ${achievement.name}`
+            );
+            
+            if (pointsResult.success) {
+              console.log(`Awarded ${achievement.points_reward} points for achievement: ${achievement.name}`);
+            }
+          } catch (pointsError) {
+            console.error(`Failed to award points for achievement ${achievement.name}:`, pointsError);
+          }
+
           newAchievements.push(newAchievement[0]);
         } else {
           // Create progress record
@@ -1408,6 +1425,23 @@ export const checkAndUnlockAchievements = async (uid) => {
             updateData.is_unlocked = true;
             updateData.unlocked_at = new Date().toISOString();
             newAchievements.push({ ...existing, ...updateData });
+            
+            // Award points for unlocking the achievement
+            try {
+              const pointsResult = await awardPoints(
+                uid,
+                existing.points_reward,
+                'achievement',
+                existing.id,
+                `Achievement unlocked: ${existing.achievement_name}`
+              );
+              
+              if (pointsResult.success) {
+                console.log(`Awarded ${existing.points_reward} points for achievement: ${existing.achievement_name}`);
+              }
+            } catch (pointsError) {
+              console.error(`Failed to award points for achievement ${existing.achievement_name}:`, pointsError);
+            }
           }
 
           await supabaseHelpers.update("achievements", existing.id, updateData);

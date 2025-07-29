@@ -25,6 +25,13 @@ export const PointsProvider = ({ children }) => {
     fetchUserPoints();
   }, [fetchUserPoints]);
 
+  // Expose fetchUserPoints globally for other components to use
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.fetchUserPoints = fetchUserPoints;
+    }
+  }, [fetchUserPoints]);
+
   const updatePoints = (newPoints) => {
     setPoints(newPoints);
   };
