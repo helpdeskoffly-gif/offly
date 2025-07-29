@@ -25,17 +25,10 @@ import {
   ArrowRight,
   Globe,
   Zap,
-  Menu,
   X,
   ChevronDown
 } from "lucide-react";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "./ui/drawer";
+
 
 export function Auth() {
   const { user, loading } = useAuth();
@@ -53,7 +46,7 @@ export function Auth() {
   const [successMessage, setSuccessMessage] = useState("");
   const [formLoading, setFormLoading] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
+
   const [activeTab, setActiveTab] = useState("signin");
 
   // GSAP refs for animations
@@ -467,102 +460,7 @@ export function Auth() {
           </div>
         </div>
 
-        {/* Mobile Menu Drawer */}
-        <Drawer open={showMobileMenu} onOpenChange={setShowMobileMenu}>
-          {/* Mobile Menu Button */}
-          <div className="lg:hidden">
-            <DrawerTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`${themeColors.text.secondary} hover:${themeColors.text.primary} p-2`}
-              >
-                <Menu className="w-5 h-5" />
-              </Button>
-            </DrawerTrigger>
-          </div>
-          <DrawerContent className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-slate-200/50 dark:border-slate-700/50">
-            <DrawerHeader className="text-center">
-              <DrawerTitle className={`${themeColors.text.primary} text-lg`}>
-                Navigation
-              </DrawerTitle>
-            </DrawerHeader>
-            <div className="p-6 space-y-4">
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  navigate("/");
-                  setShowMobileMenu(false);
-                }}
-                className={`w-full justify-start h-12 ${themeColors.text.secondary} hover:${themeColors.text.primary} text-left`}
-              >
-                <ArrowRight className="w-4 h-4 mr-3 rotate-180" />
-                Back to Home
-              </Button>
-              
-              <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
-                <div className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Quick Actions</div>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => {
-                      setActiveTab("signin");
-                      setIsSignUp(false);
-                      setShowMobileMenu(false);
-                    }}
-                    className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 h-12 flex items-center ${
-                      activeTab === "signin" 
-                        ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg" 
-                        : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
-                    }`}
-                  >
-                    <User className="w-4 h-4 mr-3" />
-                    Sign In
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab("signup");
-                      setIsSignUp(true);
-                      setShowMobileMenu(false);
-                    }}
-                    className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 h-12 flex items-center ${
-                      activeTab === "signup" 
-                        ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg" 
-                        : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
-                    }`}
-                  >
-                    <Sparkles className="w-4 h-4 mr-3" />
-                    Create Account
-                  </button>
-                </div>
-              </div>
-              
-              <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
-                <div className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Features</div>
-                <div className="space-y-2">
-                  {[
-                    { icon: Heart, title: "Daily Check-ins", desc: "Track your mood and thoughts" },
-                    { icon: Sparkles, title: "AI Insights", desc: "Get personalized recommendations" },
-                    { icon: Shield, title: "Private & Secure", desc: "Your data is encrypted" },
-                    { icon: Globe, title: "Community Support", desc: "Connect with others" }
-                  ].map((feature, index) => {
-                    const Icon = feature.icon;
-                    return (
-                      <div key={index} className="flex items-center space-x-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-                        <div className={`w-8 h-8 bg-gradient-to-r ${premiumGradients.secondary} rounded-lg flex items-center justify-center`}>
-                          <Icon className="w-4 h-4 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <div className={`font-medium text-sm ${themeColors.text.primary}`}>{feature.title}</div>
-                          <div className={`text-xs ${themeColors.text.muted}`}>{feature.desc}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </DrawerContent>
-        </Drawer>
+
       </div>
 
       {/* Main Content */}

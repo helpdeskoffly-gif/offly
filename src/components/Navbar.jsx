@@ -12,7 +12,7 @@ export function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   const [profileImageError, setProfileImageError] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -48,7 +48,6 @@ export function Navbar() {
     try {
       console.log("Navbar: Starting sign out process");
       setIsDropdownOpen(false);
-      setIsMobileMenuOpen(false);
       await signOut();
       console.log("Navbar: Sign out completed, navigating to home");
       navigate("/");
@@ -273,33 +272,7 @@ export function Navbar() {
                           </svg>
                           Dashboard
                         </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => {
-                            navigate("/new-dashboard");
-                            setIsDropdownOpen(false);
-                          }}
-                          className={`w-full justify-start px-4 py-2 text-sm rounded-none ${
-                            theme === "dark"
-                              ? "hover:bg-slate-700/50"
-                              : "hover:bg-orange-100/50"
-                          } transition-colors duration-200`}
-                        >
-                          <svg
-                            className="h-4 w-4 mr-3"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                            />
-                          </svg>
-                          New Dashboard
-                        </Button>
+
                       </div>
 
                       <div className="py-1">
@@ -379,69 +352,12 @@ export function Navbar() {
                 </div>
               )}
 
-              {/* Mobile Menu Button */}
-              <div className="lg:hidden">
-                <Button
-                  variant="ghost"
-                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className={`${theme === "dark" ? "hover:bg-slate-700/50" : "hover:bg-orange-100/50"} transition-all duration-200`}
-                >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 6h16M4 12h16M4 18h16"
-                    />
-                  </svg>
-                </Button>
-              </div>
+
             </div>
           </div>
         </div>
 
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div
-            className={`lg:hidden border-t ${theme === "dark" ? "border-slate-700/50" : "border-orange-200/50"} px-4 py-4 transition-all duration-200 ease-out`}
-          >
-            <div className="space-y-2">
-              {!user &&
-                navigationItems.map((item) => (
-                  <button
-                    key={item.name}
-                    onClick={item.onClick}
-                    className={`block w-full text-left px-3 py-2 rounded-lg ${themeColors.text.secondary} hover:${themeColors.text.primary} ${
-                      theme === "dark"
-                        ? "hover:bg-slate-700/50"
-                        : "hover:bg-orange-100/50"
-                    } transition-colors duration-200 font-medium`}
-                  >
-                    {item.name}
-                  </button>
-                ))}
 
-              {!user && (
-                <div className="pt-2 space-y-2">
-                  <Button
-                    onClick={() => {
-                      navigate("/auth");
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full bg-gradient-to-r ${premiumGradients.secondary} hover:shadow-xl hover:shadow-emerald-500/25 text-gray-900 font-semibold transition-all duration-300`}
-                  >
-                    Sign In
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </nav>
   );
