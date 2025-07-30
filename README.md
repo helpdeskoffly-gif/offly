@@ -416,23 +416,6 @@ npm run lint         # Run ESLint
 npm run lighthouse   # Run performance audit
 ```
 
-## 🤝 Contributing
-
-### Code Standards
-
-- **ESLint**: Enforced code quality
-- **Prettier**: Consistent code formatting
-- **TypeScript**: Type safety (planned migration)
-- **Testing**: Unit and integration tests (planned)
-
-### Git Workflow
-
-1. Create feature branch
-2. Implement changes with tests
-3. Submit pull request
-4. Code review and approval
-5. Merge to main branch
-
 ## 📚 API Documentation
 
 ### Core Endpoints
@@ -491,27 +474,4 @@ await getUserPoints(userId)
 await updatePlantGrowth(plantId, 10)
 ```
 
-## 🎯 Future Roadmap
 
-### Planned Features
-
-- **Advanced AI**: More sophisticated sentiment analysis
-- **Social Features**: Enhanced community interactions
-- **Mobile App**: Native iOS/Android applications
-- **API Access**: Public API for third-party integrations
-- **Advanced Analytics**: Machine learning insights
-- **Integration**: Calendar and productivity app connections
-
-### Technical Improvements
-
-- **TypeScript Migration**: Full type safety
-- **Testing Suite**: Comprehensive test coverage
-- **Performance**: Further optimization and caching
-- **Accessibility**: Enhanced accessibility features
-- **Internationalization**: Multi-language support
-
----
-
-## 📄 License
-
-This project is proprietary software. All rights reserved.
