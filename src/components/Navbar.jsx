@@ -146,6 +146,14 @@ export function Navbar() {
 
   // Only show feedback button on product pages (not landing page)
   const isProductPage = location.pathname !== "/";
+  
+  // Temporary debug - remove this after testing
+  console.log("🔍 Feedback Button Debug:", {
+    user: !!user,
+    pathname: location.pathname,
+    isProductPage,
+    shouldShowFeedback: !!user && isProductPage
+  });
 
   return (
     <>
@@ -188,18 +196,23 @@ export function Navbar() {
                       <Button
                         variant="ghost"
                         onClick={() => setIsFeedbackOpen(true)}
-                        className={`flex items-center space-x-2 h-10 ${
+                        className={`flex items-center space-x-2 h-10 bg-red-500 text-white ${
                           theme === "dark"
                             ? "hover:bg-slate-700/50"
                             : "hover:bg-orange-100/50"
                         } transition-colors duration-200`}
                       >
                         <MessageSquare className="h-5 w-5" />
-                        <span className="hidden md:inline-block font-medium">
+                        <span className="font-medium">
                           Feedback
                         </span>
                       </Button>
                     )}
+                    
+                    {/* Temporary Debug Indicator */}
+                    <div className="text-xs text-red-500 bg-red-100 dark:bg-red-900/20 px-2 py-1 rounded">
+                      Debug: {user ? 'Logged in' : 'Not logged in'} | {location.pathname} | {isProductPage ? 'Product page' : 'Landing page'}
+                    </div>
 
                     <div className="relative" ref={dropdownRef}>
                       <div>

@@ -26,11 +26,11 @@ function App() {
             {/* Routes with Navbar (using Layout) */}
             <Route path="/" element={<Layout />}>
               <Route index element={<HomeOptimized />} />
+              <Route path="/dashboard" element={<Dashboard />} />
             </Route>
             {/* Routes without Navbar (rendered directly) */}
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth-test" element={<AuthTest />} />
-            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/terms" element={<TermsAndConditions />} />
           </Routes>
         </Router>
