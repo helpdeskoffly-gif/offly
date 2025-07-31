@@ -27,6 +27,14 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
   const today = currentDate.getDate();
+  
+  console.log('🔍 Calendar Debug - Current date info:', {
+    currentDate: currentDate.toISOString(),
+    currentMonth,
+    currentYear,
+    today,
+    monthName: monthNames[currentMonth]
+  });
 
   // Days of week
   const daysOfWeek = ["S", "M", "T", "W", "T", "F", "S"];
@@ -56,6 +64,15 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
       // Get checkins for the current month
       const firstDayOfMonth = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
       const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
+      
+      console.log('🔍 Calendar Debug - Date calculation:', {
+        currentYear,
+        currentMonth,
+        firstDayOfMonth,
+        lastDayOfMonth,
+        firstDayCalculation: new Date(currentYear, currentMonth, 1),
+        lastDayCalculation: new Date(currentYear, currentMonth + 1, 0)
+      });
       
       console.log('🔍 Calendar Debug - Fetching checkins:', {
         userId: user.id,
