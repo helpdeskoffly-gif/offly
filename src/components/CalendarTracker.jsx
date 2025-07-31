@@ -27,14 +27,6 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
   const today = currentDate.getDate();
-  
-  console.log('🔍 Calendar Debug - Current date info:', {
-    currentDate: currentDate.toISOString(),
-    currentMonth,
-    currentYear,
-    today,
-    monthName: monthNames[currentMonth]
-  });
 
   // Days of week
   const daysOfWeek = ["S", "M", "T", "W", "T", "F", "S"];
@@ -54,6 +46,14 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
     "November",
     "December",
   ];
+  
+  console.log('🔍 Calendar Debug - Current date info:', {
+    currentDate: currentDate.toISOString(),
+    currentMonth,
+    currentYear,
+    today,
+    monthName: monthNames[currentMonth]
+  });
 
   // Load real check-ins from Supabase
   const loadCheckins = useCallback(async () => {
