@@ -110,7 +110,6 @@ import {
   Lightbulb,
   Play,
   Pause,
-  X,
   Send,
   Hash,
   ChevronLeft,
