@@ -146,6 +146,14 @@ export function Navbar() {
 
   // Only show feedback button on product pages (not landing page)
   const isProductPage = location.pathname !== "/";
+  
+  // Debug logging
+  console.log("Navbar Debug:", {
+    user: !!user,
+    pathname: location.pathname,
+    isProductPage,
+    shouldShowFeedback: !!user && isProductPage
+  });
 
   return (
     <>
