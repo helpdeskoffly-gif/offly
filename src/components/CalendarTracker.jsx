@@ -57,7 +57,12 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
 
   // Load real check-ins from Supabase
   const loadCheckins = useCallback(async () => {
-    if (!user) return;
+    console.log('🔍 Calendar Debug - loadCheckins called:', { user: !!user, userId: user?.id });
+    
+    if (!user) {
+      console.log('❌ Calendar Debug - No user, returning early');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -99,11 +104,13 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
 
   // Load checkins on mount and when user changes
   useEffect(() => {
+    console.log('🔍 Calendar Debug - useEffect called for loadCheckins');
     loadCheckins();
   }, [loadCheckins]);
 
   // Refresh data when refreshTrigger changes (after check-ins)
   useEffect(() => {
+    console.log('🔍 Calendar Debug - useEffect called for refreshTrigger:', refreshTrigger);
     if (refreshTrigger > 0) {
       console.log('CalendarTracker: Refreshing due to trigger change');
       loadCheckins();
@@ -293,6 +300,13 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
   };
 
   const totalCheckins = Object.keys(checkinData).length;
+
+  console.log('🔍 Calendar Debug - Component rendering:', {
+    totalCheckins,
+    realCheckinsLength: realCheckins.length,
+    checkinDataKeys: Object.keys(checkinData),
+    loading
+  });
 
   return (
     <Card
