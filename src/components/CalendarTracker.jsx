@@ -56,10 +56,23 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
       // Get checkins for the current month
       const firstDayOfMonth = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
       const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
+      
+      console.log('🔍 Calendar Debug - Fetching checkins:', {
+        userId: user.id,
+        firstDayOfMonth,
+        lastDayOfMonth,
+        currentMonth,
+        currentYear,
+        today: new Date().toISOString().split('T')[0]
+      });
+      
       const result = await getUserCheckins(user.id, firstDayOfMonth, lastDayOfMonth, 100);
       if (result.success) {
         setRealCheckins(result.data);
         console.log('CalendarTracker: realCheckins refreshed', result.data);
+        console.log('🔍 Calendar Debug - Fetched checkins count:', result.data.length);
+      } else {
+        console.error('CalendarTracker: Failed to fetch checkins:', result.error);
       }
     } catch (error) {
       console.error('Error loading calendar checkins:', error);
@@ -84,6 +97,19 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
   const checkinData = useMemo(() => {
     const data = {};
 
+    console.log('🔍 Calendar Debug - Processing checkins:', {
+      realCheckinsCount: realCheckins.length,
+      currentMonth,
+      currentYear,
+      today: new Date().getDate(),
+      realCheckins: realCheckins.map(c => ({
+        id: c.id,
+        checkin_date: c.checkin_date,
+        mood_score: c.mood_score,
+        sentiment_score: c.sentiment_score
+      }))
+    });
+
     if (!realCheckins.length) {
       // Return empty data if no checkins
       return data;
@@ -95,6 +121,18 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
       const checkinDate = new Date(checkin.checkin_date);
       const checkinMonth = checkinDate.getMonth();
       const checkinYear = checkinDate.getFullYear();
+      const checkinDay = checkinDate.getDate();
+
+      console.log('🔍 Processing checkin:', {
+        checkin_date: checkin.checkin_date,
+        parsedDate: checkinDate,
+        checkinMonth,
+        checkinYear,
+        checkinDay,
+        currentMonth,
+        currentYear,
+        matchesCurrentMonth: checkinMonth === currentMonth && checkinYear === currentYear
+      });
 
       // Only include checkins from the current month/year being viewed
       if (checkinMonth === currentMonth && checkinYear === currentYear) {
@@ -123,9 +161,19 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
           sentiment_score: checkin.sentiment_score,
           created_at: checkin.created_at,
         });
+
+        console.log('✅ Added checkin to calendar for day:', day, 'with sentiment:', sentiment);
+      } else {
+        console.log('❌ Checkin excluded - wrong month/year:', {
+          checkinMonth,
+          currentMonth,
+          checkinYear,
+          currentYear
+        });
       }
     });
 
+    console.log('📅 Final calendar data:', data);
     return data;
   }, [realCheckins, currentMonth, currentYear]);
 
