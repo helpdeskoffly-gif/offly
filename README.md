@@ -495,14 +495,13 @@ await updatePlantGrowth(plantId, 10)
 
 ### Planned Features
 
-- **Advanced AI**: More sophisticated sentiment analysis
-- **Social Features**: Enhanced community interactions
-- **Mobile App**: Native iOS/Android applications
-- **API Access**: Public API for third-party integrations
-- **Advanced Analytics**: Machine learning insights
-- **Integration**: Calendar and productivity app connections
-
-### Technical Improvements
+1. **Advanced AI**: More sophisticated sentiment analysis
+1. **Social Features**: Enhanced community interactions
+1. **Mobile App**: Native iOS/Android applications
+1. **API Access**: Public API for third-party integrations
+1. **Advanced Analytics**: Machine learning insights
+1. **Integration**: Calendar and productivity app connections
+1- Technical Improvements
 
 - **TypeScript Migration**: Full type safety
 - **Testing Suite**: Comprehensive test coverage

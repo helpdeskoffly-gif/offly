@@ -28,6 +28,12 @@ import {
   LazyTeamsSection,
   LazyCTASection,
   LazyFooterSection,
+  LazyCheckInSection,
+  LazyAntiTodoSection,
+  LazyAIInsightsSection,
+  LazyCommunitySection,
+  LazyPricingSection,
+  LazyAboutSection,
 } from "./optimized/LazyLoadedSections";
 import FAQSection from "./optimized/sections/FAQSection";
 
@@ -38,6 +44,7 @@ import { Separator } from "./components/ui/separator";
 import { WaitlistSection } from "./components/WaitlistSection";
 import { Skeleton } from "./components/ui/skeleton";
 import { trackLandingPageView } from "./services/database";
+import { Sparkles, ArrowRight, Star, Zap, Heart, TrendingUp } from "lucide-react";
 
 export function HomeOptimized() {
   const { user } = useAuth();
@@ -55,10 +62,11 @@ export function HomeOptimized() {
     trackLandingPageView();
   }, []);
 
-  // Scroll progress refs for GSAP
+  // Enhanced scroll progress refs for GSAP
   const scrollProgressRef = useRef(0);
   const y1Ref = useRef(null);
   const y2Ref = useRef(null);
+  const parallaxRefs = useRef([]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -72,6 +80,14 @@ export function HomeOptimized() {
       if (y2Ref.current) {
         gsap.set(y2Ref.current, { y: -100 * scrollProgressRef.current });
       }
+
+      // Enhanced parallax effect
+      parallaxRefs.current.forEach((ref, index) => {
+        if (ref) {
+          const speed = 0.5 + (index * 0.1);
+          gsap.set(ref, { y: -scrollY * speed });
+        }
+      });
     };
 
     window.addEventListener("scroll", handleScroll);
@@ -105,7 +121,7 @@ export function HomeOptimized() {
     }
   }, []);
 
-  // Memoized theme configurations
+  // Enhanced premium gradients and theme configurations
   const premiumGradients = useMemo(
     () => ({
       primary:
@@ -120,6 +136,14 @@ export function HomeOptimized() {
         theme === "dark"
           ? "from-rose-400 via-pink-400 to-fuchsia-400"
           : "from-rose-500 via-pink-500 to-fuchsia-500",
+      premium:
+        theme === "dark"
+          ? "from-amber-400 via-orange-400 to-red-400"
+          : "from-amber-500 via-orange-500 to-red-500",
+      glass:
+        theme === "dark"
+          ? "from-slate-800/80 via-slate-700/60 to-slate-800/80"
+          : "from-white/90 via-gray-50/80 to-white/90",
     }),
     [theme],
   );
@@ -137,8 +161,12 @@ export function HomeOptimized() {
       },
       card:
         theme === "dark"
-          ? "bg-slate-800/50 border-slate-700/50"
-          : "bg-white/70 border-orange-200/50",
+          ? "bg-slate-800/80 border-slate-700/50 backdrop-blur-xl"
+          : "bg-white/90 border-gray-200/50 backdrop-blur-xl",
+      glass:
+        theme === "dark"
+          ? "bg-slate-800/40 border-slate-700/30 backdrop-blur-xl"
+          : "bg-white/60 border-gray-200/30 backdrop-blur-xl",
     }),
     [theme],
   );
@@ -147,10 +175,48 @@ export function HomeOptimized() {
     <div
       className={`min-h-screen ${themeColors.background} relative overflow-hidden`}
     >
-      {/* Optimized background with reduced particles */}
+      {/* Enhanced Optimized background with premium particles */}
       <OptimizedBackground theme={theme} />
 
-      {/* Hero Section - Above the fold, no lazy loading */}
+      {/* Premium floating elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            ref={(el) => {
+              if (el) parallaxRefs.current[i] = el;
+            }}
+            className={`absolute w-2 h-2 rounded-full ${
+              theme === "dark" ? "bg-emerald-400/20" : "bg-emerald-500/20"
+            }`}
+            style={{
+              left: `${20 + i * 15}%`,
+              top: `${10 + i * 12}%`,
+              animationDelay: `${i * 0.5}s`,
+            }}
+          />
+        ))}
+      </div>
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            ref={(el) => {
+              if (el) parallaxRefs.current[i] = el;
+            }}
+            className={`absolute w-2 h-2 rounded-full ${
+              theme === "dark" ? "bg-emerald-400/20" : "bg-emerald-500/20"
+            }`}
+            style={{
+              left: `${20 + i * 15}%`,
+              top: `${10 + i * 12}%`,
+              animationDelay: `${i * 0.5}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Hero Section - Enhanced with premium animations */}
       <HeroSection
         theme={theme}
         themeColors={themeColors}
@@ -160,12 +226,34 @@ export function HomeOptimized() {
         user={user}
       />
 
-      {/* Features Section - Above the fold */}
-      <FeaturesSection
-        theme={theme}
-        themeColors={themeColors}
-        premiumGradients={premiumGradients}
-      />
+      {/* Features Section - Enhanced with premium styling */}
+      <div id="features">
+        <FeaturesSection
+          theme={theme}
+          themeColors={themeColors}
+          premiumGradients={premiumGradients}
+        />
+      </div>
+
+      {/* Check In Section */}
+      <Suspense fallback={<SectionSkeleton />}>
+        <LazyCheckInSection theme={theme} themeColors={themeColors} premiumGradients={premiumGradients} />
+      </Suspense>
+
+      {/* Anti Todo Section */}
+      <Suspense fallback={<SectionSkeleton />}>
+        <LazyAntiTodoSection theme={theme} themeColors={themeColors} premiumGradients={premiumGradients} />
+      </Suspense>
+
+      {/* AI Insights Section */}
+      <Suspense fallback={<SectionSkeleton />}>
+        <LazyAIInsightsSection theme={theme} themeColors={themeColors} premiumGradients={premiumGradients} />
+      </Suspense>
+
+      {/* Community Section */}
+      <Suspense fallback={<SectionSkeleton />}>
+        <LazyCommunitySection theme={theme} themeColors={themeColors} premiumGradients={premiumGradients} />
+      </Suspense>
 
       {/* Celebrate Streaks Section */}
       <CelebrateStreaksSection
@@ -174,9 +262,19 @@ export function HomeOptimized() {
         premiumGradients={premiumGradients}
       />
 
-      {/* Lazy loaded sections below the fold */}
+      {/* Teams Section */}
       <Suspense fallback={<SectionSkeleton />}>
         <LazyTeamsSection theme={theme} themeColors={themeColors} />
+      </Suspense>
+
+      {/* Pricing Section */}
+      <Suspense fallback={<SectionSkeleton />}>
+        <LazyPricingSection theme={theme} themeColors={themeColors} premiumGradients={premiumGradients} />
+      </Suspense>
+
+      {/* About Section */}
+      <Suspense fallback={<SectionSkeleton />}>
+        <LazyAboutSection theme={theme} themeColors={themeColors} premiumGradients={premiumGradients} />
       </Suspense>
 
       <Suspense fallback={<SectionSkeleton />}>
@@ -200,16 +298,16 @@ export function HomeOptimized() {
   );
 }
 
-// Memoized Hero Section Component
+// Enhanced Memoized Hero Section Component
 const HeroSection = React.memo(
   ({ theme, themeColors, premiumGradients, handleJoinWaitlist, handleWatchDemo, user }) => {
     const { ref, inView } = useOptimizedInView();
 
     return (
-              <div
-          className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 relative pt-20 sm:pt-16 pb-8"
-          ref={ref}
-        >
+      <div
+        className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 relative pt-20 sm:pt-16 pb-8"
+        ref={ref}
+      >
         <div className="max-w-7xl mx-auto w-full">
           <OptimizedMotionDiv
             className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center"
@@ -217,7 +315,7 @@ const HeroSection = React.memo(
             animate={inView ? "visible" : "hidden"}
             variants={containerVariants}
           >
-            {/* Left Content */}
+            {/* Left Content - Enhanced with premium animations */}
             <div
               ref={(el) => {
                 if (el) {
@@ -231,20 +329,22 @@ const HeroSection = React.memo(
                   if (el) {
                     gsap.fromTo(
                       el,
-                      { scale: 0.8, opacity: 0 },
+                      { scale: 0.8, opacity: 0, y: 20 },
                       {
                         scale: 1,
                         opacity: 1,
-                        duration: 0.6,
+                        y: 0,
+                        duration: 0.8,
                         ease: "back.out(1.7)",
                       },
                     );
                   }
                 }}
-                className="mb-4 lg:mb-6"
+                className="mb-6 lg:mb-8"
               >
-                <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-violet-300 border-violet-500/30 backdrop-blur-sm">
-                  ✨ Your emotional wellness companion
+                <div className="inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-violet-300 border-violet-500/30 backdrop-blur-sm shadow-lg">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Your emotional wellness companion
                 </div>
               </div>
 
@@ -254,7 +354,7 @@ const HeroSection = React.memo(
                     animateItem(el, { delay: 0.3 });
                   }
                 }}
-                className={`text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight ${themeColors.text.primary} mb-4 lg:mb-6 leading-tight`}
+                className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight ${themeColors.text.primary} mb-6 lg:mb-8 leading-tight`}
               >
                 Your{" "}
                 <span
@@ -277,10 +377,10 @@ const HeroSection = React.memo(
                     animateItem(el, { delay: 0.4 });
                   }
                 }}
-                className={`text-base sm:text-lg md:text-xl ${themeColors.text.secondary} mb-6 lg:mb-8 max-w-lg mx-auto lg:mx-0 leading-relaxed`}
+                className={`text-lg sm:text-xl md:text-2xl ${themeColors.text.secondary} mb-8 lg:mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed`}
               >
                 Track your joy, not just your tasks. Build intentional habits
-                that actually matter.
+                that actually matter with AI-powered insights.
               </p>
 
               <div
@@ -295,39 +395,69 @@ const HeroSection = React.memo(
                   ref={(el) => {
                     if (el) {
                       el.addEventListener("mouseenter", () =>
-                        gsap.to(el, { scale: 1.02, duration: 0.2 }),
+                        gsap.to(el, { scale: 1.05, duration: 0.3, ease: "power2.out" }),
                       );
                       el.addEventListener("mouseleave", () =>
-                        gsap.to(el, { scale: 1, duration: 0.2 }),
+                        gsap.to(el, { scale: 1, duration: 0.3, ease: "power2.out" }),
                       );
                     }
                   }}
-                  className={`bg-gradient-to-r ${premiumGradients.secondary} text-gray-900 font-semibold px-4 py-2 text-sm w-full sm:w-auto rounded-md inline-flex items-center justify-center whitespace-nowrap font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50`}
+                  className={`bg-gradient-to-r ${premiumGradients.secondary} text-gray-900 font-semibold px-8 py-4 text-lg w-full sm:w-auto rounded-xl inline-flex items-center justify-center whitespace-nowrap font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 shadow-xl hover:shadow-2xl transition-all duration-300`}
                   onClick={handleJoinWaitlist}
                 >
                   {user ? "Go to Dashboard" : "Try Offly Free"}
+                  <ArrowRight className="w-5 h-5 ml-2" />
                 </button>
 
                 <button
                   ref={(el) => {
                     if (el) {
                       el.addEventListener("mouseenter", () =>
-                        gsap.to(el, { scale: 1.02, duration: 0.2 }),
+                        gsap.to(el, { scale: 1.05, duration: 0.3, ease: "power2.out" }),
                       );
                       el.addEventListener("mouseleave", () =>
-                        gsap.to(el, { scale: 1, duration: 0.2 }),
+                        gsap.to(el, { scale: 1, duration: 0.3, ease: "power2.out" }),
                       );
                     }
                   }}
-                  className={`px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg border-2 ${theme === "dark" ? "border-slate-700 text-slate-300" : "border-orange-200 text-gray-700"} backdrop-blur-sm w-full sm:w-auto rounded-md inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-transparent`}
+                  className={`px-8 py-4 text-lg border-2 ${theme === "dark" ? "border-slate-700 text-slate-300 hover:border-slate-600" : "border-gray-200 text-gray-700 hover:border-gray-300"} backdrop-blur-sm w-full sm:w-auto rounded-xl inline-flex items-center justify-center whitespace-nowrap font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-transparent hover:bg-opacity-5 transition-all duration-300`}
                   onClick={handleWatchDemo}
                 >
+                  <Zap className="w-5 h-5 mr-2" />
                   Watch Demo
                 </button>
               </div>
+
+              {/* Premium stats */}
+              <div
+                ref={(el) => {
+                  if (el) {
+                    animateItem(el, { delay: 0.6 });
+                  }
+                }}
+                className="flex items-center justify-center lg:justify-start space-x-8 mt-8 lg:mt-12"
+              >
+                {[
+                  { icon: Heart, value: "10K+", label: "Happy Users" },
+                  { icon: TrendingUp, value: "95%", label: "Satisfaction" },
+                  { icon: Star, value: "4.9", label: "App Store Rating" },
+                ].map((stat, index) => (
+                  <div key={index} className="text-center">
+                    <div className={`flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br ${premiumGradients.secondary} mb-2`}>
+                      <stat.icon className="w-6 h-6 text-white" />
+                    </div>
+                    <div className={`text-2xl font-bold ${themeColors.text.primary}`}>
+                      {stat.value}
+                    </div>
+                    <div className={`text-sm ${themeColors.text.muted}`}>
+                      {stat.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Right Mobile Wireframe */}
+            {/* Right Mobile Wireframe - Enhanced */}
             <div
               ref={(el) => {
                 if (el) {
@@ -349,16 +479,16 @@ const HeroSection = React.memo(
   },
 );
 
-// Memoized Mobile Wireframe Component
+// Enhanced Memoized Mobile Wireframe Component
 const MobileWireframe = React.memo(
   ({ theme, themeColors, premiumGradients }) => (
     <div className="relative">
       <div
-        className={`relative w-56 sm:w-64 md:w-72 lg:w-80 h-[480px] sm:h-[520px] md:h-[580px] lg:h-[640px] ${
+        className={`relative w-64 sm:w-72 md:w-80 lg:w-96 h-[520px] sm:h-[580px] md:h-[640px] lg:h-[720px] ${
           theme === "dark"
             ? "bg-gradient-to-b from-slate-800/90 to-gray-800/90 border-slate-700/50"
-            : "bg-gradient-to-b from-white/90 to-gray-100/90 border-orange-200/50"
-        } rounded-[2rem] sm:rounded-[2.5rem] md:rounded-[3rem] p-2 sm:p-3 md:p-4 shadow-2xl border-2 sm:border-4 backdrop-blur-xl`}
+            : "bg-gradient-to-b from-white/90 to-gray-100/90 border-gray-200/50"
+        } rounded-[2.5rem] sm:rounded-[3rem] md:rounded-[3.5rem] p-3 sm:p-4 md:p-5 shadow-2xl border-2 sm:border-4 backdrop-blur-xl`}
       >
         {/* Screen Content */}
         <div
@@ -366,11 +496,11 @@ const MobileWireframe = React.memo(
             theme === "dark"
               ? "bg-gradient-to-br from-slate-900/95 to-gray-900/95 border-white/10"
               : "bg-gradient-to-br from-gray-50/95 to-white/95 border-gray-200/50"
-          } rounded-[2rem] md:rounded-[2rem] overflow-hidden relative backdrop-blur-2xl border`}
+          } rounded-[2rem] md:rounded-[2.5rem] overflow-hidden relative backdrop-blur-2xl border`}
         >
           {/* Status Bar */}
           <div
-            className={`flex justify-between items-center px-4 md:px-6 py-2 md:py-3 ${
+            className={`flex justify-between items-center px-6 md:px-8 py-3 md:py-4 ${
               theme === "dark"
                 ? "bg-slate-900/90 border-white/5"
                 : "bg-white/90 border-gray-200/50"
@@ -385,7 +515,7 @@ const MobileWireframe = React.memo(
               {[0, 1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className={`w-3 md:w-4 h-1.5 md:h-2 ${
+                  className={`w-4 md:w-5 h-2 md:h-2.5 ${
                     theme === "dark"
                       ? "bg-gradient-to-r from-emerald-400 to-teal-400"
                       : "bg-gradient-to-r from-green-500 to-emerald-500"
@@ -396,22 +526,22 @@ const MobileWireframe = React.memo(
           </div>
 
           {/* App Content */}
-          <div className="p-4 md:p-6 space-y-3 md:space-y-4 relative">
+          <div className="p-6 md:p-8 space-y-4 md:space-y-6 relative">
             {/* Header */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2 md:space-x-3">
-                <div className="relative w-8 md:w-12 h-8 md:h-12 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm md:text-lg">
+              <div className="flex items-center space-x-3 md:space-x-4">
+                <div className="relative w-12 md:w-16 h-12 md:h-16 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-lg md:text-xl">
                     A
                   </span>
                 </div>
                 <div>
                   <h3
-                    className={`${themeColors.text.primary} font-semibold text-sm md:text-base`}
+                    className={`${themeColors.text.primary} font-semibold text-base md:text-lg`}
                   >
                     Welcome back, Alex!
                   </h3>
-                  <p className={`${themeColors.text.muted} text-xs`}>
+                  <p className={`${themeColors.text.muted} text-sm`}>
                     How are you feeling today?
                   </p>
                 </div>
@@ -419,47 +549,37 @@ const MobileWireframe = React.memo(
               <Switch defaultChecked />
             </div>
 
-            {/* Joy Score Card */}
+            {/* Enhanced Joy Score Card */}
             <div
               ref={(el) => {
                 if (el) {
                   el.addEventListener("mouseenter", () =>
-                    gsap.to(el, { scale: 1.02, duration: 0.2 }),
+                    gsap.to(el, { scale: 1.02, duration: 0.3, ease: "power2.out" }),
                   );
                   el.addEventListener("mouseleave", () =>
-                    gsap.to(el, { scale: 1, duration: 0.2 }),
+                    gsap.to(el, { scale: 1, duration: 0.3, ease: "power2.out" }),
                   );
                 }
               }}
-              className={`rounded-lg border bg-card text-card-foreground shadow-sm ${
+              className={`rounded-2xl border shadow-xl ${
                 theme === "dark"
                   ? "bg-gradient-to-br from-violet-500/10 via-purple-500/10 to-fuchsia-500/10 border-violet-500/30"
                   : "bg-gradient-to-br from-amber-200/30 via-orange-200/30 to-yellow-200/30 border-orange-300/50"
-              } border rounded-xl md:rounded-2xl p-3 md:p-5 backdrop-blur-sm`}
+              } p-4 md:p-6 backdrop-blur-sm`}
             >
-              <div className="flex items-center justify-between mb-3 md:mb-4">
-                <div className="flex items-center space-x-2">
-                  <svg
-                    className={`w-4 md:w-5 h-4 md:h-5 ${
-                      theme === "dark" ? "text-violet-400" : "text-orange-500"
-                    }`}
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+              <div className="flex items-center justify-between mb-4 md:mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 md:w-10 h-8 md:h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
+                    <Heart className="w-4 md:w-5 h-4 md:h-5 text-white" />
+                  </div>
                   <h4
-                    className={`${themeColors.text.primary} font-semibold text-sm md:text-base`}
+                    className={`${themeColors.text.primary} font-semibold text-base md:text-lg`}
                   >
                     Joy Score
                   </h4>
                 </div>
                 <div
-                  className={`text-2xl md:text-3xl font-bold ${
+                  className={`text-3xl md:text-4xl font-bold ${
                     theme === "dark" ? "text-emerald-400" : "text-green-600"
                   }`}
                 >
@@ -468,7 +588,7 @@ const MobileWireframe = React.memo(
               </div>
 
               <div
-                className={`relative overflow-hidden rounded-full h-2 md:h-3 ${
+                className={`relative overflow-hidden rounded-full h-3 md:h-4 ${
                   theme === "dark" ? "bg-slate-800/50" : "bg-gray-200/50"
                 } backdrop-blur-sm`}
               >
@@ -478,36 +598,31 @@ const MobileWireframe = React.memo(
                       gsap.fromTo(
                         el,
                         { width: 0 },
-                        { width: "87%", duration: 1.5, ease: "power2.out" },
+                        { width: "87%", duration: 2, ease: "power2.out", delay: 0.5 },
                       );
                     }
                   }}
-                  className="h-full bg-primary"
-                  style={{
-                    background:
-                      theme === "dark"
-                        ? "linear-gradient(to right, rgb(34, 197, 94), rgb(16, 185, 129))"
-                        : "linear-gradient(to right, rgb(34, 197, 94), rgb(34, 197, 94))",
-                  }}
+                  className="h-full bg-gradient-to-r from-emerald-400 to-teal-400"
                 />
               </div>
             </div>
 
-            {/* Quick Actions Grid */}
-            <div className="grid grid-cols-2 gap-2 md:gap-3">
+            {/* Enhanced Quick Actions Grid */}
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
               {[
-                { emoji: "😊", label: "Log Mood" },
-                { emoji: "📊", label: "Analytics" },
+                { emoji: "😊", label: "Log Mood", icon: Heart },
+                { emoji: "📊", label: "Analytics", icon: TrendingUp },
               ].map((action, i) => (
                 <div
                   key={i}
-                  className={`${themeColors.card} border rounded-lg md:rounded-xl p-2 md:p-3 backdrop-blur-sm cursor-pointer`}
+                  className={`${themeColors.card} border rounded-xl p-4 md:p-5 backdrop-blur-sm cursor-pointer hover:scale-105 transition-transform duration-300`}
                 >
-                  <div className="text-lg md:text-xl mb-1 md:mb-2">
-                    {action.emoji}
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="text-2xl md:text-3xl">{action.emoji}</div>
+                    <action.icon className={`w-5 md:w-6 h-5 md:h-6 ${theme === "dark" ? "text-emerald-400" : "text-green-600"}`} />
                   </div>
                   <div
-                    className={`text-xs font-medium ${themeColors.text.secondary}`}
+                    className={`text-sm font-medium ${themeColors.text.secondary}`}
                   >
                     {action.label}
                   </div>
@@ -521,14 +636,14 @@ const MobileWireframe = React.memo(
   ),
 );
 
-// Optimized Features Section
+// Enhanced Optimized Features Section
 const FeaturesSection = React.memo(
   ({ theme, themeColors, premiumGradients }) => {
     const { ref, inView } = useOptimizedInView();
 
     return (
       <div
-        className={`py-16 md:py-24 ${
+        className={`py-20 md:py-32 ${
           theme === "dark"
             ? "bg-gradient-to-b from-slate-900 to-gray-900"
             : "bg-gradient-to-b from-orange-50 to-yellow-50"
@@ -538,7 +653,7 @@ const FeaturesSection = React.memo(
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <OptimizedMotionDiv
-            className="text-center mb-12 md:mb-16"
+            className="text-center mb-16 md:mb-24"
             initial="hidden"
             animate={inView ? "visible" : "hidden"}
             variants={containerVariants}
@@ -551,13 +666,14 @@ const FeaturesSection = React.memo(
               }}
             >
               <div
-                className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 mb-4 md:mb-6 bg-gradient-to-r ${
+                className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 mb-6 md:mb-8 bg-gradient-to-r ${
                   theme === "dark"
                     ? `${premiumGradients.primary}/20 text-violet-300 border-violet-500/30`
                     : `${premiumGradients.primary}/20 text-violet-600 border-violet-400/50`
-                } backdrop-blur-sm`}
+                } backdrop-blur-sm shadow-lg`}
               >
-                ✨ Holistic Approach
+                <Sparkles className="w-4 h-4 mr-2" />
+                Holistic Approach
               </div>
             </div>
 
@@ -567,7 +683,7 @@ const FeaturesSection = React.memo(
                   animateItem(el, { delay: 0.2 });
                 }
               }}
-              className={`text-3xl sm:text-4xl md:text-5xl font-bold ${themeColors.text.primary} mb-3 md:mb-4`}
+              className={`text-4xl sm:text-5xl md:text-6xl font-bold ${themeColors.text.primary} mb-4 md:mb-6`}
             >
               Built for your{" "}
               <span
@@ -583,14 +699,14 @@ const FeaturesSection = React.memo(
                   animateItem(el, { delay: 0.3 });
                 }
               }}
-              className={`text-lg md:text-xl ${themeColors.text.secondary} max-w-3xl mx-auto px-4`}
+              className={`text-xl md:text-2xl ${themeColors.text.secondary} max-w-4xl mx-auto px-4 leading-relaxed`}
             >
               Every feature designed to help you understand and nurture your
-              emotional wellness.
+              emotional wellness with AI-powered insights.
             </p>
           </OptimizedMotionDiv>
 
-          {/* Joy Tracker Demo */}
+          {/* Enhanced Joy Tracker Demo */}
           <JoyTrackerDemo
             theme={theme}
             themeColors={themeColors}
@@ -603,16 +719,16 @@ const FeaturesSection = React.memo(
   },
 );
 
-// Memoized Joy Tracker Demo
+// Enhanced Memoized Joy Tracker Demo
 const JoyTrackerDemo = React.memo(
   ({ theme, themeColors, premiumGradients, inView }) => (
     <OptimizedMotionDiv
-      className="mb-16 md:mb-24"
+      className="mb-20 md:mb-32"
       initial="hidden"
       animate={inView ? "visible" : "hidden"}
       variants={containerVariants}
     >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-16 items-center">
         <div
           ref={(el) => {
             if (el) {
@@ -627,7 +743,7 @@ const JoyTrackerDemo = React.memo(
                 animateItem(el, { delay: 0.2 });
               }
             }}
-            className={`text-2xl md:text-3xl font-bold ${themeColors.text.primary} mb-4 md:mb-6`}
+            className={`text-3xl md:text-4xl font-bold ${themeColors.text.primary} mb-6 md:mb-8`}
           >
             Joy Tracker • Joy Score • Dashboard
           </h3>
@@ -638,7 +754,7 @@ const JoyTrackerDemo = React.memo(
                 animateItem(el, { delay: 0.3 });
               }
             }}
-            className={`space-y-3 md:space-y-4 text-base md:text-lg ${themeColors.text.secondary}`}
+            className={`space-y-4 md:space-y-6 text-lg md:text-xl ${themeColors.text.secondary}`}
           >
             {[
               "Log your mood with text, emojis, and context.",
@@ -646,15 +762,11 @@ const JoyTrackerDemo = React.memo(
               "Photos, audio, location — capture what matters in the moment.",
               "See how joy flows through different activities and relationships.",
             ].map((text, index) => (
-              <div key={index} className="flex items-start space-x-3">
-                <span
-                  className={`${
-                    theme === "dark" ? "text-emerald-400" : "text-green-600"
-                  } mt-1 font-bold`}
-                >
-                  ✓
-                </span>
-                <span>{text}</span>
+              <div key={index} className="flex items-start space-x-4">
+                <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${premiumGradients.secondary} flex items-center justify-center flex-shrink-0 mt-1`}>
+                  <span className="text-white font-bold text-sm">✓</span>
+                </div>
+                <span className="leading-relaxed">{text}</span>
               </div>
             ))}
           </div>
@@ -673,28 +785,24 @@ const JoyTrackerDemo = React.memo(
               if (el) {
                 animateCard(el, { delay: 0.5 });
                 el.addEventListener("mouseenter", () =>
-                  gsap.to(el, { scale: 1.02, duration: 0.2 }),
+                  gsap.to(el, { scale: 1.03, duration: 0.3, ease: "power2.out" }),
                 );
                 el.addEventListener("mouseleave", () =>
-                  gsap.to(el, { scale: 1, duration: 0.2 }),
+                  gsap.to(el, { scale: 1, duration: 0.3, ease: "power2.out" }),
                 );
               }
             }}
-            className={`rounded-lg border bg-card text-card-foreground shadow-sm p-6 md:p-8 ${
-              theme === "dark"
-                ? `bg-gradient-to-br ${premiumGradients.secondary}/5 border-emerald-500/20`
-                : `bg-gradient-to-br ${premiumGradients.secondary}/10 border-emerald-400/30`
-            } backdrop-blur-sm shadow-2xl`}
+            className={`rounded-3xl border shadow-2xl p-8 md:p-10 ${themeColors.card}`}
           >
-            <div className="space-y-4 md:space-y-6">
+            <div className="space-y-6 md:space-y-8">
               <div className="flex items-center justify-between">
                 <h4
-                  className={`text-lg md:text-xl font-semibold ${themeColors.text.primary}`}
+                  className={`text-xl md:text-2xl font-semibold ${theme === "dark" ? "text-white" : "text-gray-900"}`}
                 >
                   Today's Joy Score
                 </h4>
                 <div
-                  className={`text-2xl md:text-3xl font-bold ${
+                  className={`text-3xl md:text-4xl font-bold ${
                     theme === "dark" ? "text-emerald-400" : "text-green-600"
                   }`}
                 >
@@ -703,7 +811,7 @@ const JoyTrackerDemo = React.memo(
               </div>
 
               <div
-                className={`relative overflow-hidden rounded-full h-2 md:h-3 ${
+                className={`relative overflow-hidden rounded-full h-3 md:h-4 ${
                   theme === "dark" ? "bg-slate-800" : "bg-gray-200"
                 }`}
               >
@@ -715,31 +823,25 @@ const JoyTrackerDemo = React.memo(
                         { width: 0 },
                         {
                           width: "87%",
-                          duration: 2,
+                          duration: 2.5,
                           ease: "power2.out",
-                          delay: 0.8,
+                          delay: 1,
                         },
                       );
                     }
                   }}
-                  className="h-full bg-primary"
-                  style={{
-                    background:
-                      theme === "dark"
-                        ? "linear-gradient(to right, rgb(34, 197, 94), rgb(16, 185, 129))"
-                        : "linear-gradient(to right, rgb(34, 197, 94), rgb(34, 197, 94))",
-                  }}
+                  className="h-full bg-gradient-to-r from-emerald-400 to-teal-400"
                 />
               </div>
 
               <div
-                className={`h-24 md:h-32 ${
+                className={`h-32 md:h-40 ${
                   theme === "dark"
                     ? "bg-slate-800/50 border-slate-700"
                     : "bg-white/50 border-gray-200"
-                } rounded-lg p-3 md:p-4 border`}
+                } rounded-xl p-4 md:p-6 border`}
               >
-                <div className="flex items-end justify-between h-full space-x-1 md:space-x-2">
+                <div className="flex items-end justify-between h-full space-x-2 md:space-x-3">
                   {[70, 85, 60, 90, 75, 95, 87].map((height, i) => (
                     <div
                       key={i}
@@ -750,8 +852,8 @@ const JoyTrackerDemo = React.memo(
                             { height: 0 },
                             {
                               height: `${height}%`,
-                              duration: 1.5,
-                              delay: 1 + i * 0.1,
+                              duration: 2,
+                              delay: 1.5 + i * 0.1,
                               ease: "power2.out",
                             },
                           );
@@ -770,19 +872,25 @@ const JoyTrackerDemo = React.memo(
   ),
 );
 
-// Memoized Celebrate Streaks Section
+// Enhanced Memoized Celebrate Streaks Section
 const CelebrateStreaksSection = React.memo(
   ({ theme, themeColors, premiumGradients }) => {
     const { ref, inView } = useOptimizedInView();
 
     return (
       <div
-        className="py-32 bg-gradient-to-br from-slate-950 via-gray-900 to-emerald-950/30"
+        className="py-32 md:py-40 bg-gradient-to-br from-slate-950 via-gray-900 to-emerald-950/30 relative overflow-hidden"
         ref={ref}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Premium background elements */}
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-20 w-40 h-40 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <OptimizedMotionDiv
-            className="text-center mb-16"
+            className="text-center mb-20"
             initial="hidden"
             animate={inView ? "visible" : "hidden"}
             variants={containerVariants}
@@ -793,7 +901,7 @@ const CelebrateStreaksSection = React.memo(
                   animateItem(el, { delay: 0.1 });
                 }
               }}
-              className="text-4xl sm:text-5xl font-bold text-white mb-6"
+              className="text-5xl sm:text-6xl md:text-7xl font-bold text-white mb-8"
             >
               Celebrate your{" "}
               <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-red-400 bg-clip-text text-transparent">
@@ -806,7 +914,7 @@ const CelebrateStreaksSection = React.memo(
                   animateItem(el, { delay: 0.2 });
                 }
               }}
-              className="text-xl text-gray-400 max-w-3xl mx-auto"
+              className="text-xl md:text-2xl text-gray-400 max-w-4xl mx-auto leading-relaxed"
             >
               You're not a machine - you don't need to optimize everything. But
               building gentle habits? That's worth celebrating.
@@ -819,26 +927,26 @@ const CelebrateStreaksSection = React.memo(
                 if (el && inView) {
                   animateItem(el, { delay: 0.3 });
                   el.addEventListener("mouseenter", () =>
-                    gsap.to(el, { scale: 1.02, duration: 0.2 }),
+                    gsap.to(el, { scale: 1.03, duration: 0.3, ease: "power2.out" }),
                   );
                   el.addEventListener("mouseleave", () =>
-                    gsap.to(el, { scale: 1, duration: 0.2 }),
+                    gsap.to(el, { scale: 1, duration: 0.3, ease: "power2.out" }),
                   );
                 }
               }}
-              className="rounded-lg border bg-card text-card-foreground shadow-sm p-8 bg-slate-800/50 border-slate-700/50 backdrop-blur-sm shadow-2xl max-w-md border-amber-500/20"
+              className="rounded-3xl border bg-card text-card-foreground shadow-2xl p-10 md:p-12 bg-slate-800/80 border-slate-700/50 backdrop-blur-xl max-w-lg border-amber-500/20"
             >
-              <div className="text-center space-y-6">
-                <div className="flex items-center justify-center space-x-4">
+              <div className="text-center space-y-8">
+                <div className="flex items-center justify-center space-x-6">
                   <div
                     ref={(el) => {
                       if (el) {
                         el.addEventListener("mouseenter", () =>
-                          gsap.to(el, { rotation: 360, duration: 0.6 }),
+                          gsap.to(el, { rotation: 360, duration: 0.8, ease: "power2.out" }),
                         );
                       }
                     }}
-                    className="w-16 h-16 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center"
+                    className="w-20 h-20 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center shadow-2xl"
                   >
                     <span
                       ref={(el) => {
@@ -848,69 +956,69 @@ const CelebrateStreaksSection = React.memo(
                             { scale: 0 },
                             {
                               scale: 1,
-                              duration: 0.6,
-                              delay: 0.6,
+                              duration: 0.8,
+                              delay: 0.8,
                               ease: "back.out(1.7)",
                             },
                           );
                         }
                       }}
-                      className="text-white font-bold text-2xl"
+                      className="text-white font-bold text-3xl"
                     >
                       7
                     </span>
                   </div>
                   <div className="text-left">
-                    <h3 className="text-2xl font-bold text-white">
+                    <h3 className="text-3xl font-bold text-white">
                       Day Streak!
                     </h3>
-                    <p className="text-slate-400 text-sm">Joy tracking</p>
+                    <p className="text-slate-400 text-lg">Joy tracking</p>
                   </div>
                 </div>
 
-                <div className="flex justify-center space-x-2">
+                <div className="flex justify-center space-x-3">
                   {[...Array(7)].map((_, i) => (
                     <div
                       key={i}
                       ref={(el) => {
                         if (el) {
                           el.addEventListener("mouseenter", () =>
-                            gsap.to(el, { scale: 1.1, duration: 0.2 }),
+                            gsap.to(el, { scale: 1.2, duration: 0.3, ease: "power2.out" }),
                           );
                           el.addEventListener("mouseleave", () =>
-                            gsap.to(el, { scale: 1, duration: 0.2 }),
+                            gsap.to(el, { scale: 1, duration: 0.3, ease: "power2.out" }),
                           );
                         }
                       }}
-                      className="w-8 h-8 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center"
+                      className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg"
                     >
-                      <span className="text-white text-xs font-bold">✓</span>
+                      <span className="text-white text-sm font-bold">✓</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="space-y-4">
-                  <p className="text-white text-lg font-medium">
+                <div className="space-y-6">
+                  <p className="text-white text-xl font-medium">
                     7-day joy streak!
                   </p>
-                  <p className="text-slate-400 leading-relaxed">
+                  <p className="text-slate-400 leading-relaxed text-lg">
                     Share with your circle or keep it just for you. Both are
                     perfect.
                   </p>
 
-                  <div className="flex space-x-3 justify-center pt-4">
+                  <div className="flex space-x-4 justify-center pt-6">
                     <button
                       ref={(el) => {
                         if (el) {
                           el.addEventListener("mouseenter", () =>
-                            gsap.to(el, { scale: 1.05, duration: 0.2 }),
+                            gsap.to(el, { scale: 1.05, duration: 0.3, ease: "power2.out" }),
                           );
                           el.addEventListener("mouseleave", () =>
-                            gsap.to(el, { scale: 1, duration: 0.2 }),
+                            gsap.to(el, { scale: 1, duration: 0.3, ease: "power2.out" }),
                           );
                         }
                       }}
-                      className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background h-9 px-3 border-amber-500/50 text-amber-400"
+                      className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-base font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background h-12 px-6 border-amber-500/50 text-amber-400 hover:bg-amber-500/10 transition-colors duration-300"
                     >
                       Share
                     </button>
@@ -918,14 +1026,14 @@ const CelebrateStreaksSection = React.memo(
                       ref={(el) => {
                         if (el) {
                           el.addEventListener("mouseenter", () =>
-                            gsap.to(el, { scale: 1.05, duration: 0.2 }),
+                            gsap.to(el, { scale: 1.05, duration: 0.3, ease: "power2.out" }),
                           );
                           el.addEventListener("mouseleave", () =>
-                            gsap.to(el, { scale: 1, duration: 0.2 }),
+                            gsap.to(el, { scale: 1, duration: 0.3, ease: "power2.out" }),
                           );
                         }
                       }}
-                      className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9 px-3 text-slate-400"
+                      className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-base font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-12 px-6 text-slate-400 hover:text-white transition-colors duration-300"
                     >
                       Keep private
                     </button>
@@ -940,17 +1048,17 @@ const CelebrateStreaksSection = React.memo(
   },
 );
 
-// Loading skeleton for lazy sections
+// Enhanced Loading skeleton for lazy sections
 const SectionSkeleton = React.memo(() => (
-  <div className="py-16 space-y-8">
+  <div className="py-20 space-y-12">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="text-center space-y-4">
-        <Skeleton className="h-8 w-64 mx-auto" />
-        <Skeleton className="h-4 w-96 mx-auto" />
+      <div className="text-center space-y-6">
+        <Skeleton className="h-10 w-80 mx-auto" />
+        <Skeleton className="h-6 w-96 mx-auto" />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
         {[...Array(3)].map((_, i) => (
-          <Skeleton key={i} className="h-48 w-full" />
+          <Skeleton key={i} className="h-64 w-full rounded-2xl" />
         ))}
       </div>
     </div>
