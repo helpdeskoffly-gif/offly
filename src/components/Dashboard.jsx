@@ -1344,7 +1344,7 @@ const Dashboard = () => {
         console.log('Current dashboardData:', dashboardData);
 
         // Reload recent check-ins
-        const checkinsResult = await getUserCheckins(user.id, 5);
+        const checkinsResult = await getUserCheckins(user.id, null, null, 5);
         if (checkinsResult.success) {
           setRecentCheckins(checkinsResult.data);
         }
