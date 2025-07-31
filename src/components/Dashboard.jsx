@@ -98,6 +98,9 @@ import {
   Wind,
   Umbrella,
   ArrowRight,
+  MessageSquare,
+  X,
+  Upload,
   Palette,
   Volume2,
   HelpCircle,
@@ -212,6 +215,12 @@ const Dashboard = () => {
   const [calendarRefreshTrigger, setCalendarRefreshTrigger] = useState(0);
   const [lastAINudge, setLastAINudge] = useState("");
   const [showAINudge, setShowAINudge] = useState(false);
+
+  // Feedback state
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const feedbackRef = useRef(null);
 
   const containerRef = useRef(null);
   const contentRef = useRef(null);
@@ -2098,6 +2107,15 @@ const Dashboard = () => {
             <div className="flex items-center space-x-2 sm:space-x-3">
               <NotificationPanel />
               
+              {/* Feedback Button */}
+              <Button
+                variant="ghost"
+                onClick={() => setIsFeedbackOpen(true)}
+                className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-slate-700/50 backdrop-blur-sm border border-slate-600/30 rounded-lg sm:rounded-xl hover:bg-slate-600/50 hover:border-slate-500/50 transition-all duration-300"
+              >
+                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
+              </Button>
+              
               {/* Plant Icon */}
               <div 
                 onClick={() => setShowPlantGarden(true)}
@@ -2295,6 +2313,96 @@ const Dashboard = () => {
             
             <div className="overflow-y-auto max-h-[calc(95vh-120px)]">
               <PlantGarden />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Feedback Modal */}
+      {isFeedbackOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsFeedbackOpen(false)} />
+          <div className={`relative w-full max-w-md ${themeColors.card} rounded-2xl shadow-2xl border`}>
+            <div className="flex items-center justify-between p-6 border-b border-slate-200/20">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-xl flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className={`text-xl font-bold ${themeColors.text.primary}`}>Send Feedback</h2>
+                  <p className={`text-sm ${themeColors.text.secondary}`}>Help us improve Offly</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsFeedbackOpen(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="feedback-text" className={`text-sm font-medium ${themeColors.text.primary}`}>
+                    What didn't you like?
+                  </Label>
+                  <Textarea
+                    id="feedback-text"
+                    placeholder="Share your thoughts..."
+                    value={feedbackText}
+                    onChange={(e) => setFeedbackText(e.target.value)}
+                    className={`mt-2 ${themeColors.card} border-slate-200/20 focus:border-blue-500/50`}
+                    rows={4}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="feedback-file" className={`text-sm font-medium ${themeColors.text.primary}`}>
+                    Attach File (Optional)
+                  </Label>
+                  <div className="mt-2">
+                    <input
+                      type="file"
+                      id="feedback-file"
+                      onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                      className="hidden"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => document.getElementById('feedback-file').click()}
+                      className={`w-full ${themeColors.card} border-slate-200/20 hover:border-blue-500/50`}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {selectedFile ? selectedFile.name : "Choose File"}
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="flex space-x-3 pt-4">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setIsFeedbackOpen(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      // Dummy submission for now
+                      console.log("Feedback submitted:", { text: feedbackText, file: selectedFile });
+                      setFeedbackText("");
+                      setSelectedFile(null);
+                      setIsFeedbackOpen(false);
+                    }}
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700"
+                  >
+                    Send Feedback
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
