@@ -97,10 +97,10 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
   const themeColors = {
     background: theme === "dark"
       ? "bg-slate-950/95 backdrop-blur-xl"
-      : "bg-white/95 backdrop-blur-xl",
+      : "bg-green-50/95 backdrop-blur-xl",
     modal: theme === "dark"
       ? "bg-slate-900/95 border-slate-800/50 backdrop-blur-xl"
-      : "bg-white/98 border-slate-200/60 backdrop-blur-xl shadow-2xl",
+      : "bg-emerald-50/98 border-green-200/60 backdrop-blur-xl shadow-2xl",
     text: {
       primary: theme === "dark" ? "text-white" : "text-slate-900",
       secondary: theme === "dark" ? "text-slate-300" : "text-slate-700",
@@ -108,14 +108,14 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
     },
     card: theme === "dark"
       ? "bg-slate-800/50 border-slate-700/30 backdrop-blur-sm"
-      : "bg-white/80 border-slate-200/50 backdrop-blur-sm shadow-lg",
+      : "bg-green-25/80 border-green-200/50 backdrop-blur-sm shadow-lg",
     input: theme === "dark"
-      ? "bg-slate-800/50 border-slate-700/50 focus:border-violet-400"
-      : "bg-white/80 border-slate-300/60 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20",
+      ? "bg-slate-800/50 border-slate-700/50 focus:border-green-400"
+      : "bg-emerald-25/80 border-green-300/60 focus:border-green-500 focus:ring-2 focus:ring-green-500/20",
     button: {
       primary: theme === "dark"
-        ? "bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600"
-        : "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700",
+        ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+        : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700",
       secondary: theme === "dark"
         ? "bg-slate-700 hover:bg-slate-600 text-white border-slate-600"
         : "bg-slate-100 hover:bg-slate-200 text-slate-900 border-slate-300",
@@ -343,7 +343,7 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
                 </p>
                 {/* Mobile Current Tab Indicator */}
                 <div className="lg:hidden mt-2">
-                  <div className="inline-flex items-center space-x-2 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
+                  <div className="inline-flex items-center space-x-2 px-3 py-1 bg-green-100 dark:bg-slate-800 rounded-full">
                     {(() => {
                       const currentItem = navigationItems.find(item => item.id === activeTab);
                       const Icon = currentItem?.icon;
@@ -375,7 +375,7 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
                 
                 {/* Mobile Navigation Dropdown */}
                 {showMobileMenu && (
-                  <div className="absolute top-full right-0 mt-2 w-64 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-xl shadow-2xl z-50">
+                  <div className="absolute top-full right-0 mt-2 w-64 bg-emerald-50/95 dark:bg-slate-900/95 backdrop-blur-xl border border-green-200/50 dark:border-slate-700/50 rounded-xl shadow-2xl z-50">
                     <div className="p-4">
                       <div className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Settings Navigation</div>
                       <div className="space-y-2">
@@ -391,7 +391,7 @@ export function ProfileSettingsModal({ user, userProfile, isOpen, onClose, onSav
                               className={`w-full text-left px-4 py-4 rounded-lg transition-all duration-200 flex items-center space-x-3 ${
                                 activeTab === item.id 
                                   ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg" 
-                                  : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                                  : "hover:bg-green-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
                               }`}
                             >
                               <Icon className="w-5 h-5" />
@@ -812,7 +812,7 @@ function PreferencesTabContent({
         </h3>
 
         <div className="space-y-6">
-          <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+          <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-slate-800/50 rounded-xl">
             <div>
               <h4 className={`font-medium ${themeColors.text.primary}`}>Dark Mode</h4>
               <p className={`text-sm ${themeColors.text.muted}`}>
@@ -843,11 +843,11 @@ function PreferencesTabContent({
           <div className="space-y-4">
             <h4 className={`font-medium ${themeColors.text.primary} mb-3`}>Notifications</h4>
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-slate-800/50 rounded-lg">
                 <span className={`text-sm ${themeColors.text.secondary}`}>Email notifications</span>
                 <Button size="sm" variant="outline" className="h-8 px-4 rounded-lg">Enabled</Button>
               </div>
-              <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-slate-800/50 rounded-lg">
                 <span className={`text-sm ${themeColors.text.secondary}`}>Daily reminders</span>
                 <Button size="sm" variant="outline" className="h-8 px-4 rounded-lg">Disabled</Button>
               </div>

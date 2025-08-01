@@ -227,13 +227,13 @@ const Dashboard = () => {
   const containerRef = useRef(null);
   const contentRef = useRef(null);
 
-  // Professional premium theme colors
+  // Professional premium theme colors with greenish tint for light mode
   const premiumGradients = useMemo(
     () => ({
       primary:
         theme === "dark"
           ? "from-slate-600 via-slate-700 to-slate-800"
-          : "from-blue-400 via-indigo-500 to-purple-600",
+          : "from-emerald-500 via-green-500 to-teal-600",
       secondary:
         theme === "dark"
           ? "from-blue-600 via-indigo-600 to-purple-600"
@@ -241,11 +241,11 @@ const Dashboard = () => {
       tertiary:
         theme === "dark"
           ? "from-gray-600 via-gray-700 to-gray-800"
-          : "from-orange-400 via-pink-500 to-rose-600",
+          : "from-green-500 via-emerald-500 to-teal-600",
       accent:
         theme === "dark"
           ? "from-indigo-600 via-purple-600 to-violet-600"
-          : "from-violet-400 via-purple-500 to-indigo-600",
+          : "from-emerald-500 via-green-500 to-teal-600",
     }),
     [theme],
   );
@@ -255,7 +255,7 @@ const Dashboard = () => {
       background:
         theme === "dark"
           ? "bg-gradient-to-br from-slate-950 via-gray-950 to-slate-950"
-          : "bg-white bg-[radial-gradient(circle_at_20%_80%,rgba(99,102,241,0.04),transparent_50%)] bg-[radial-gradient(circle_at_80%_20%,rgba(168,85,247,0.04),transparent_50%)] bg-[radial-gradient(circle_at_40%_40%,rgba(59,130,246,0.02),transparent_50%)]",
+          : "bg-gradient-to-br from-emerald-200 via-green-200 to-teal-200 bg-[radial-gradient(circle_at_20%_80%,rgba(16,185,129,0.25),transparent_50%)] bg-[radial-gradient(circle_at_80%_20%,rgba(5,150,105,0.20),transparent_50%)] bg-[radial-gradient(circle_at_40%_40%,rgba(6,182,212,0.15),transparent_50%)]",
       text: {
         primary: theme === "dark" ? "text-slate-200" : "text-slate-800",
         secondary: theme === "dark" ? "text-slate-400" : "text-slate-600",
@@ -268,21 +268,21 @@ const Dashboard = () => {
       cardHover:
         theme === "dark"
           ? "hover:bg-slate-800/70 hover:border-slate-700/60"
-          : "hover:bg-gradient-to-br hover:from-white/95 hover:via-white/100 hover:to-white/95 hover:border-slate-300/70 hover:shadow-xl",
-      // Clean card variants matching calendar style
+          : "hover:bg-gradient-to-br hover:from-slate-100/95 hover:via-white/100 hover:to-slate-100/95 hover:border-slate-300/70 hover:shadow-xl",
+      // Subtle card variants with minimal green tint
       cardVariants: {
         primary: theme === "dark" 
           ? "bg-slate-900/60 border-slate-800/50 backdrop-blur-xl"
           : "bg-gradient-to-br from-blue-50/90 via-white/95 to-indigo-50/80 border-blue-200/50 backdrop-blur-xl shadow-lg",
         secondary: theme === "dark"
           ? "bg-slate-900/60 border-slate-800/50 backdrop-blur-xl"
-          : "bg-gradient-to-br from-emerald-50/90 via-white/95 to-teal-50/80 border-emerald-200/50 backdrop-blur-xl shadow-lg",
+          : "bg-gradient-to-br from-emerald-50/90 via-white/95 to-green-50/80 border-emerald-200/50 backdrop-blur-xl shadow-lg",
         tertiary: theme === "dark"
           ? "bg-slate-900/60 border-slate-800/50 backdrop-blur-xl"
-          : "bg-gradient-to-br from-amber-50/90 via-white/95 to-orange-50/80 border-amber-200/50 backdrop-blur-xl shadow-lg",
+          : "bg-gradient-to-br from-purple-50/90 via-white/95 to-violet-50/80 border-purple-200/50 backdrop-blur-xl shadow-lg",
         accent: theme === "dark"
           ? "bg-slate-900/60 border-slate-800/50 backdrop-blur-xl"
-          : "bg-gradient-to-br from-violet-50/90 via-white/95 to-purple-50/80 border-violet-200/50 backdrop-blur-xl shadow-lg",
+          : "bg-gradient-to-br from-teal-50/90 via-white/95 to-cyan-50/80 border-teal-200/50 backdrop-blur-xl shadow-lg",
         neutral: theme === "dark"
           ? "bg-slate-900/60 border-slate-800/50 backdrop-blur-xl"
           : "bg-gradient-to-br from-slate-50/90 via-white/95 to-gray-50/80 border-slate-200/50 backdrop-blur-xl shadow-lg",
@@ -1038,7 +1038,7 @@ const Dashboard = () => {
           <div
             className={`p-6 bg-gradient-to-br ${premiumGradients.accent} relative overflow-hidden`}
           >
-            <div className="absolute inset-0 bg-white/5" />
+            <div className="absolute inset-0 bg-blue-100/5" />
             <div className="relative z-10 flex items-center space-x-4">
               <img
                 className="w-12 h-12 rounded-xl object-cover ring-4 ring-white/20 shadow-sm"
@@ -1052,7 +1052,7 @@ const Dashboard = () => {
                 <div className="text-white/80 text-xs sm:text-sm break-all">
                   {user?.email}
                 </div>
-                <Badge className="bg-white/20 text-white border-white/30 mt-2 px-2 py-1 rounded-full text-xs">
+                <Badge className="bg-blue-100/20 text-white border-blue-200/30 mt-2 px-2 py-1 rounded-full text-xs">
                   ✨ Premium Explorer
                 </Badge>
               </div>
@@ -1606,8 +1606,8 @@ const Dashboard = () => {
                     ? `bg-gradient-to-br ${tab.gradient} text-white shadow-lg scale-105 transform`
                     : `${themeColors.text.muted} hover:${themeColors.text.primary} ${
                         theme === "dark" 
-                          ? "hover:bg-slate-700/30" 
-                          : "hover:bg-white/60 hover:shadow-md"
+                          ? "hover:bg-green-900/20 hover:border-green-700/30" 
+                          : "hover:bg-gradient-to-br hover:from-green-50/60 hover:via-emerald-25/60 hover:to-green-50/60 hover:shadow-md"
                       } hover:scale-102 transform`
                 }`}
                 title={tab.label}
@@ -1621,7 +1621,7 @@ const Dashboard = () => {
                 <div
                   className={`relative p-2 sm:p-2.5 rounded-md sm:rounded-lg transition-all duration-300 ${
                     isActive
-                      ? "bg-white/20 shadow-md"
+                      ? "bg-gradient-to-br from-emerald-50/20 via-white/20 to-green-50/20 shadow-md"
                       : `${tab.bgColor} group-hover:bg-opacity-80 group-hover:scale-110`
                   }`}
                 >
@@ -1631,7 +1631,7 @@ const Dashboard = () => {
 
                   {/* Subtle glow effect for active icon */}
                   {isActive && (
-                    <div className="absolute inset-0 bg-white/10 rounded-md sm:rounded-lg blur-sm" />
+                    <div className="absolute inset-0 bg-emerald-100/10 rounded-md sm:rounded-lg blur-sm" />
                   )}
                 </div>
 
@@ -1646,7 +1646,7 @@ const Dashboard = () => {
 
                 {/* Active indicator dot */}
                 {isActive && (
-                  <div className="absolute -bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-white rounded-full shadow-md animate-pulse" />
+                  <div className="absolute -bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-emerald-100 rounded-full shadow-md animate-pulse" />
                 )}
 
                 {/* Hover effect overlay */}
@@ -1663,9 +1663,9 @@ const Dashboard = () => {
     switch (activeTab) {
       case "Dashboard":
         return (
-          <div className="space-y-4 sm:space-y-8">
+          <div className="space-y-4 sm:space-y-6 lg:space-y-8">
             {/* Enhanced Welcome Section */}
-            <div className="fade-in grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div className="fade-in grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
               {/* Main Check-in Card */}
               <div className="lg:col-span-2">
                 <Card
@@ -1674,8 +1674,8 @@ const Dashboard = () => {
                   <div
                     className={`absolute inset-0 bg-gradient-to-br ${premiumGradients.accent} opacity-5`}
                   />
-                  <CardContent className="p-4 sm:p-8 relative z-10 flex flex-col justify-center items-center text-center h-full min-h-[200px] sm:min-h-[280px]">
-                    <div className="space-y-4 sm:space-y-6 max-w-md">
+                  <CardContent className="p-3 sm:p-6 lg:p-8 relative z-10 flex flex-col justify-center items-center text-center h-full min-h-[180px] sm:min-h-[220px] lg:min-h-[280px]">
+                    <div className="space-y-3 sm:space-y-4 lg:space-y-6 max-w-md">
                       <div className="relative">
                         <div
                           className={`w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br ${premiumGradients.accent} rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg mx-auto`}
@@ -1759,25 +1759,25 @@ const Dashboard = () => {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
                 {/* Anti-Todos Completed Card */}
                 <Card className={`${themeColors.card} border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 group overflow-hidden relative`}>
                   <div className={`absolute inset-0 ${theme === "dark" ? "bg-gradient-to-br from-purple-500/5 via-pink-500/5 to-rose-500/5" : "bg-gradient-to-br from-purple-100/50 via-pink-100/40 to-rose-100/30"} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
-                  <CardContent className="p-4 lg:p-6 relative z-10">
-                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <CardContent className="p-3 sm:p-4 lg:p-6 relative z-10">
+                    <div className="flex items-center justify-between mb-2 sm:mb-3 lg:mb-4">
                       <div
-                        className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${premiumGradients.tertiary} shadow-lg ${theme === "dark" ? "shadow-purple-500/25 group-hover:shadow-purple-500/40" : "shadow-purple-300/30 group-hover:shadow-purple-400/50"} transition-all duration-300`}
+                        className={`p-1.5 sm:p-2 lg:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br ${premiumGradients.tertiary} shadow-lg ${theme === "dark" ? "shadow-purple-500/25 group-hover:shadow-purple-500/40" : "shadow-purple-300/30 group-hover:shadow-purple-400/50"} transition-all duration-300`}
                       >
-                        <Target className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
+                        <Target className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 xl:w-6 xl:h-6 text-white" />
                       </div>
                       <span
-                        className={`text-xs ${themeColors.text.muted} uppercase tracking-wide font-semibold ${theme === "dark" ? "bg-purple-500/10" : "bg-purple-100/80"} px-2 py-1 rounded-full`}
+                        className={`text-xs ${themeColors.text.muted} uppercase tracking-wide font-semibold ${theme === "dark" ? "bg-purple-500/10" : "bg-purple-100/80"} px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full`}
                       >
                         Activities
                       </span>
                     </div>
                     <div
-                      className={`text-xl sm:text-2xl lg:text-3xl font-bold ${themeColors.text.primary} mb-1 sm:mb-2 ${theme === "dark" ? "group-hover:text-purple-600" : "group-hover:text-purple-700"} transition-colors duration-300`}
+                      className={`text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold ${themeColors.text.primary} mb-1 sm:mb-2 ${theme === "dark" ? "group-hover:text-purple-600" : "group-hover:text-purple-700"} transition-colors duration-300`}
                     >
                       {antiTodosCompleted}
                     </div>
@@ -1867,7 +1867,7 @@ const Dashboard = () => {
               </div>
 
               {/* Trees Planted Card */}
-              <div className={`p-4 sm:p-6 rounded-xl ${theme === 'dark' ? 'bg-slate-800/50 border border-slate-700/50' : 'bg-white/70 border border-slate-200/60'} backdrop-blur-sm shadow-lg mb-6`}>
+              <div className={`p-4 sm:p-6 rounded-xl ${theme === 'dark' ? 'bg-slate-800/50 border border-slate-700/50' : 'bg-gradient-to-br from-blue-50/70 via-white/70 to-indigo-50/70 border border-blue-200/60'} backdrop-blur-sm shadow-lg mb-6`}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className={`text-lg sm:text-xl font-semibold ${themeColors.text.primary}`}>🌳 Trees Planted</h3>
                   <Button
@@ -1957,10 +1957,10 @@ const Dashboard = () => {
 
       case "Joy Tracker":
         return (
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             <div className="fade-in">
               {/* Analytics Dashboard */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 {/* Main Chart Area */}
                 <div className="lg:col-span-2">
                   <Card
@@ -2038,7 +2038,7 @@ const Dashboard = () => {
               </div>
 
               {/* Enhanced Mood Insights */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Top Moods */}
                 <Card className={`${themeColors.cardVariants.tertiary} border-0`}>
                   <CardHeader>
@@ -2251,30 +2251,42 @@ const Dashboard = () => {
       <header
         className={`relative z-10 ${themeColors.card} border-b backdrop-blur-xl shadow-sm`}
       >
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 sm:py-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2 sm:py-3">
           <div className="flex items-center justify-between">
             {/* Logo */}
             <Logo size="md" />
 
             {/* User Actions */}
-            <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="flex items-center space-x-1.5 sm:space-x-2 lg:space-x-3">
               <NotificationPanel />
               
               {/* Feedback Button */}
               <Button
                 variant="ghost"
                 onClick={() => setIsFeedbackOpen(true)}
-                className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-slate-700/50 backdrop-blur-sm border border-slate-600/30 rounded-lg sm:rounded-xl hover:bg-slate-600/50 hover:border-slate-500/50 transition-all duration-300"
+                className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 ${
+                  theme === "dark" 
+                    ? "bg-green-900/20 hover:bg-green-800/30 border-green-700/30 hover:border-green-600/50" 
+                    : "bg-green-100/50 hover:bg-green-200/50 border-green-200/50 hover:border-green-300/50"
+                } backdrop-blur-sm border rounded-lg sm:rounded-xl transition-all duration-300`}
               >
-                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
+                <MessageSquare className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                  theme === "dark" ? "text-green-400" : "text-green-600"
+                }`} />
               </Button>
               
               {/* Plant Icon */}
               <div 
                 onClick={() => setShowPlantGarden(true)}
-                className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-slate-700/50 backdrop-blur-sm border border-slate-600/30 rounded-lg sm:rounded-xl hover:bg-slate-600/50 hover:border-slate-500/50 transition-all duration-300 cursor-pointer group"
+                className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 ${
+                  theme === "dark" 
+                    ? "bg-green-900/20 hover:bg-green-800/30 border-green-700/30 hover:border-green-600/50" 
+                    : "bg-green-100/50 hover:bg-green-200/50 border-green-200/50 hover:border-green-300/50"
+                } backdrop-blur-sm border rounded-lg sm:rounded-xl transition-all duration-300 cursor-pointer group`}
               >
-                <span className="text-emerald-400 text-base sm:text-lg group-hover:text-emerald-300 transition-colors duration-300">
+                <span className={`text-base sm:text-lg transition-colors duration-300 ${
+                  theme === "dark" ? "text-emerald-400 group-hover:text-emerald-300" : "text-emerald-600 group-hover:text-emerald-700"
+                }`}>
                   🌱
                 </span>
               </div>
@@ -2287,7 +2299,7 @@ const Dashboard = () => {
 
       {/* Main Content with Tab Navigation */}
       <main
-        className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-4 sm:py-6"
+        className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 py-3 sm:py-4 lg:py-6"
         ref={containerRef}
       >
         {/* Tab Navigation */}

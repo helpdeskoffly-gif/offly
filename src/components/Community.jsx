@@ -95,25 +95,25 @@ export const Community = () => {
   const themeColors = {
     background: theme === "dark"
       ? "bg-gradient-to-br from-slate-950 via-gray-950 to-slate-950"
-      : "bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100",
+      : "bg-background", // Use the new calming background color
     text: {
-      primary: theme === "dark" ? "text-slate-200" : "text-gray-900",
+      primary: theme === "dark" ? "text-slate-200" : "text-slate-800",
       secondary: theme === "dark" ? "text-slate-400" : "text-gray-600",
       muted: theme === "dark" ? "text-slate-500" : "text-gray-500",
     },
     card: theme === "dark"
       ? "bg-slate-900/60 border-slate-800/50 backdrop-blur-xl"
-      : "bg-white/80 border-slate-200/50 backdrop-blur-xl",
+      : "bg-card border-border backdrop-blur-xl", // Use theme-consistent card colors
     cardHover: theme === "dark"
       ? "hover:bg-slate-800/70 hover:border-slate-700/60"
-      : "hover:bg-white/90 hover:border-slate-300/60",
+      : "hover:bg-accent/50 hover:border-border", // Use theme-consistent hover colors
     cardVariants: {
       neutral: theme === "dark"
         ? "bg-slate-800/40 border-slate-700/40"
-        : "bg-slate-50/80 border-slate-200/40",
+        : "bg-muted/30 border-border",
       success: theme === "dark"
         ? "bg-emerald-900/20 border-emerald-700/40"
-        : "bg-emerald-50/80 border-emerald-200/40",
+        : "bg-primary/5 border-primary/20",
     }
   };
 
@@ -579,41 +579,29 @@ export const Community = () => {
         {/* Community Tabs */}
         <div className="w-full overflow-hidden">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <div className={`grid w-full grid-cols-3 bg-slate-800/40 dark:bg-slate-800/40 border border-slate-700/40 dark:border-slate-700/40 rounded-xl p-2 overflow-hidden`}>
-          <button
-            onClick={() => handleTabChange('all')}
-            className={`h-14 flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg transition-all duration-200 px-3 min-w-0 ${
-              activeTab === 'all' 
-                ? `bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md` 
-                : `text-slate-400 dark:text-slate-400 hover:text-slate-200 dark:hover:text-slate-200`
-            }`}
-          >
-            <Globe className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="text-xs font-medium">All</span>
-          </button>
-          <button
-            onClick={() => handleTabChange('friends')}
-            className={`h-14 flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg transition-all duration-200 px-3 min-w-0 ${
-              activeTab === 'friends' 
-                ? `bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md` 
-                : `text-slate-400 dark:text-slate-400 hover:text-slate-200 dark:hover:text-slate-200`
-            }`}
-          >
-            <Users className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="text-xs font-medium">Friends</span>
-          </button>
-          <button
-            onClick={() => handleTabChange('my_posts')}
-            className={`h-14 flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg transition-all duration-200 px-3 min-w-0 ${
-              activeTab === 'my_posts' 
-                ? `bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md` 
-                : `text-slate-400 dark:text-slate-400 hover:text-slate-200 dark:hover:text-slate-200`
-            }`}
-          >
-            <User className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="text-xs font-medium">Mine</span>
-          </button>
-        </div>
+            <TabsList className={`grid w-full grid-cols-3 ${themeColors.card} p-1 rounded-xl`}>
+              <TabsTrigger 
+                value="all" 
+                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white"
+              >
+                <Globe className="w-4 h-4" />
+                <span className="hidden sm:inline">All</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="friends"
+                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white"
+              >
+                <Users className="w-4 h-4" />
+                <span className="hidden sm:inline">Friends</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="my_posts"
+                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white"
+              >
+                <User className="w-4 h-4" />
+                <span className="hidden sm:inline">Mine</span>
+              </TabsTrigger>
+            </TabsList>
 
         {/* Tab Content */}
         <TabsContent value={activeTab} className="mt-6">
@@ -759,7 +747,7 @@ export const Community = () => {
             </Card>
           )}
         </TabsContent>
-      </Tabs>
+          </Tabs>
         </div>
         </div>
 

@@ -3,7 +3,7 @@ import { gsap } from "gsap";
 import { Card, CardContent } from "./ui/Card";
 import { Calendar, ChevronLeft, ChevronRight, Flame, CheckCircle } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
-import { getUserCheckins } from "../services/database";
+import { getUserCheckins, getUserCheckinsForDate } from "../services/database";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,7 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
   const [showDialog, setShowDialog] = useState(false);
   const [selectedDayCheckins, setSelectedDayCheckins] = useState([]);
   const [selectedDay, setSelectedDay] = useState(null);
+  const [loadingDayData, setLoadingDayData] = useState(false);
 
   // Get current date info
   const currentDate = new Date();
@@ -164,7 +165,7 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
 
         // Initialize array for the day if it doesn't exist
         if (!data[day]) {
-          data[day] = { hasCheckin: false, checkins: [] };
+          data[day] = { hasCheckin: false, checkins: [], sentiment: "neutral" };
         }
 
         // Convert sentiment score to sentiment label
@@ -185,6 +186,12 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
           sentiment_score: checkin.sentiment_score,
           created_at: checkin.created_at,
         });
+
+        // Set the day's overall sentiment to the most recent checkin's sentiment
+        // (since checkins are ordered by created_at descending)
+        if (data[day].checkins.length === 1) {
+          data[day].sentiment = sentiment;
+        }
 
         console.log('✅ Added checkin to calendar for day:', day, 'with sentiment:', sentiment);
       } else {
@@ -235,7 +242,7 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
     background:
       theme === "dark"
         ? "bg-slate-900/80 border-slate-700/50 backdrop-blur-xl"
-        : "bg-white/95 border-slate-200/60 backdrop-blur-xl shadow-lg",
+        : "bg-gradient-to-br from-teal-50/90 via-white/95 to-cyan-50/80 border-teal-200/60 backdrop-blur-xl shadow-lg",
     text: {
       primary: theme === "dark" ? "text-slate-100" : "text-slate-900",
       secondary: theme === "dark" ? "text-slate-300" : "text-slate-700",
@@ -289,14 +296,73 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
     }
   }, []);
 
-  const getDayStatus = (day) => {
+    const handleDayClick = async (day) => {
+    if (!day || !user) return;
+    
+    const dayData = checkinData[day];
+    if (!dayData?.hasCheckin) return;
+
+    setLoadingDayData(true);
+    try {
+      // Format the date properly for database query
+      const clickedDate = new Date(currentYear, currentMonth, day);
+      const dateString = clickedDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      console.log('🔍 Fetching detailed checkins for date:', {
+        day,
+        dateString,
+        currentYear,
+        currentMonth
+      });
+
+      // Show dialog immediately with loading state
+      setSelectedDay(day);
+      setSelectedDayCheckins([]);
+      setShowDialog(true);
+
+      // Fetch detailed checkins for this specific date
+      const result = await getUserCheckinsForDate(user.id, dateString);
+      
+      if (result.success && result.data) {
+        setSelectedDayCheckins(result.data);
+        
+        console.log('✅ Fetched detailed checkins:', {
+          date: dateString,
+          count: result.data.length,
+          checkins: result.data
+        });
+      } else {
+        console.error('Failed to fetch detailed checkins:', result.error);
+        // Fallback to cached data
+        setSelectedDayCheckins(dayData.checkins || []);
+      }
+    } catch (error) {
+      console.error('Error fetching day checkins:', error);
+      // Fallback to cached data
+      const dayData = checkinData[day];
+      setSelectedDayCheckins(dayData.checkins || []);
+    } finally {
+      setLoadingDayData(false);
+    }
+  };
+
+  const getDayStatus = (day) => {;
     if (!day) return null;
     const isToday = day === today;
     const dayData = checkinData[day];
     const hasCheckin = dayData?.hasCheckin;
     const sentiment = dayData?.sentiment;
+    
+    // Get the most recent checkin's emoji and mood score for display
+    let emoji = null;
+    let score = null;
+    if (hasCheckin && dayData.checkins.length > 0) {
+      const mostRecentCheckin = dayData.checkins[0]; // First checkin (most recent due to desc order)
+      emoji = mostRecentCheckin.mood_emoji;
+      score = mostRecentCheckin.mood_score;
+    }
 
-    return { isToday, hasCheckin, sentiment };
+    return { isToday, hasCheckin, sentiment, emoji, score };
   };
 
   const totalCheckins = Object.keys(checkinData).length;
@@ -399,13 +465,7 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
                             : `${themeColors.hover} ${themeColors.text.secondary}`
                       }
                     `}
-                    onClick={() => {
-                      if (status?.hasCheckin) {
-                        setSelectedDayCheckins(checkinData[day].checkins);
-                        setSelectedDay(day);
-                        setShowDialog(true);
-                      }
-                    }}
+                    onClick={() => handleDayClick(day)}
                   >
                     {status?.hasCheckin ? (
                       <div
@@ -472,32 +532,74 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
               All your recorded moods for this day.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            {selectedDayCheckins.length > 0 ? (
-              selectedDayCheckins.map((checkin) => (
+          <div className="space-y-4 py-4 max-h-96 overflow-y-auto">
+            {loadingDayData ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-2" />
+                <p className="text-slate-500 dark:text-slate-400">Loading check-ins...</p>
+              </div>
+            ) : selectedDayCheckins.length > 0 ? (
+              selectedDayCheckins.map((checkin, index) => (
                 <div
-                  key={checkin.id}
-                  className="flex items-center space-x-3 p-3 rounded-lg bg-slate-100 dark:bg-slate-800"
+                  key={checkin.id || index}
+                  className="flex items-start space-x-3 p-4 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                 >
-                  <span className="text-2xl">{checkin.mood_emoji}</span>
-                  <div>
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                      {checkin.mood_text || "No notes"}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Score: {checkin.mood_score} | Sentiment:{" "}
-                      {checkin.sentiment}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {new Date(checkin.created_at).toLocaleTimeString()}
-                    </p>
+                  <div className="flex-shrink-0">
+                    <span className="text-2xl">{checkin.mood_emoji || "🙂"}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                        Mood Score: {checkin.mood_score}/10
+                      </p>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        checkin.sentiment_score >= 4 
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          : checkin.sentiment_score <= 2
+                          ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                          : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                      }`}>
+                        {checkin.sentiment_score >= 4 ? 'Positive' : checkin.sentiment_score <= 2 ? 'Negative' : 'Neutral'}
+                      </span>
+                    </div>
+                    {checkin.mood_text && (
+                      <p className="text-sm text-slate-700 dark:text-slate-300 mb-2">
+                        "{checkin.mood_text}"
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                      <span>
+                        Sentiment Score: {checkin.sentiment_score}/5
+                      </span>
+                      <span>
+                        {new Date(checkin.created_at).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                    {checkin.hashtags && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {checkin.hashtags.split(',').map((tag, tagIndex) => (
+                          <span
+                            key={tagIndex}
+                            className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded-full"
+                          >
+                            #{tag.trim()}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-center text-slate-500">
-                No check-ins for this day.
-              </p>
+              <div className="text-center py-8">
+                <div className="text-4xl mb-2">📅</div>
+                <p className="text-slate-500 dark:text-slate-400">
+                  No check-ins found for this day.
+                </p>
+              </div>
             )}
           </div>
         </DialogContent>

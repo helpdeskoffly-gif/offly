@@ -60,7 +60,7 @@ export const AntiTodoList = ({ userId }) => {
       : "from-emerald-500 via-teal-500 to-cyan-500",
     tertiary: theme === "dark"
       ? "from-slate-600 via-slate-700 to-slate-800"
-      : "from-slate-200 via-slate-300 to-slate-400",
+      : "from-teal-500 via-cyan-500 to-blue-500",
   };
 
   const themeColors = {
@@ -74,23 +74,23 @@ export const AntiTodoList = ({ userId }) => {
     },
     card: theme === "dark"
       ? "bg-slate-900/60 border-slate-800/50 backdrop-blur-xl"
-      : "bg-white/80 border-slate-200/50 backdrop-blur-xl",
+      : "bg-gradient-to-br from-emerald-50/90 via-white/95 to-green-50/80 border-emerald-200/50 backdrop-blur-xl",
     cardHover: theme === "dark"
       ? "hover:bg-slate-800/70 hover:border-slate-700/60"
-      : "hover:bg-white/90 hover:border-slate-300/60",
+      : "hover:bg-gradient-to-br hover:from-emerald-100/95 hover:via-white/100 hover:to-green-100/95 hover:border-emerald-300/60",
     cardVariants: {
       muted: theme === "dark"
         ? "bg-slate-800/40 border-slate-700/40"
-        : "bg-slate-50/80 border-slate-200/40",
+        : "bg-gradient-to-br from-emerald-50/90 via-white/95 to-green-50/80 border-emerald-200/40",
       success: theme === "dark"
         ? "bg-emerald-900/20 border-emerald-700/40"
-        : "bg-emerald-50/80 border-emerald-200/40",
+        : "bg-gradient-to-br from-emerald-50/90 via-white/95 to-green-50/80 border-emerald-200/40",
       destructive: theme === "dark"
         ? "bg-red-900/20 border-red-700/40"
-        : "bg-red-50/80 border-red-200/40",
+        : "bg-gradient-to-br from-red-50/90 via-white/95 to-pink-50/80 border-red-200/40",
       secondary: theme === "dark"
         ? "bg-slate-800/60 border-slate-700/50"
-        : "bg-slate-100/80 border-slate-300/50",
+        : "bg-gradient-to-br from-emerald-50/90 via-white/95 to-green-50/80 border-emerald-300/50",
     }
   };
 
@@ -516,36 +516,36 @@ export const AntiTodoList = ({ userId }) => {
   };
 
   return (
-    <div ref={containerRef} className="space-y-8">
+    <div ref={containerRef} className="space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Premium Header Section */}
-      <div ref={headerRef} className={`${themeColors.card} rounded-3xl border-0 shadow-xl overflow-hidden relative`}>
+      <div ref={headerRef} className={`${themeColors.card} rounded-2xl sm:rounded-3xl border-0 shadow-xl overflow-hidden relative`}>
         {/* Background gradient overlay */}
         <div className={`absolute inset-0 bg-gradient-to-br ${premiumGradients.accent} opacity-5`} />
-        <div className="absolute inset-0 bg-white/5 dark:bg-black/10" />
+        <div className="absolute inset-0 bg-blue-100/5 dark:bg-black/10" />
         
-        <div className="relative z-10 p-8">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-            <div className="flex items-center space-x-6">
-              <div className={`w-16 h-16 bg-gradient-to-br ${premiumGradients.accent} rounded-3xl flex items-center justify-center shadow-xl shadow-emerald-500/25`}>
-                <Target className="w-8 h-8 text-white drop-shadow-lg" />
-                <div className="absolute -inset-2 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-3xl blur-xl -z-10 animate-pulse"></div>
+        <div className="relative z-10 p-4 sm:p-6 lg:p-8">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6 lg:gap-8">
+            <div className="flex items-center space-x-3 sm:space-x-4 lg:space-x-6">
+              <div className={`w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-gradient-to-br ${premiumGradients.accent} rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-xl shadow-emerald-500/25`}>
+                <Target className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-white drop-shadow-lg" />
+                <div className="absolute -inset-2 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-2xl sm:rounded-3xl blur-xl -z-10 animate-pulse"></div>
               </div>
               <div>
-                <h2 className={`text-3xl lg:text-4xl font-bold ${themeColors.text.primary} mb-2`}>
+                <h2 className={`text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold ${themeColors.text.primary} mb-1 sm:mb-2`}>
                   Anti-Todo Activities
                 </h2>
-                <p className={`text-lg ${themeColors.text.secondary}`}>
+                <p className={`text-sm sm:text-base lg:text-lg ${themeColors.text.secondary}`}>
                   Joyful activities designed to spark happiness
                 </p>
               </div>
             </div>
 
             {/* Enhanced Stats */}
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:gap-4">
               {Object.entries(statusConfig).map(([status, config]) => {
                 const count = stats[status.replace(' ', '') === 'notstarted' ? 'available' : status.replace(' ', '').toLowerCase()] || 0;
                 return (
-                  <Badge key={status} className={`${config.color} px-4 py-2 text-sm font-medium border backdrop-blur-sm rounded-full`}>
+                  <Badge key={status} className={`${config.color} px-2 sm:px-3 lg:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium border backdrop-blur-sm rounded-full`}>
                     {count} {config.label}
                   </Badge>
                 );
@@ -554,20 +554,20 @@ export const AntiTodoList = ({ userId }) => {
           </div>
 
           {/* Enhanced Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 mt-8">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4 sm:mt-6 lg:mt-8">
             <Button
               onClick={handleRegenerate}
               disabled={isRegenerating}
-              className={`bg-gradient-to-r ${premiumGradients.secondary} hover:shadow-xl hover:scale-105 text-white h-10 px-8 rounded-2xl font-semibold transition-all duration-300`}
+              className={`bg-gradient-to-r ${premiumGradients.secondary} hover:shadow-xl hover:scale-105 text-white h-10 sm:h-11 lg:h-12 px-4 sm:px-6 lg:px-8 rounded-xl sm:rounded-2xl font-semibold transition-all duration-300 text-sm sm:text-base`}
             >
               {isRegenerating ? (
                 <>
-                  <RefreshCw className="w-5 h-5 mr-3 animate-spin" />
+                  <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 animate-spin" />
                   Regenerating...
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-5 h-5 mr-3" />
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
                   Generate New
                 </>
               )}
@@ -628,7 +628,7 @@ export const AntiTodoList = ({ userId }) => {
           </div>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-4 lg:space-y-6">
           {antiTodoList.map((item, index) => {
             const category = getActivityCategory(item.content, index);
             const config = statusConfig[item.status] || statusConfig['not started'];
@@ -638,35 +638,35 @@ export const AntiTodoList = ({ userId }) => {
               <Card
                 key={item.id}
                 data-card-id={item.id}
-                className={`anti-todo-card group ${themeColors.card} ${themeColors.cardHover} border-0 shadow-xl transition-all duration-300 transform hover:scale-[1.02] overflow-hidden relative rounded-3xl`}
+                className={`anti-todo-card group ${themeColors.card} ${themeColors.cardHover} border-0 shadow-xl transition-all duration-300 transform hover:scale-[1.02] overflow-hidden relative rounded-2xl sm:rounded-3xl`}
               >
                 {/* Gradient border effect */}
-                <div className={`absolute inset-0 bg-gradient-to-r ${category.gradient} opacity-2 rounded-3xl`}></div>
-                <div className={`absolute inset-[1px] ${themeColors.card} rounded-3xl`}></div>
+                <div className={`absolute inset-0 bg-gradient-to-r ${category.gradient} opacity-2 rounded-2xl sm:rounded-3xl`}></div>
+                <div className={`absolute inset-[1px] ${themeColors.card} rounded-2xl sm:rounded-3xl`}></div>
                 
-                <CardContent className="relative z-10 p-6 lg:p-8">
+                <CardContent className="relative z-10 p-3 sm:p-4 lg:p-6 xl:p-8">
                   {/* Mobile Layout - Redesigned */}
-                  <div className="lg:hidden space-y-6">
+                  <div className="lg:hidden space-y-4 sm:space-y-6">
                     {/* Icon and Title Section */}
-                    <div className="flex items-start gap-4">
-                      <div className={`w-16 h-16 bg-gradient-to-br ${category.gradient} rounded-2xl flex items-center justify-center shadow-lg shadow-current/20 flex-shrink-0 group-hover:scale-105 transition-transform duration-300`}>
-                        <IconComponent className="w-8 h-8 text-white drop-shadow-sm" />
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className={`w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-gradient-to-br ${category.gradient} rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-current/20 flex-shrink-0 group-hover:scale-105 transition-transform duration-300`}>
+                        <IconComponent className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-white drop-shadow-sm" />
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <h3 className={`text-xl font-bold ${themeColors.text.primary} leading-relaxed group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-300 mb-3`}>
+                        <h3 className={`text-base sm:text-lg lg:text-xl font-bold ${themeColors.text.primary} leading-relaxed group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-300 mb-2 sm:mb-3`}>
                           {item.content.replace(/\(.*?\)\s*/, '')}
                         </h3>
                         
                         {/* Status and Time Row */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Badge className={`${config.color} px-4 py-2 text-sm font-semibold border backdrop-blur-sm rounded-xl`}>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <Badge className={`${config.color} px-2 sm:px-3 lg:px-4 py-1 sm:py-2 text-xs sm:text-sm font-semibold border backdrop-blur-sm rounded-lg sm:rounded-xl`}>
                               {config.label}
                             </Badge>
-                            <div className={`flex items-center gap-2 ${themeColors.text.muted} px-3 py-2 rounded-xl bg-white/5`}>
-                              <Clock className="w-4 h-4" />
-                              <span className="text-sm">{item.content.match(/\((.*?)\)/)?.[1] || '15 min'}</span>
+                            <div className={`flex items-center gap-1 sm:gap-2 ${themeColors.text.muted} px-2 sm:px-3 py-1 sm:py-2 rounded-lg sm:rounded-xl bg-blue-100/5`}>
+                              <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+                              <span className="text-xs sm:text-sm">{item.content.match(/\((.*?)\)/)?.[1] || '15 min'}</span>
                             </div>
                           </div>
                           
@@ -676,7 +676,7 @@ export const AntiTodoList = ({ userId }) => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleShare(item)}
-                              className={`${themeColors.text.muted} hover:${themeColors.text.primary} transition-all duration-300 h-10 w-10 rounded-xl backdrop-blur-sm hover:bg-white/10 hover:scale-110`}
+                              className={`${themeColors.text.muted} hover:${themeColors.text.primary} transition-all duration-300 h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 rounded-lg sm:rounded-xl backdrop-blur-sm hover:bg-blue-100/10 hover:scale-110`}
                               title="Share to Community"
                             >
                               <Share2 className="w-5 h-5" />
@@ -688,27 +688,27 @@ export const AntiTodoList = ({ userId }) => {
 
                     {/* Category Badge */}
                     <div className="flex justify-start">
-                      <Badge className={`bg-gradient-to-r ${category.gradient} text-white px-4 py-2 rounded-xl font-medium shadow-sm text-sm`}>
+                      <Badge className={`bg-gradient-to-r ${category.gradient} text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-medium shadow-sm text-xs sm:text-sm`}>
                         {category.name}
                       </Badge>
                     </div>
 
                     {/* Action Buttons - Mobile */}
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                       {item.status === 'not started' && (
                         <Button
                           onClick={() => handleItemAction(item.id, 'ongoing')}
                           disabled={loadingItems.has(item.id)}
-                          className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white px-6 py-4 h-14 rounded-2xl font-semibold transition-all duration-300 w-full text-base`}
+                          className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white px-4 sm:px-6 py-3 sm:py-4 h-12 sm:h-14 rounded-xl sm:rounded-2xl font-semibold transition-all duration-300 w-full text-sm sm:text-base`}
                         >
                           {loadingItems.has(item.id) ? (
                             <>
-                              <Zap className="w-5 h-5 mr-3 animate-pulse" />
+                              <Zap className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 animate-pulse" />
                               Starting...
                             </>
                           ) : (
                             <>
-                              <Play className="w-5 h-5 mr-3" />
+                              <Play className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
                               Start Activity
                             </>
                           )}
@@ -716,20 +716,20 @@ export const AntiTodoList = ({ userId }) => {
                       )}
 
                       {item.status === 'ongoing' && (
-                        <div className="space-y-3">
+                        <div className="space-y-2 sm:space-y-3">
                           <Button
                             onClick={() => handleItemAction(item.id, 'completed')}
                             disabled={loadingItems.has(item.id)}
-                            className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white px-6 py-4 h-14 rounded-2xl font-semibold transition-all duration-300 w-full text-base`}
+                            className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white px-4 sm:px-6 py-3 sm:py-4 h-12 sm:h-14 rounded-xl sm:rounded-2xl font-semibold transition-all duration-300 w-full text-sm sm:text-base`}
                           >
                             {loadingItems.has(item.id) ? (
                               <>
-                                <CheckCircle className="w-5 h-5 mr-3 animate-pulse" />
+                                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 animate-pulse" />
                                 Completing...
                               </>
                             ) : (
                               <>
-                                <CheckCircle className="w-5 h-5 mr-3" />
+                                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
                                 Complete Activity
                               </>
                             )}
@@ -738,16 +738,16 @@ export const AntiTodoList = ({ userId }) => {
                           <Button
                             onClick={() => handleItemAction(item.id, 'stopped')}
                             disabled={loadingItems.has(item.id)}
-                            className={`bg-gradient-to-r ${premiumGradients.tertiary} hover:shadow-lg hover:scale-105 text-white px-6 py-4 h-14 rounded-2xl font-semibold transition-all duration-300 w-full text-base`}
+                            className={`bg-gradient-to-r ${premiumGradients.tertiary} hover:shadow-lg hover:scale-105 text-white px-4 sm:px-6 py-3 sm:py-4 h-12 sm:h-14 rounded-xl sm:rounded-2xl font-semibold transition-all duration-300 w-full text-sm sm:text-base`}
                           >
                             {loadingItems.has(item.id) ? (
                               <>
-                                <Square className="w-5 h-5 mr-3 animate-pulse" />
+                                <Square className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 animate-pulse" />
                                 Stopping...
                               </>
                             ) : (
                               <>
-                                <Square className="w-5 h-5 mr-3" />
+                                <Square className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
                                 Stop Activity
                               </>
                             )}
@@ -756,8 +756,8 @@ export const AntiTodoList = ({ userId }) => {
                       )}
 
                       {(item.status === 'completed' || item.status === 'stopped') && (
-                        <div className="space-y-3">
-                          <div className={`bg-gradient-to-r ${premiumGradients.tertiary} px-6 py-4 rounded-2xl flex items-center justify-center h-14 font-semibold text-white shadow-lg`}>
+                        <div className="space-y-2 sm:space-y-3">
+                          <div className={`bg-gradient-to-r ${premiumGradients.tertiary} px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl flex items-center justify-center h-12 sm:h-14 font-semibold text-white shadow-lg text-sm sm:text-base`}>
                             <CheckCircle className="w-5 h-5 mr-3" />
                             {item.status === 'completed' ? 'Completed' : 'Stopped'}
                           </div>
@@ -800,7 +800,7 @@ export const AntiTodoList = ({ userId }) => {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleShare(item)}
-                                className={`${themeColors.text.muted} hover:${themeColors.text.primary} transition-all duration-300 h-10 w-10 rounded-xl backdrop-blur-sm hover:bg-white/10 hover:scale-110`}
+                                className={`${themeColors.text.muted} hover:${themeColors.text.primary} transition-all duration-300 h-10 w-10 rounded-xl backdrop-blur-sm hover:bg-blue-100/10 hover:scale-110`}
                                 title="Share to Community"
                               >
                                 <Share2 className="w-5 h-5" />
@@ -819,7 +819,7 @@ export const AntiTodoList = ({ userId }) => {
                               <Badge className={`bg-gradient-to-r ${category.gradient} text-white px-3 py-1 rounded-lg font-medium shadow-sm`}>
                                 {category.name}
                               </Badge>
-                              <div className={`flex items-center gap-2 ${themeColors.text.muted} px-3 py-1 rounded-lg bg-white/5`}>
+                              <div className={`flex items-center gap-2 ${themeColors.text.muted} px-3 py-1 rounded-lg bg-blue-100/5`}>
                                 <Clock className="w-4 h-4" />
                                 {item.content.match(/\((.*?)\)/)?.[1] || '15 min'}
                               </div>
@@ -1002,7 +1002,7 @@ export const AntiTodoList = ({ userId }) => {
       {/* Points Toast */}
       {showToast && (
         <div className="fixed top-4 right-3 left-3 sm:left-auto sm:right-6 z-50 animate-in slide-in-from-top-2 duration-300">
-          <div className={`${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} border rounded-xl shadow-xl p-3 sm:p-4 max-w-sm backdrop-blur-sm`}>
+          <div className={`${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-gradient-to-br from-blue-50/90 via-white/95 to-indigo-50/80 border-blue-200'} border rounded-xl shadow-xl p-3 sm:p-4 max-w-sm backdrop-blur-sm`}>
             <div className="flex items-start gap-3">
               <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 mt-0.5 flex-shrink-0" />
               <div className="flex-1 min-w-0">

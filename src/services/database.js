@@ -724,6 +724,21 @@ export const getUserCheckins = async (uid, startDate = null, endDate = null, lim
   });
 };
 
+// Get user checkins for a specific date
+export const getUserCheckinsForDate = async (uid, date) => {
+  return safeSupabaseOperation(async () => {
+    const { data, error } = await supabase
+      .from("checkins")
+      .select("*")
+      .eq("user_id", uid)
+      .eq("checkin_date", date)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return { success: true, data };
+  });
+};
+
 // Reset daily counters
 export const resetDailyCounters = async () => {
   return safeSupabaseOperation(async () => {

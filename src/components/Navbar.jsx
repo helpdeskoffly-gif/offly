@@ -125,11 +125,11 @@ export function Navbar() {
     navbar:
       theme === "dark"
         ? "bg-slate-900/70 border-slate-700/60"
-        : "bg-white/90 border-slate-200/60 shadow-lg",
+        : "bg-card/80 border-border shadow-lg backdrop-blur-xl",
     text: {
-      primary: theme === "dark" ? "text-white" : "text-slate-900",
-      secondary: theme === "dark" ? "text-slate-300" : "text-slate-700",
-      muted: theme === "dark" ? "text-slate-400" : "text-slate-600",
+      primary: theme === "dark" ? "text-white" : "text-foreground",
+      secondary: theme === "dark" ? "text-slate-300" : "text-muted-foreground",
+      muted: theme === "dark" ? "text-slate-400" : "text-muted-foreground",
     },
   };
 
@@ -190,8 +190,8 @@ export function Navbar() {
                         onClick={() => setIsFeedbackOpen(true)}
                         className={`flex items-center space-x-2 h-10 ${
                           theme === "dark"
-                            ? "hover:bg-slate-700/50"
-                            : "hover:bg-orange-100/50"
+                            ? "hover:!bg-green-900/20 hover:!text-green-300"
+                            : "hover:!bg-green-50/50 hover:!text-green-700"
                         } transition-colors duration-200`}
                       >
                         <MessageSquare className="h-5 w-5" />
@@ -208,8 +208,8 @@ export function Navbar() {
                           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                           className={`flex items-center space-x-2 h-10 ${
                             theme === "dark"
-                              ? "hover:bg-slate-700/50"
-                              : "hover:bg-orange-100/50"
+                              ? "hover:!bg-green-900/20 hover:!text-green-300"
+                              : "hover:!bg-green-50/50 hover:!text-green-700"
                           } transition-colors duration-200`}
                         >
                           <img
@@ -249,14 +249,14 @@ export function Navbar() {
                           className={`absolute right-0 mt-2 w-56 ${themeColors.navbar} backdrop-blur-lg rounded-xl shadow-2xl border ${
                             theme === "dark"
                               ? "border-slate-700/50"
-                              : "border-orange-200/50"
+                              : "border-green-200/50"
                           } py-2 z-50 transition-all duration-200 ease-out`}
                         >
                           <div
                             className={`px-4 py-3 border-b ${
                               theme === "dark"
                                 ? "border-slate-700/50"
-                                : "border-orange-200/50"
+                                : "border-green-200/50"
                             }`}
                           >
                             <div className="flex items-center space-x-3">
@@ -297,8 +297,8 @@ export function Navbar() {
                               }}
                               className={`w-full justify-start px-4 py-2 text-sm rounded-none ${
                                 theme === "dark"
-                                  ? "hover:bg-slate-700/50"
-                                  : "hover:bg-orange-100/50"
+                                  ? "hover:!bg-green-900/20 hover:!text-green-300"
+                                  : "hover:!bg-green-50/50 hover:!text-green-700"
                               } transition-colors duration-200`}
                             >
                               <svg
@@ -328,8 +328,8 @@ export function Navbar() {
                               }}
                               className={`w-full justify-start px-4 py-2 text-sm rounded-none ${
                                 theme === "dark"
-                                  ? "hover:bg-slate-700/50"
-                                  : "hover:bg-orange-100/50"
+                                  ? "hover:!bg-green-900/20 hover:!text-green-300"
+                                  : "hover:!bg-green-50/50 hover:!text-green-700"
                               } transition-colors duration-200`}
                             >
                               <svg
@@ -359,7 +359,7 @@ export function Navbar() {
                           </div>
 
                           <div
-                            className={`border-t ${theme === "dark" ? "border-slate-700/50" : "border-orange-200/50"} pt-1`}
+                            className={`border-t ${theme === "dark" ? "border-slate-700/50" : "border-green-200/50"} pt-1`}
                           >
                             <Button
                               variant="ghost"
@@ -411,8 +411,8 @@ export function Navbar() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div
             ref={feedbackRef}
-            className={`w-full max-w-md ${theme === "dark" ? "bg-slate-800" : "bg-white"} rounded-2xl shadow-2xl border ${
-              theme === "dark" ? "border-slate-700" : "border-gray-200"
+            className={`w-full max-w-md ${theme === "dark" ? "bg-slate-800" : "bg-card/90 backdrop-blur-xl"} rounded-2xl shadow-2xl border ${
+              theme === "dark" ? "border-slate-700" : "border-border"
             } p-6`}
           >
             <div className="flex items-center justify-between mb-6">
@@ -440,8 +440,8 @@ export function Navbar() {
                   className={`w-full h-24 px-3 py-2 rounded-lg border resize-none ${
                     theme === "dark"
                       ? "bg-slate-700 border-slate-600 text-white placeholder-gray-400"
-                      : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500"
-                  } focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                      : "bg-input border-border text-foreground placeholder-muted-foreground"
+                  } focus:outline-none focus:ring-2 focus:ring-primary`}
                 />
               </div>
 
@@ -460,8 +460,8 @@ export function Navbar() {
                     htmlFor="file-upload"
                     className={`flex items-center space-x-2 px-4 py-2 rounded-lg border cursor-pointer ${
                       theme === "dark"
-                        ? "border-slate-600 text-gray-300 hover:bg-slate-700"
-                        : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                        ? "border-green-600/50 text-green-300 hover:bg-green-900/20"
+                        : "border-border text-foreground hover:bg-accent/50"
                     } transition-colors duration-200`}
                   >
                     <Upload className="h-4 w-4" />

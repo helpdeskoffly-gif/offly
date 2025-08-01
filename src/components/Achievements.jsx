@@ -186,14 +186,14 @@ function Achievements() {
 
   const getCategoryColor = (category) => {
     const colors = {
-      milestone: "from-blue-500 to-cyan-500",
-      streak: "from-orange-500 to-red-500",
-      wellness: "from-pink-500 to-rose-500",
-      variety: "from-purple-500 to-pink-500",
+      milestone: "from-emerald-500 to-teal-500",
+      streak: "from-green-500 to-emerald-600", 
+      wellness: "from-green-400 to-emerald-500",
+      variety: "from-lime-500 to-green-500",
       social: "from-green-500 to-emerald-500",
       plant: "from-emerald-500 to-teal-500",
-      timing: "from-indigo-500 to-purple-500",
-      engagement: "from-yellow-500 to-orange-500",
+      timing: "from-teal-500 to-cyan-500",
+      engagement: "from-green-400 to-emerald-500",
     };
     return colors[category] || "from-gray-500 to-slate-500";
   };
@@ -202,7 +202,7 @@ function Achievements() {
     
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500" />
         <p className="ml-4 text-slate-600 dark:text-slate-400">Loading achievements...</p>
       </div>
     );
@@ -211,14 +211,14 @@ function Achievements() {
   
 
   return (
-    <div className="space-y-4 sm:space-y-8 p-4 sm:p-6 lg:p-8">
+    <div className="space-y-3 sm:space-y-6 lg:space-y-8 p-3 sm:p-4 lg:p-6 xl:p-8">
       
       {/* Stats Header */}
       <div className="grid grid-cols-1 gap-4 mb-6 mx-2 sm:mx-4">
-        <Card className="bg-white/70 dark:bg-slate-800/50 border-slate-200/60 dark:border-slate-700/50 backdrop-blur-sm">
+        <Card className="bg-green-50/50 dark:bg-slate-800/50 border-green-200/40 dark:border-slate-700/40 backdrop-blur-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
                 <Coins className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -233,7 +233,7 @@ function Achievements() {
 
 
       {/* Achievements Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mx-2 sm:mx-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mx-2 sm:mx-4">
         {achievements.length === 0 ? (
           <div className="col-span-full text-center py-8">
             <p className="text-lg text-slate-600 dark:text-slate-400">No achievements found</p>
@@ -248,7 +248,7 @@ function Achievements() {
             return (
               <Card 
                 key={achievement.achievement_id}
-                className="bg-white/70 dark:bg-slate-800/50 border-slate-200/60 dark:border-slate-700/50 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                className="bg-green-50/50 dark:bg-slate-800/50 border-green-200/40 dark:border-slate-700/40 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-xl"
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -289,7 +289,7 @@ function Achievements() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1">
-                        <Coins className="w-4 h-4 text-yellow-500" />
+                        <Coins className="w-4 h-4 text-green-500" />
                         <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
                           {achievement.points_reward || 10} points
                         </span>
@@ -315,7 +315,7 @@ function Achievements() {
           })
         )}
       </div>
-    </div>
+    </div>  
   );
 }
 

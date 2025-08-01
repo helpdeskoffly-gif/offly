@@ -13,7 +13,7 @@ const PricingSection = memo(({ theme, themeColors, premiumGradients }) => {
       className={`py-16 md:py-24 ${
         theme === "dark"
           ? "bg-gradient-to-b from-gray-900 to-slate-900"
-          : "bg-gradient-to-b from-amber-50 to-orange-50"
+          : "bg-gradient-to-b from-blue-200 via-indigo-200 to-purple-200"
       } relative overflow-hidden`}
       ref={ref}
       id="pricing"
@@ -27,7 +27,7 @@ const PricingSection = memo(({ theme, themeColors, premiumGradients }) => {
             hidden: { opacity: 0, y: 20 },
             visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
           }}
-        >
+        > 
           <div
             ref={(el) => {
               if (el) {
@@ -92,7 +92,7 @@ const PricingSection = memo(({ theme, themeColors, premiumGradients }) => {
             className={`rounded-2xl border shadow-xl p-6 md:p-8 h-full ${
               theme === "dark"
                 ? "bg-slate-800/80 border-slate-700/50 backdrop-blur-xl"
-                : "bg-white/90 border-gray-200/50 backdrop-blur-xl"
+                : "bg-gradient-to-br from-blue-50/90 via-white/95 to-indigo-50/80 border-blue-200/50 backdrop-blur-xl"
             }`}
           >
             <div className="text-center space-y-6">
@@ -103,7 +103,7 @@ const PricingSection = memo(({ theme, themeColors, premiumGradients }) => {
               </div>
               
               <div>
-                <h3 className={`text-xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"} mb-2`}>
+                <h3 className={`text-xl font-bold ${theme === "dark" ? "text-white" : "text-slate-800"} mb-2`}>
                   Free
                 </h3>
               </div>
@@ -118,7 +118,7 @@ const PricingSection = memo(({ theme, themeColors, premiumGradients }) => {
                 ].map((feature, index) => (
                   <div key={index} className="flex items-center space-x-3">
                     <Check className={`w-4 h-4 ${theme === "dark" ? "text-emerald-400" : "text-green-600"}`} />
-                    <span className={`text-sm ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}>{feature}</span>
+                    <span className={`text-sm ${theme === "dark" ? "text-gray-300" : "text-slate-600"}`}>{feature}</span>
                   </div>
                 ))}
               </div>
@@ -147,7 +147,7 @@ const PricingSection = memo(({ theme, themeColors, premiumGradients }) => {
             className={`rounded-2xl border shadow-xl p-6 md:p-8 h-full ${
               theme === "dark"
                 ? "bg-slate-800/80 border-slate-700/50 backdrop-blur-xl"
-                : "bg-white/90 border-gray-200/50 backdrop-blur-xl"
+                : "bg-gradient-to-br from-purple-50/90 via-white/95 to-violet-50/80 border-purple-200/50 backdrop-blur-xl"
             } border-2 border-purple-500/30`}
           >
             <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -165,7 +165,7 @@ const PricingSection = memo(({ theme, themeColors, premiumGradients }) => {
               </div>
               
               <div>
-                <h3 className={`text-xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"} mb-2`}>
+                <h3 className={`text-xl font-bold ${theme === "dark" ? "text-white" : "text-slate-800"} mb-2`}>
                   Pro
                 </h3>
               </div>
@@ -182,7 +182,7 @@ const PricingSection = memo(({ theme, themeColors, premiumGradients }) => {
                 ].map((feature, index) => (
                   <div key={index} className="flex items-center space-x-3">
                     <Check className={`w-4 h-4 ${theme === "dark" ? "text-purple-400" : "text-purple-600"}`} />
-                    <span className={`text-sm ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}>{feature}</span>
+                    <span className={`text-sm ${theme === "dark" ? "text-gray-300" : "text-slate-600"}`}>{feature}</span>
                   </div>
                 ))}
               </div>
@@ -212,7 +212,7 @@ const PricingSection = memo(({ theme, themeColors, premiumGradients }) => {
             className={`rounded-2xl border shadow-xl p-6 md:p-8 h-full ${
               theme === "dark"
                 ? "bg-slate-800/80 border-slate-700/50 backdrop-blur-xl"
-                : "bg-white/90 border-gray-200/50 backdrop-blur-xl"
+                : "bg-gradient-to-br from-amber-50/90 via-white/95 to-orange-50/80 border-amber-200/50 backdrop-blur-xl"
             }`}
           >
             <div className="text-center space-y-6">
@@ -223,7 +223,7 @@ const PricingSection = memo(({ theme, themeColors, premiumGradients }) => {
               </div>
               
               <div>
-                <h3 className={`text-xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"} mb-2`}>
+                <h3 className={`text-xl font-bold ${theme === "dark" ? "text-white" : "text-slate-800"} mb-2`}>
                   Teams
                 </h3>
               </div>
@@ -240,7 +240,7 @@ const PricingSection = memo(({ theme, themeColors, premiumGradients }) => {
                 ].map((feature, index) => (
                   <div key={index} className="flex items-center space-x-3">
                     <Check className={`w-4 h-4 ${theme === "dark" ? "text-amber-400" : "text-amber-600"}`} />
-                    <span className={`text-sm ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}>{feature}</span>
+                    <span className={`text-sm ${theme === "dark" ? "text-gray-300" : "text-slate-600"}`}>{feature}</span>
                   </div>
                 ))}
               </div>

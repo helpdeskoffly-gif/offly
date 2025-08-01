@@ -79,10 +79,10 @@ export function Auth() {
     },
     card: theme === "dark"
       ? "bg-slate-900/80 border-slate-800/50 backdrop-blur-xl"
-      : "bg-white/90 border-slate-200/50 backdrop-blur-xl",
+      : "bg-gradient-to-br from-violet-50/90 via-white/95 to-purple-50/80 border-violet-200/50 backdrop-blur-xl",
     input: theme === "dark"
       ? "bg-slate-800/50 border-slate-700/50 focus:border-violet-400"
-      : "bg-white/50 border-slate-300/50 focus:border-violet-500",
+      : "bg-gradient-to-br from-violet-50/50 via-white/50 to-purple-50/50 border-violet-300/50 focus:border-violet-500",
   };
 
   useEffect(() => {
@@ -523,9 +523,9 @@ export function Auth() {
           <div className="flex justify-center w-full">
             <Card ref={authCardRef} className={`w-full max-w-md ${themeColors.card} border shadow-2xl overflow-hidden`}>
               <div className={`p-6 lg:p-8 bg-gradient-to-br ${premiumGradients.primary} relative`}>
-                <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
+                <div className="absolute inset-0 bg-violet-100/10 backdrop-blur-sm"></div>
                 <div className="relative z-10 text-center text-white">
-                  <div className="w-12 h-12 lg:w-16 lg:h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 lg:w-16 lg:h-16 bg-violet-100/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <User className="w-6 h-6 lg:w-8 lg:h-8" />
                   </div>
                   <h2 className="text-xl lg:text-2xl font-bold mb-2">
@@ -690,7 +690,7 @@ export function Auth() {
                           <div className="w-full border-t border-gray-300 dark:border-gray-600" />
                         </div>
                         <div className="relative flex justify-center text-sm">
-                          <span className={`px-4 bg-white dark:bg-slate-900 ${themeColors.text.muted}`}>
+                          <span className={`px-4 bg-violet-50 dark:bg-slate-900 ${themeColors.text.muted}`}>
                             Or continue with
                           </span>
                         </div>
