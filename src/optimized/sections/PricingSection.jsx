@@ -89,7 +89,7 @@ const PricingSection = memo(({ theme, themeColors, premiumGradients }) => {
                 );
               }
             }}
-            className={`rounded-2xl border shadow-xl p-6 md:p-8 ${
+            className={`rounded-2xl border shadow-xl p-6 md:p-8 h-full ${
               theme === "dark"
                 ? "bg-slate-800/80 border-slate-700/50 backdrop-blur-xl"
                 : "bg-white/90 border-gray-200/50 backdrop-blur-xl"
@@ -131,7 +131,7 @@ const PricingSection = memo(({ theme, themeColors, premiumGradients }) => {
             </div>
           </MemoizedCard>
 
-          {/* Pro Plan */}
+                    {/* Pro Plan */}
           <MemoizedCard
             ref={(el) => {
               if (el) {
@@ -144,7 +144,7 @@ const PricingSection = memo(({ theme, themeColors, premiumGradients }) => {
                 );
               }
             }}
-            className={`rounded-2xl border shadow-xl p-6 md:p-8 relative ${
+            className={`rounded-2xl border shadow-xl p-6 md:p-8 h-full ${
               theme === "dark"
                 ? "bg-slate-800/80 border-slate-700/50 backdrop-blur-xl"
                 : "bg-white/90 border-gray-200/50 backdrop-blur-xl"
@@ -209,7 +209,7 @@ const PricingSection = memo(({ theme, themeColors, premiumGradients }) => {
                 );
               }
             }}
-            className={`rounded-2xl border shadow-xl p-6 md:p-8 ${
+            className={`rounded-2xl border shadow-xl p-6 md:p-8 h-full ${
               theme === "dark"
                 ? "bg-slate-800/80 border-slate-700/50 backdrop-blur-xl"
                 : "bg-white/90 border-gray-200/50 backdrop-blur-xl"

@@ -23,6 +23,7 @@ import { useTheme } from "../contexts/ThemeContext.jsx";
 import { useNavigate } from "react-router-dom";
 import { useCheckinCooldown } from "../hooks/useCheckinCooldown";
 import Logo from "./Logo";
+import { supabase } from "../supabase";
 import {
   submitCheckin,
   getUserCheckins,
@@ -33,6 +34,7 @@ import {
   getWeeklyAntiTodoInsights,
   checkAndUnlockAchievements,
   checkProfileCompletion,
+  getUserAnalytics,
 } from "../services/database";
 import { notificationService } from "../services/notifications";
 import { openaiService } from "../services/openai";
@@ -214,6 +216,7 @@ const Dashboard = () => {
   const [calendarRefreshTrigger, setCalendarRefreshTrigger] = useState(0);
   const [lastAINudge, setLastAINudge] = useState("");
   const [showAINudge, setShowAINudge] = useState(false);
+  const [antiTodosCompleted, setAntiTodosCompleted] = useState(0);
 
   // Feedback state
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -1170,10 +1173,134 @@ const Dashboard = () => {
           console.error('Error loading activities:', error);
           setActivities([]); // Set empty array as fallback
         }
+
+        // Load anti-todos completion count using direct supabase query (same as AntiTodoList)
+        try {
+          const { data, error } = await supabase
+            .from('user_analytics')
+            .select('completedantitodos')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (!error && data) {
+            setAntiTodosCompleted(data.completedantitodos || 0);
+            console.log('Dashboard: Total completion count from analytics:', data.completedantitodos);
+          } else {
+            console.log('Dashboard: No analytics record found or error:', error);
+            setAntiTodosCompleted(0);
+          }
+        } catch (error) {
+          console.error('Dashboard: Error fetching anti-todos completion count:', error);
+          setAntiTodosCompleted(0);
+        }
       }
     };
     loadUserData();
   }, [user]);
+
+  // Separate useEffect to ensure anti-todos count is loaded
+  useEffect(() => {
+    const fetchAntiTodosCount = async () => {
+      if (user?.id) {
+        try {
+          console.log('Dashboard: Fetching anti-todos count for user:', user.id);
+          
+          // First try to get from user_analytics
+          const { data: analyticsData, error: analyticsError } = await supabase
+            .from('user_analytics')
+            .select('completedantitodos')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (!analyticsError && analyticsData && analyticsData.completedantitodos !== null) {
+            console.log('Dashboard: Anti-todos count from analytics:', analyticsData.completedantitodos);
+            setAntiTodosCompleted(analyticsData.completedantitodos);
+            return;
+          }
+          
+          // Fallback: count completed items directly from anti_todo_items table
+          console.log('Dashboard: No analytics record found, trying direct count from anti_todo_items');
+          const { data: itemsData, error: itemsError } = await supabase
+            .from('anti_todo_items')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('status', 'completed');
+          
+          if (!itemsError && itemsData) {
+            const count = itemsData.length;
+            console.log('Dashboard: Direct count from anti_todo_items:', count);
+            setAntiTodosCompleted(count);
+          } else {
+            console.log('Dashboard: No completed items found:', itemsError);
+            setAntiTodosCompleted(0);
+          }
+        } catch (error) {
+          console.error('Dashboard: Error fetching anti-todos completion count:', error);
+          setAntiTodosCompleted(0);
+        }
+      }
+    };
+
+    fetchAntiTodosCount();
+  }, [user?.id]);
+
+  // Force refresh anti-todos count when component mounts
+  useEffect(() => {
+    if (user?.id) {
+      const timer = setTimeout(() => {
+        const fetchAntiTodosCount = async () => {
+          try {
+            const { data: itemsData, error: itemsError } = await supabase
+              .from('anti_todo_items')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('status', 'completed');
+            
+            if (!itemsError && itemsData) {
+              const count = itemsData.length;
+              console.log('Dashboard: Force refresh - Direct count from anti_todo_items:', count);
+              setAntiTodosCompleted(count);
+            }
+          } catch (error) {
+            console.error('Dashboard: Error in force refresh:', error);
+          }
+        };
+        fetchAntiTodosCount();
+      }, 2000); // Wait 2 seconds then refresh
+
+      return () => clearTimeout(timer);
+    }
+  }, [user?.id]);
+
+  // Additional refresh on user change
+  useEffect(() => {
+    if (user?.id) {
+      const fetchCount = async () => {
+        try {
+          const { data: itemsData, error: itemsError } = await supabase
+            .from('anti_todo_items')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('status', 'completed');
+          
+          if (!itemsError && itemsData) {
+            const count = itemsData.length;
+            console.log('Dashboard: User change - Direct count from anti_todo_items:', count);
+            setAntiTodosCompleted(count);
+          }
+        } catch (error) {
+          console.error('Dashboard: Error in user change fetch:', error);
+        }
+      };
+      
+      // Immediate fetch
+      fetchCount();
+      
+      // Delayed fetch
+      const timer = setTimeout(fetchCount, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [user?.id]);
 
   // Helper function to convert emoji to mood score (1-10)
   const convertEmojiToScore = (emoji) => {
@@ -1632,36 +1759,37 @@ const Dashboard = () => {
                 </Button>
               </div>
 
-              {/* Trees Planted Card */}
-              <div className={`p-4 sm:p-6 rounded-xl ${theme === 'dark' ? 'bg-slate-800/50 border border-slate-700/50' : 'bg-white/70 border border-slate-200/60'} backdrop-blur-sm shadow-lg mb-6`}>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className={`text-lg sm:text-xl font-semibold ${themeColors.text.primary}`}>🌳 Trees Planted</h3>
-                  <Button
-                    variant="ghost"
-                    onClick={() => animateTabChange("Achievements")}
-                    className="text-xs sm:text-sm"
-                  >
-                    View Garden
-                  </Button>
-                </div>
-                
-                <div className="text-center">
-                  <div className="text-3xl sm:text-4xl font-bold mb-2">
-                    <span className="bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">
-                      {localStorage.getItem(`trees_planted_${user?.id}`) || 0}
-                    </span>
-                  </div>
-                  <p className={`text-sm ${themeColors.text.secondary}`}>
-                    {parseInt(localStorage.getItem(`trees_planted_${user?.id}`) || 0) === 0 ? 'Start your journey!' : 
-                     `${localStorage.getItem(`trees_planted_${user?.id}`) || 0} trees planted so far!`}
-                  </p>
-                </div>
-              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
+                {/* Anti-Todos Completed Card */}
+                <Card className={`${themeColors.card} border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 group overflow-hidden relative`}>
+                  <div className={`absolute inset-0 ${theme === "dark" ? "bg-gradient-to-br from-purple-500/5 via-pink-500/5 to-rose-500/5" : "bg-gradient-to-br from-purple-100/50 via-pink-100/40 to-rose-100/30"} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
+                  <CardContent className="p-4 lg:p-6 relative z-10">
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                      <div
+                        className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${premiumGradients.tertiary} shadow-lg ${theme === "dark" ? "shadow-purple-500/25 group-hover:shadow-purple-500/40" : "shadow-purple-300/30 group-hover:shadow-purple-400/50"} transition-all duration-300`}
+                      >
+                        <Target className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
+                      </div>
+                      <span
+                        className={`text-xs ${themeColors.text.muted} uppercase tracking-wide font-semibold ${theme === "dark" ? "bg-purple-500/10" : "bg-purple-100/80"} px-2 py-1 rounded-full`}
+                      >
+                        Activities
+                      </span>
+                    </div>
+                    <div
+                      className={`text-xl sm:text-2xl lg:text-3xl font-bold ${themeColors.text.primary} mb-1 sm:mb-2 ${theme === "dark" ? "group-hover:text-purple-600" : "group-hover:text-purple-700"} transition-colors duration-300`}
+                    >
+                      {antiTodosCompleted}
+                    </div>
+                    <p className={`text-xs sm:text-sm ${themeColors.text.secondary} font-medium`}>
+                      Anti-Todos ✨
+                    </p>
+                  </CardContent>
+                </Card>
 
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 <Card className={`${themeColors.card} border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 group overflow-hidden relative`}>
                   <div className={`absolute inset-0 ${theme === "dark" ? "bg-gradient-to-br from-violet-500/5 via-purple-500/5 to-fuchsia-500/5" : "bg-gradient-to-br from-violet-100/50 via-purple-100/40 to-fuchsia-100/30"} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
-                  <CardContent className="p-3 sm:p-4 lg:p-6 relative z-10">
+                  <CardContent className="p-4 lg:p-6 relative z-10">
                     <div className="flex items-center justify-between mb-3 sm:mb-4">
                       <div
                         className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${premiumGradients.primary} shadow-lg ${theme === "dark" ? "shadow-violet-500/25 group-hover:shadow-violet-500/40" : "shadow-indigo-300/30 group-hover:shadow-indigo-400/50"} transition-all duration-300`}
@@ -1687,7 +1815,7 @@ const Dashboard = () => {
 
                 <Card className={`${themeColors.card} border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 group overflow-hidden relative`}>
                   <div className={`absolute inset-0 ${theme === "dark" ? "bg-gradient-to-br from-emerald-500/5 via-teal-500/5 to-cyan-500/5" : "bg-gradient-to-br from-emerald-100/50 via-teal-100/40 to-cyan-100/30"} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
-                  <CardContent className="p-3 sm:p-4 lg:p-6 relative z-10">
+                  <CardContent className="p-4 lg:p-6 relative z-10">
                     <div className="flex items-center justify-between mb-3 sm:mb-4">
                       <div
                         className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${premiumGradients.secondary} shadow-lg ${theme === "dark" ? "shadow-emerald-500/25 group-hover:shadow-emerald-500/40" : "shadow-emerald-300/30 group-hover:shadow-emerald-400/50"} transition-all duration-300`}
@@ -1713,7 +1841,7 @@ const Dashboard = () => {
 
                 <Card className={`${themeColors.card} border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 group overflow-hidden relative`}>
                   <div className={`absolute inset-0 ${theme === "dark" ? "bg-gradient-to-br from-amber-500/5 via-orange-500/5 to-red-500/5" : "bg-gradient-to-br from-amber-100/50 via-orange-100/40 to-red-100/30"} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
-                  <CardContent className="p-3 sm:p-4 lg:p-6 relative z-10">
+                  <CardContent className="p-4 lg:p-6 relative z-10">
                     <div className="flex items-center justify-between mb-3 sm:mb-4">
                       <div
                         className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${premiumGradients.accent} shadow-lg ${theme === "dark" ? "shadow-amber-500/25 group-hover:shadow-amber-500/40" : "shadow-violet-300/30 group-hover:shadow-violet-400/50"} transition-all duration-300`}
@@ -1736,6 +1864,32 @@ const Dashboard = () => {
                     </p>
                   </CardContent>
                 </Card>
+              </div>
+
+              {/* Trees Planted Card */}
+              <div className={`p-4 sm:p-6 rounded-xl ${theme === 'dark' ? 'bg-slate-800/50 border border-slate-700/50' : 'bg-white/70 border border-slate-200/60'} backdrop-blur-sm shadow-lg mb-6`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className={`text-lg sm:text-xl font-semibold ${themeColors.text.primary}`}>🌳 Trees Planted</h3>
+                  <Button
+                    variant="ghost"
+                    onClick={() => animateTabChange("Achievements")}
+                    className="text-xs sm:text-sm"
+                  >
+                    View Garden
+                  </Button>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-3xl sm:text-4xl font-bold mb-2">
+                    <span className="bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">
+                      {localStorage.getItem(`trees_planted_${user?.id}`) || 0}
+                    </span>
+                  </div>
+                  <p className={`text-sm ${themeColors.text.secondary}`}>
+                    {parseInt(localStorage.getItem(`trees_planted_${user?.id}`) || 0) === 0 ? 'Start your journey!' : 
+                     `${localStorage.getItem(`trees_planted_${user?.id}`) || 0} trees planted so far!`}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -1834,9 +1988,9 @@ const Dashboard = () => {
                 </div>
 
                 {/* Stats Sidebar */}
-                <div className="space-y-4">
-                  <Card className={`${themeColors.cardVariants.primary} border-0`}>
-                    <CardContent className="p-6 text-center">
+                <div className="flex flex-col h-full gap-4">
+                  <Card className={`${themeColors.cardVariants.primary} border-0 flex-1`}>
+                    <CardContent className="p-6 text-center h-full flex flex-col justify-center">
                       <div
                         className={`w-16 h-16 bg-gradient-to-br ${premiumGradients.primary} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm`}
                       >
@@ -1858,8 +2012,8 @@ const Dashboard = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className={`${themeColors.cardVariants.accent} border-0`}>
-                    <CardContent className="p-6 text-center">
+                  <Card className={`${themeColors.cardVariants.accent} border-0 flex-1`}>
+                    <CardContent className="p-6 text-center h-full flex flex-col justify-center">
                       <div
                         className={`w-16 h-16 bg-gradient-to-br ${premiumGradients.accent} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm`}
                       >

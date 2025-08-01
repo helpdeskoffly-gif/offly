@@ -644,8 +644,141 @@ export const AntiTodoList = ({ userId }) => {
                 <div className={`absolute inset-0 bg-gradient-to-r ${category.gradient} opacity-2 rounded-3xl`}></div>
                 <div className={`absolute inset-[1px] ${themeColors.card} rounded-3xl`}></div>
                 
-                <CardContent className="relative z-10 p-8">
-                  <div className="flex flex-col lg:flex-row gap-6">
+                <CardContent className="relative z-10 p-6 lg:p-8">
+                  {/* Mobile Layout - Redesigned */}
+                  <div className="lg:hidden space-y-6">
+                    {/* Icon and Title Section */}
+                    <div className="flex items-start gap-4">
+                      <div className={`w-16 h-16 bg-gradient-to-br ${category.gradient} rounded-2xl flex items-center justify-center shadow-lg shadow-current/20 flex-shrink-0 group-hover:scale-105 transition-transform duration-300`}>
+                        <IconComponent className="w-8 h-8 text-white drop-shadow-sm" />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`text-xl font-bold ${themeColors.text.primary} leading-relaxed group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-300 mb-3`}>
+                          {item.content.replace(/\(.*?\)\s*/, '')}
+                        </h3>
+                        
+                        {/* Status and Time Row */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Badge className={`${config.color} px-4 py-2 text-sm font-semibold border backdrop-blur-sm rounded-xl`}>
+                              {config.label}
+                            </Badge>
+                            <div className={`flex items-center gap-2 ${themeColors.text.muted} px-3 py-2 rounded-xl bg-white/5`}>
+                              <Clock className="w-4 h-4" />
+                              <span className="text-sm">{item.content.match(/\((.*?)\)/)?.[1] || '15 min'}</span>
+                            </div>
+                          </div>
+                          
+                          {/* Share button for completed items */}
+                          {item.status === 'completed' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleShare(item)}
+                              className={`${themeColors.text.muted} hover:${themeColors.text.primary} transition-all duration-300 h-10 w-10 rounded-xl backdrop-blur-sm hover:bg-white/10 hover:scale-110`}
+                              title="Share to Community"
+                            >
+                              <Share2 className="w-5 h-5" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Category Badge */}
+                    <div className="flex justify-start">
+                      <Badge className={`bg-gradient-to-r ${category.gradient} text-white px-4 py-2 rounded-xl font-medium shadow-sm text-sm`}>
+                        {category.name}
+                      </Badge>
+                    </div>
+
+                    {/* Action Buttons - Mobile */}
+                    <div className="space-y-3">
+                      {item.status === 'not started' && (
+                        <Button
+                          onClick={() => handleItemAction(item.id, 'ongoing')}
+                          disabled={loadingItems.has(item.id)}
+                          className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white px-6 py-4 h-14 rounded-2xl font-semibold transition-all duration-300 w-full text-base`}
+                        >
+                          {loadingItems.has(item.id) ? (
+                            <>
+                              <Zap className="w-5 h-5 mr-3 animate-pulse" />
+                              Starting...
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-5 h-5 mr-3" />
+                              Start Activity
+                            </>
+                          )}
+                        </Button>
+                      )}
+
+                      {item.status === 'ongoing' && (
+                        <div className="space-y-3">
+                          <Button
+                            onClick={() => handleItemAction(item.id, 'completed')}
+                            disabled={loadingItems.has(item.id)}
+                            className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white px-6 py-4 h-14 rounded-2xl font-semibold transition-all duration-300 w-full text-base`}
+                          >
+                            {loadingItems.has(item.id) ? (
+                              <>
+                                <CheckCircle className="w-5 h-5 mr-3 animate-pulse" />
+                                Completing...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-5 h-5 mr-3" />
+                                Complete Activity
+                              </>
+                            )}
+                          </Button>
+                          
+                          <Button
+                            onClick={() => handleItemAction(item.id, 'stopped')}
+                            disabled={loadingItems.has(item.id)}
+                            className={`bg-gradient-to-r ${premiumGradients.tertiary} hover:shadow-lg hover:scale-105 text-white px-6 py-4 h-14 rounded-2xl font-semibold transition-all duration-300 w-full text-base`}
+                          >
+                            {loadingItems.has(item.id) ? (
+                              <>
+                                <Square className="w-5 h-5 mr-3 animate-pulse" />
+                                Stopping...
+                              </>
+                            ) : (
+                              <>
+                                <Square className="w-5 h-5 mr-3" />
+                                Stop Activity
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
+
+                      {(item.status === 'completed' || item.status === 'stopped') && (
+                        <div className="space-y-3">
+                          <div className={`bg-gradient-to-r ${premiumGradients.tertiary} px-6 py-4 rounded-2xl flex items-center justify-center h-14 font-semibold text-white shadow-lg`}>
+                            <CheckCircle className="w-5 h-5 mr-3" />
+                            {item.status === 'completed' ? 'Completed' : 'Stopped'}
+                          </div>
+                          
+                          {item.status === 'stopped' && (
+                            <Button
+                              onClick={() => handleItemAction(item.id, 'ongoing')}
+                              disabled={loadingItems.has(item.id)}
+                              className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white h-14 px-6 rounded-2xl transition-all duration-300 w-full text-base font-semibold`}
+                            >
+                              <Play className="w-5 h-5 mr-3" />
+                              Resume Activity
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Desktop Layout */}
+                  <div className="hidden lg:flex flex-col lg:flex-row gap-6">
                     {/* Icon and Content Section */}
                     <div className="flex-1 space-y-4">
                       <div className="flex items-start gap-4">
@@ -697,7 +830,7 @@ export const AntiTodoList = ({ userId }) => {
                     </div>
 
                     {/* Enhanced Action Buttons */}
-                    <div className="flex flex-row lg:flex-col gap-3 lg:w-auto w-full">
+                    <div className="flex flex-col gap-3 lg:w-auto w-full">
                       {item.status === 'not started' && (
                         <Button
                           onClick={() => handleItemAction(item.id, 'ongoing')}
@@ -759,8 +892,8 @@ export const AntiTodoList = ({ userId }) => {
                       )}
 
                       {(item.status === 'completed' || item.status === 'stopped') && (
-                        <div className="flex gap-3 w-full lg:w-auto">
-                          <div className={`bg-gradient-to-r ${premiumGradients.tertiary} px-4 py-2 rounded-lg flex items-center justify-center h-10 font-medium text-white shadow-lg flex-1 lg:min-w-[100px]`}>
+                        <div className="space-y-2 w-full lg:w-auto">
+                          <div className={`bg-gradient-to-r ${premiumGradients.tertiary} px-4 py-2 rounded-lg flex items-center justify-center h-10 font-medium text-white shadow-lg w-full lg:min-w-[100px]`}>
                             <CheckCircle className="w-4 h-4 mr-2" />
                             {item.status === 'completed' ? 'Completed' : 'Stopped'}
                           </div>
@@ -769,9 +902,10 @@ export const AntiTodoList = ({ userId }) => {
                             <Button
                               onClick={() => handleItemAction(item.id, 'ongoing')}
                               disabled={loadingItems.has(item.id)}
-                              className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white h-10 px-4 rounded-lg transition-all duration-300 flex-1 lg:min-w-[80px]`}
+                              className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white h-10 px-4 rounded-lg transition-all duration-300 w-full lg:min-w-[100px]`}
                             >
-                              <Play className="w-4 h-4" />
+                              <Play className="w-4 h-4 mr-2" />
+                              Resume
                             </Button>
                           )}
                         </div>
