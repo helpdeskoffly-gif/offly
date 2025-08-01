@@ -10,8 +10,10 @@ import { Input } from "./ui/input";
 import { Checkbox } from "./ui/checkbox";
 import { Label } from "./ui/label";
 import { ProfileCompletionModal } from "./ProfileCompletionModal";
+import { WaitlistSection } from "./WaitlistSection";
+import { UserLimitBanner } from "./UserLimitBanner";
 import { supabase, supabaseHelpers } from "../supabase";
-import { createSignupUser, createActiveUser } from "../services/database";
+import { createSignupUser, createActiveUser, getUserCount, debugSupabaseConnection } from "../services/database";
 import { 
   Eye, 
   EyeOff, 
@@ -26,7 +28,9 @@ import {
   Globe,
   Zap,
   X,
-  ChevronDown
+  ChevronDown,
+  UserX,
+  Users
 } from "lucide-react";
 
 
@@ -46,6 +50,9 @@ export function Auth() {
   const [successMessage, setSuccessMessage] = useState("");
   const [formLoading, setFormLoading] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [userLimitReached, setUserLimitReached] = useState(false);
+  const [showWaitlist, setShowWaitlist] = useState(false);
+  const [userCount, setUserCount] = useState(0);
 
   const [activeTab, setActiveTab] = useState("signin");
 
@@ -84,6 +91,56 @@ export function Auth() {
       ? "bg-slate-800/50 border-slate-700/50 focus:border-violet-400"
       : "bg-gradient-to-br from-violet-50/50 via-white/50 to-purple-50/50 border-violet-300/50 focus:border-violet-500",
   };
+
+  // Check user count limit on component mount
+  useEffect(() => {
+    const checkUserLimit = async () => {
+      try {
+        console.log('Auth: Starting user limit check...');
+        
+        // Debug Supabase connection first
+        debugSupabaseConnection();
+        
+        console.log('Auth: Checking user count...');
+        const result = await getUserCount();
+        console.log('Auth: User count result:', result);
+        if (result.success) {
+          setUserCount(result.count);
+          console.log(`Auth: Current user count: ${result.count}`);
+          if (result.count >= 4) {
+            console.log('Auth: User limit reached, setting userLimitReached to true');
+            setUserLimitReached(true);
+          } else {
+            console.log('Auth: User limit not reached');
+            setUserLimitReached(false);
+          }
+        } else {
+          console.error('Auth: Failed to get user count:', result.error);
+          // For testing purposes, assume we're at capacity if there's an error
+          console.log('Auth: Assuming capacity reached due to error');
+          setUserLimitReached(true);
+          setUserCount(4);
+        }
+      } catch (error) {
+        console.error("Auth: Error checking user count:", error);
+        // For testing purposes, assume we're at capacity if there's an error
+        setUserLimitReached(true);
+        setUserCount(4);
+      }
+    };
+    
+    checkUserLimit();
+  }, []);
+
+  // Debug log for render state
+  useEffect(() => {
+    console.log('Auth: Render state update:', { 
+      userLimitReached, 
+      isSignUp, 
+      userCount,
+      showLimitMessage: userLimitReached && isSignUp 
+    });
+  }, [userLimitReached, isSignUp, userCount]);
 
   useEffect(() => {
     if (!loading && user) {
@@ -266,6 +323,13 @@ export function Auth() {
       setFormLoading(true);
       setError("");
 
+      // Check user limit for sign-up if it's a new user
+      if (isSignUp && userLimitReached) {
+        setError("User limit reached. Please join the waitlist instead.");
+        setFormLoading(false);
+        return;
+      }
+
       const { data, error } = await supabaseHelpers.signInWithGoogle();
 
       if (error) {
@@ -293,11 +357,25 @@ export function Auth() {
       return;
     }
 
+    // Check user limit for sign-up
+    if (isSignUp && userLimitReached) {
+      setError("User limit reached. Please join the waitlist instead.");
+      return;
+    }
+
     try {
       setFormLoading(true);
       setError("");
 
       if (isSignUp) {
+        // Double-check user count before creating new account
+        const countResult = await getUserCount();
+        if (countResult.success && countResult.count >= 4) {
+          setUserLimitReached(true);
+          setError("User limit reached. Please join the waitlist instead.");
+          setFormLoading(false);
+          return;
+        }
         // Sign up with email/password
         const { data, error } = await supabase.auth.signUp({
           email: email,
@@ -465,10 +543,21 @@ export function Auth() {
 
       {/* Main Content */}
       <div className="relative z-10 flex items-center justify-center min-h-[calc(100vh-120px)] px-4 lg:px-6">
-        <div className="w-full max-w-6xl mx-auto flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+        <div className="w-full max-w-6xl mx-auto space-y-8">
           
-          {/* Left Side - Features (Hidden on mobile) */}
-          <div className="hidden lg:block space-y-8 w-full">
+          {/* User Limit Banner - Above everything */}
+          <UserLimitBanner 
+            userLimitReached={userLimitReached}
+            isSignUp={isSignUp}
+            setIsSignUp={setIsSignUp}
+            setActiveTab={setActiveTab}
+            setShowWaitlist={setShowWaitlist}
+          />
+
+          <div className="flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            
+            {/* Left Side - Features (Hidden on mobile) */}
+            <div className="hidden lg:block space-y-8 w-full">
             <div ref={titleRef} className="space-y-4">
               <h1 className={`text-4xl lg:text-5xl font-bold ${themeColors.text.primary} leading-tight`}>
                 {isSignUp ? "Join the Community" : "Welcome Back"}
@@ -593,7 +682,10 @@ export function Auth() {
                   </form>
                 ) : (
                   <>
-                    <form onSubmit={handleEmailPasswordAuth} className="space-y-6">
+                    {/* Hide form if user limit reached and trying to sign up */}
+                    {!(userLimitReached && isSignUp) && (
+                      <>
+                        <form onSubmit={handleEmailPasswordAuth} className="space-y-6">
                       <div className="space-y-2">
                         <Label htmlFor="email" className={`${themeColors.text.secondary} text-sm font-medium`}>Email</Label>
                         <div className="relative">
@@ -700,7 +792,7 @@ export function Auth() {
                         type="button"
                         variant="outline"
                         onClick={handleGoogleSignIn}
-                        disabled={formLoading}
+                        disabled={formLoading || (isSignUp && userLimitReached)}
                         className={`w-full h-14 border-2 ${themeColors.text.secondary} hover:${themeColors.text.primary} transition-all duration-300 rounded-xl text-base mobile-touch-target`}
                       >
                         <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
@@ -712,6 +804,8 @@ export function Auth() {
                         Continue with Google
                       </Button>
                     </div>
+                      </>
+                    )}
 
                     <div className="text-center pt-2">
                       <button
@@ -730,8 +824,54 @@ export function Auth() {
               </div>
             </Card>
           </div>
+          </div>
         </div>
       </div>
+
+      {/* Waitlist Modal */}
+      {showWaitlist && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-purple-200/20 dark:border-purple-800/20">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-200/50 dark:border-slate-700/50 bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-violet-500 rounded-full flex items-center justify-center">
+                    <Heart className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Join Our Waitlist</h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Be first to know when we expand</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowWaitlist(false)}
+                  className="p-2 hover:bg-gray-200/50 dark:hover:bg-slate-800/50 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 via-violet-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <Users className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  Thanks for your interest! 🌱
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                  We're building something special and would love to have you join us when we're ready to welcome more members.
+                </p>
+              </div>
+              
+              <WaitlistSection />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Profile Modal */}
       {showProfileModal && (

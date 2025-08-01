@@ -10,6 +10,7 @@ import AuthTest from "./components/AuthTest";
 import { Loading } from "./components/Loading";
 import SupabaseErrorBoundary from "./components/SupabaseErrorBoundary";
 import TermsAndConditions from "./components/TermsAndConditions";
+import { WaitlistPage } from "./components/WaitlistPage";
 
 function App() {
   const { loading } = useAuth();
@@ -32,6 +33,7 @@ function App() {
             <Route path="/auth-test" element={<AuthTest />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/waitlist" element={<WaitlistPage />} />
           </Routes>
         </Router>
       </ThemeProvider>

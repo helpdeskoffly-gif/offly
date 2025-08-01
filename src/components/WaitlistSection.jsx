@@ -7,6 +7,7 @@ import { Card } from "./ui/Card";
 import { addToWaitlist } from "../services/database";
 
 export function WaitlistSection() {
+  console.log("WaitlistSection rendered");
   const { theme } = useTheme();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState(""); // '', 'loading', 'success', 'error'
