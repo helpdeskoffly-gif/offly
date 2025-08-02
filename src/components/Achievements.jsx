@@ -59,7 +59,6 @@ function Achievements() {
     streak: { name: 'Streaks', icon: Flame, color: 'from-orange-500 to-red-500', bgColor: 'bg-orange-500/10' },
     wellness: { name: 'Wellness', icon: Heart, color: 'from-green-500 to-emerald-500', bgColor: 'bg-green-500/10' },
     social: { name: 'Social', icon: Users, color: 'from-purple-500 to-violet-500', bgColor: 'bg-purple-500/10' },
-    plant: { name: 'Garden', icon: Sprout, color: 'from-emerald-500 to-teal-500', bgColor: 'bg-emerald-500/10' },
     timing: { name: 'Consistency', icon: Clock, color: 'from-amber-500 to-yellow-500', bgColor: 'bg-amber-500/10' }
   };
 

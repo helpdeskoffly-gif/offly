@@ -23,13 +23,6 @@ INSERT INTO achievement_definitions (id, name, description, points_reward, categ
   ('antitodo_15', 'Mindfulness Master', 'Complete 15 anti-todo items', 75, 'wellness', 15, 'Infinity'),
   ('antitodo_30', 'Zen Warrior', 'Complete 30 anti-todo items', 150, 'wellness', 30, 'Compass'),
   
-  -- Plant achievements
-  ('first_plant', 'Plant Parent', 'Grow your first plant', 15, 'plant', 1, 'Sprout'),
-  ('plant_level_2', 'Growing Green', 'Reach plant level 2', 25, 'plant', 2, 'Leaf'),
-  ('plant_level_3', 'Garden Guru', 'Reach plant level 3', 50, 'plant', 3, 'TreePine'),
-  ('plant_level_4', 'Master Gardener', 'Reach plant level 4', 100, 'plant', 4, 'Trees'),
-  ('plant_complete', 'Harvest Master', 'Complete a full plant lifecycle', 200, 'plant', 1, 'Mountain'),
-  
   -- Timing/Consistency achievements
   ('daily_consistency', 'Daily Devotion', 'Check in for 5 consecutive days', 30, 'timing', 5, 'Calendar'),
   ('weekly_consistency', 'Weekly Warrior', 'Complete at least 5 check-ins in a week', 40, 'timing', 5, 'CalendarDays'),
@@ -83,19 +76,6 @@ BEGIN
                 current_progress := COALESCE(user_analytics_record.current_streak, 0);
             WHEN 'wellness' THEN
                 current_progress := COALESCE(user_analytics_record.completedantitodos, 0);
-            WHEN 'plant' THEN
-                -- For plant achievements, we need to check different metrics
-                IF achievement_record.achievement_id LIKE '%level%' THEN
-                    -- Get max plant level from user_plants
-                    SELECT COALESCE(MAX(growth_level), 0) INTO current_progress
-                    FROM user_plants
-                    WHERE user_id = user_uuid;
-                ELSE
-                    -- Count of plants owned
-                    SELECT COUNT(*) INTO current_progress
-                    FROM user_plants
-                    WHERE user_id = user_uuid;
-                END IF;
             WHEN 'timing' THEN
                 -- For timing achievements, use appropriate metric
                 IF achievement_record.achievement_id LIKE '%daily%' OR achievement_record.achievement_id LIKE '%weekly%' THEN
@@ -161,6 +141,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- 3. Create trigger to automatically update achievement progress after checkins
+-- Drop existing trigger first, then function
+DROP TRIGGER IF EXISTS update_achievements_after_checkin ON checkins;
 DROP FUNCTION IF EXISTS trigger_update_achievements_after_checkin();
 
 CREATE OR REPLACE FUNCTION trigger_update_achievements_after_checkin()
@@ -172,9 +154,6 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
--- Drop existing trigger if it exists
-DROP TRIGGER IF EXISTS update_achievements_after_checkin ON checkins;
 
 -- Create new trigger
 CREATE TRIGGER update_achievements_after_checkin

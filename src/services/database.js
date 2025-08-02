@@ -1498,10 +1498,7 @@ export const getAllAchievementDefinitions = () => {
     antitodo_5: { name: 'Wellness Enthusiast', points_reward: 25, category: 'wellness' },
     antitodo_15: { name: 'Mindfulness Master', points_reward: 50, category: 'wellness' },
     antitodo_30: { name: 'Zen Warrior', points_reward: 100, category: 'wellness' },
-    wellness_week: { name: 'Weekly Wellness', points_reward: 20, category: 'timing' },
-    first_plant: { name: 'Plant Parent', points_reward: 15, category: 'plant' },
-    plant_level_5: { name: 'Green Thumb', points_reward: 30, category: 'plant' },
-    plant_complete: { name: 'Harvest Master', points_reward: 50, category: 'plant' }
+    wellness_week: { name: 'Weekly Wellness', points_reward: 20, category: 'timing' }
   };
 };
 
