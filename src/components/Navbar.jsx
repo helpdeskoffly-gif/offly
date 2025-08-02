@@ -60,18 +60,11 @@ export function Navbar() {
       console.log("Navbar: Starting sign out process");
       setIsDropdownOpen(false);
       await signOut();
-      console.log("Navbar: Sign out completed, navigating to home");
-      navigate("/");
-      
-      // Force a page reload after a short delay to ensure all caches are cleared
-      setTimeout(() => {
-        console.log("Navbar: Force reloading page to clear all caches");
-        window.location.reload();
-      }, 500);
+      console.log("Navbar: Sign out completed, navigating to auth");
+      navigate("/auth");
     } catch (error) {
       console.error("Error during sign out:", error);
-      // Still navigate to home even if there's an error
-      navigate("/");
+      navigate("/auth");
     }
   };
 

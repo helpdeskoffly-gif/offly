@@ -147,107 +147,9 @@ export function Auth() {
   }, [userLimitReached, isSignUp, userCount]);
 
   useEffect(() => {
-    if (!loading && user) {
-      console.log("Auth: User authenticated, navigating to dashboard...", { userId: user.id, loading });
-      // Add a small delay to ensure router is ready
-      const timer = setTimeout(() => {
-        console.log("Auth: Executing navigation to dashboard");
-        navigate("/dashboard", { replace: true });
-      }, 200); // Slightly longer delay
-      return () => clearTimeout(timer);
-    }
-  }, [user, loading, navigate]);
-
-  // Additional safety mechanism - navigate even if userProfile is still loading
-  useEffect(() => {
-    if (user && !loading) {
-      console.log("Auth: Safety navigation check - user exists and not loading");
-      const safetyTimer = setTimeout(() => {
-        if (user) {
-          console.log("Auth: Safety navigation triggered");
-          navigate("/dashboard", { replace: true });
-        }
-      }, 3000); // Wait 3 seconds then force navigation
-      return () => clearTimeout(safetyTimer);
-    }
-  }, [user, loading, navigate]);
-
-  // Handle OAuth callback with improved detection
-  useEffect(() => {
-    const handleAuthCallback = async () => {
-      try {
-        console.log("Auth: Checking for OAuth callback...");
-        
-        // Check URL parameters for OAuth callback indicators
-        const urlParams = new URLSearchParams(window.location.search);
-        const hasOAuthParams = urlParams.has('access_token') || urlParams.has('code') || window.location.hash.includes('access_token');
-        
-        if (hasOAuthParams) {
-          console.log("Auth: OAuth callback detected in URL parameters");
-        }
-        
-        // Always check for session, regardless of URL params
-        const { data, error } = await supabase.auth.getSession();
-        console.log("Auth: OAuth callback session check:", { 
-          hasSession: !!data.session, 
-          hasUser: !!data.session?.user,
-          currentUser: !!user,
-          error: error?.message
-        });
-        
-        if (data.session?.user && !user) {
-          console.log("Auth: Found session user, processing...", data.session.user.id);
-          
-          // Check if this is a new user
-          const { data: existingUser, error: userCheckError } = await supabase
-            .from("users")
-            .select("*")
-            .eq("id", data.session.user.id)
-            .single();
-
-          console.log("Auth: User check result:", { 
-            exists: !!existingUser, 
-            error: userCheckError?.code 
-          });
-
-          if (!existingUser && userCheckError?.code === 'PGRST116') {
-            console.log("Auth: New user detected, creating signup user...");
-            // New user - create records and show profile completion
-            await createSignupUser(
-              data.session.user.id,
-              data.session.user.email,
-              data.session.user.user_metadata?.full_name ||
-                data.session.user.email,
-              { termsAccepted },
-            );
-            setShowProfileModal(true);
-          } else {
-            console.log("Auth: Existing user, navigating to dashboard...");
-            // Existing user, navigate to dashboard after a short delay
-            setTimeout(() => {
-              navigate("/dashboard", { replace: true });
-            }, 1000);
-          }
-        } else if (data.session?.user && user) {
-          console.log("Auth: User already loaded, navigating to dashboard...");
-          // User is already loaded, just navigate
-          setTimeout(() => {
-            navigate("/dashboard", { replace: true });
-          }, 500);
-        }
-      } catch (error) {
-        console.error("Auth: Error in OAuth callback handling:", error);
-      }
-    };
-
-    // Run immediately and also when user state changes
-    handleAuthCallback();
-  }, [user, termsAccepted, navigate]);
-
-  useEffect(() => {
-    console.log("Auth: Component mounted, checking immediate auth state...");
+    console.log("Auth: Component mounted, checking for URL errors...");
     
-    // Check for error parameters in URL
+    // Only check for error parameters in URL
     const urlParams = new URLSearchParams(window.location.search);
     const errorParam = urlParams.get('error');
     
@@ -257,29 +159,15 @@ export function Auth() {
       // Clear the error from URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-    
-    // Immediate check for existing authentication
-    const checkImmediateAuth = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (session?.user && !error) {
-          console.log("Auth: Found immediate session, redirecting to dashboard...", session.user.id);
-          navigate("/dashboard", { replace: true });
-          return;
-        }
-        
-        console.log("Auth: No immediate session found, continuing with auth flow");
-      } catch (err) {
-        console.error("Auth: Error checking immediate auth:", err);
-      }
-    };
-    
-    // Only check for immediate auth if there's no error parameter
-    if (!errorParam) {
-      checkImmediateAuth();
+  }, []); // Run only once on mount
+
+  // Simple redirect if user is authenticated - let useAuth handle all the complex logic
+  useEffect(() => {
+    if (user && !loading) {
+      console.log("Auth: User is authenticated, redirecting to dashboard");
+      navigate("/dashboard", { replace: true });
     }
-  }, [navigate]);
+  }, [user, loading, navigate]);
 
   // Enhanced GSAP animations with mobile considerations
   useEffect(() => {

@@ -1174,15 +1174,10 @@ const Dashboard = () => {
                 try {
                   setShowProfile(false);
                   await signOut();
-                  navigate("/");
-                  
-                  // Force a page reload after a short delay to ensure all caches are cleared
-                  setTimeout(() => {
-                    console.log("Dashboard: Force reloading page to clear all caches");
-                    window.location.reload();
-                  }, 500);
+                  navigate("/auth");
                 } catch (error) {
                   console.error("Error signing out:", error);
+                  navigate("/auth");
                 }
               }}
               className="w-full justify-start px-4 py-3 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-300 group"
