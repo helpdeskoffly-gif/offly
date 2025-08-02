@@ -32,49 +32,55 @@ export const useAuth = () => {
       console.log("Auth state change:", event, session?.user?.id);
 
       if (session?.user) {
-        // Prevent processing the same user session multiple times
-        if (lastProcessedUserId !== session.user.id) {
-          lastProcessedUserId = session.user.id;
-          await handleUserSession(session.user);
-        } else {
-          console.log("Skipping duplicate session for user:", session.user.id);
+        // For OAuth sign-ins, process the session immediately
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          console.log("useAuth: Processing user session from auth state change:", session.user.id);
+          
+          // Prevent processing the same user session multiple times
+          if (lastProcessedUserId !== session.user.id) {
+            lastProcessedUserId = session.user.id;
+            await handleUserSession(session.user);
+          } else {
+            console.log("useAuth: User already processed, just updating loading state");
+            setLoading(false);
+          }
         }
       } else {
         console.log("Auth state change: No session, clearing user state");
         lastProcessedUserId = null;
         setUserState(null);
         setUserProfileState(null);
-        setAnalyticsLoaded(false); // Reset analytics loaded state
+        setAnalyticsLoaded(false);
         setLoading(false);
       }
     });
 
-    // Then get initial session
+    // Then get initial session with simplified logic
     const getInitialSession = async () => {
       if (!mounted) return;
 
+      console.log("useAuth: Getting initial session...");
+      
       try {
-        const {
-          data: { session },
-          error,
-        } = await supabase.auth.getSession();
-
+        const { data, error } = await supabase.auth.getSession();
+        
         if (error) {
-          console.error("Error getting session:", error);
+          console.error("useAuth: Error getting initial session:", error);
           setLoading(false);
           return;
         }
-
-        if (session?.user) {
-          console.log("Initial session found:", session.user.id);
-          await handleUserSession(session.user);
+        
+        if (data.session?.user) {
+          console.log("useAuth: Initial session found:", data.session.user.id);
+          lastProcessedUserId = data.session.user.id;
+          await handleUserSession(data.session.user);
         } else {
-          console.log("No initial session");
+          console.log("useAuth: No initial session found");
           setAnalyticsLoaded(false);
           setLoading(false);
         }
       } catch (error) {
-        console.error("Session initialization error:", error);
+        console.error("useAuth: Session initialization error:", error);
         setAnalyticsLoaded(false);
         setLoading(false);
       }
@@ -113,6 +119,49 @@ export const useAuth = () => {
       // Set user immediately
       setUserState(supabaseUser);
       setLoading(false); // Set loading false immediately
+
+      // Ensure user exists in database (critical for OAuth users)
+      // But only if we're not on the OAuth callback page (to prevent duplicate creation)
+      const isOAuthCallback = window.location.pathname === '/auth/callback' || 
+                              window.location.search.includes('code=') ||
+                              window.location.hash.includes('access_token');
+                              
+      if (!isOAuthCallback) {
+        try {
+          console.log("Ensuring user exists in database...");
+          const { data: existingUser, error: userCheckError } = await supabase
+            .from("users")
+            .select("*")
+            .eq("id", supabaseUser.id)
+            .single();
+
+          if (userCheckError && userCheckError.code === 'PGRST116') {
+            console.log("User not found in database, creating...");
+            
+            // Import and use createSignupUser
+            const { createSignupUser } = await import('../services/database');
+            
+            try {
+              await createSignupUser(
+                supabaseUser.id,
+                supabaseUser.email,
+                supabaseUser.user_metadata?.full_name || supabaseUser.email
+              );
+              console.log("User created successfully in database");
+            } catch (createError) {
+              console.error("Failed to create user in database:", createError);
+              // Continue anyway, the user session is still valid
+            }
+          } else if (existingUser) {
+            console.log("User already exists in database");
+          }
+        } catch (dbError) {
+          console.error("Database check/creation failed:", dbError);
+          // Continue anyway, the session is still valid
+        }
+      } else {
+        console.log("OAuth callback detected, skipping user creation in useAuth (handled by callback handler)");
+      }
 
       // Load analytics and full profile in the background
       if (!analyticsLoaded) {
@@ -156,14 +205,28 @@ export const useAuth = () => {
     try {
       console.log("Background: Initializing analytics for user:", userId);
       
-      // Initialize analytics
-      await initializeOrUpdateUserAnalytics(userId);
+      // Initialize analytics - wrap in try/catch to proceed even if this fails
+      try {
+        await initializeOrUpdateUserAnalytics(userId);
+      } catch (analyticInitError) {
+        console.error("Error initializing analytics, continuing anyway:", analyticInitError);
+      }
       
-      // Fetch analytics and profile data
-      const [analyticsResult, userProfileResult] = await Promise.all([
-        getUserAnalytics(userId),
-        supabase.from('users').select('username, hobbies, avatar_url, full_name, bio').eq('id', userId).single(),
-      ]);
+      // Fetch analytics and profile data - use individual try/catch to handle failures gracefully
+      let analyticsResult = { data: null, error: null };
+      let userProfileResult = { data: null, error: null };
+      
+      try {
+        analyticsResult = await getUserAnalytics(userId);
+      } catch (analyticsError) {
+        console.error("Failed to load analytics, continuing anyway:", analyticsError);
+      }
+      
+      try {
+        userProfileResult = await supabase.from('users').select('username, hobbies, avatar_url, full_name, bio').eq('id', userId).single();
+      } catch (profileError) {
+        console.error("Failed to load user profile, continuing anyway:", profileError);
+      }
 
       let userHobbies = [];
       let userUsername = user?.user_metadata?.full_name || user?.email || "User";

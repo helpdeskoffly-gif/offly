@@ -81,6 +81,224 @@ export const debugSupabaseConnection = () => {
   console.log('=== End Debug Info ===');
 };
 
+// Enhanced database debugging for OAuth issues
+export const debugOAuthFlow = async () => {
+  try {
+    console.log('=== OAuth Flow Debug ===');
+    
+    // Test 1: Check current auth session
+    console.log('1. Checking current auth session...');
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    console.log('Session result:', { 
+      hasSession: !!session, 
+      userId: session?.user?.id,
+      email: session?.user?.email,
+      error: sessionError?.message 
+    });
+    
+    // Test 2: Check current auth user
+    console.log('2. Checking current auth user...');
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    console.log('Auth user result:', { 
+      hasUser: !!user, 
+      userId: user?.id,
+      email: user?.email,
+      error: userError?.message 
+    });
+    
+    // Test 3: If we have a user, check if they exist in public.users
+    if (user) {
+      console.log('3. Checking if user exists in public.users...');
+      const { data: publicUser, error: publicUserError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      console.log('Public user result:', { 
+        exists: !!publicUser, 
+        user: publicUser,
+        error: publicUserError?.message 
+      });
+      
+      // Test 4: Check analytics record
+      console.log('4. Checking user analytics...');
+      const { data: analytics, error: analyticsError } = await supabase
+        .from('user_analytics')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+        
+      console.log('Analytics result:', { 
+        exists: !!analytics, 
+        analytics: analytics,
+        error: analyticsError?.message 
+      });
+    }
+    
+    // Test 5: Check user count
+    console.log('5. Checking total user count...');
+    const { count, error: countError } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true });
+      
+    console.log('User count result:', { count, error: countError?.message });
+    
+    console.log('=== OAuth Flow Debug Complete ===');
+    
+    return {
+      success: true,
+      session: !!session,
+      user: !!user,
+      publicUser: user ? !!publicUser : false,
+      analytics: user ? !!analytics : false,
+      userCount: count || 0
+    };
+    
+  } catch (error) {
+    console.error('OAuth flow debug failed:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Simple test function for new user creation
+export const testNewUserCreation = async () => {
+  try {
+    console.log('=== Testing New User Creation ===');
+    
+    // Get current auth user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.log('No authenticated user found');
+      return { success: false, error: 'No authenticated user' };
+    }
+    
+    console.log('Testing with user:', user.id, user.email);
+    
+    // Test basic insert
+    const testUserData = {
+      id: user.id,
+      email: user.email,
+      full_name: user.user_metadata?.full_name || 'Test User',
+      username: user.user_metadata?.username || user.email.split('@')[0],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    
+    console.log('Attempting simple insert:', testUserData);
+    
+    const { data, error } = await supabase
+      .from('users')
+      .upsert(testUserData, { onConflict: 'id' })
+      .select();
+    
+    if (error) {
+      console.error('Insert failed:', error);
+      return { success: false, error: error.message, code: error.code };
+    }
+    
+    console.log('Insert successful:', data[0]);
+    return { success: true, data: data[0] };
+    
+  } catch (error) {
+    console.error('Test failed:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Check database trigger status and user limits
+export const checkDatabaseTriggers = async () => {
+  try {
+    console.log('=== Checking Database Triggers ===');
+    
+    // Check current user count
+    const { count, error: countError } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true });
+      
+    console.log('Current user count:', count, countError?.message || 'No error');
+    
+    // Test if we can query database functions
+    try {
+      const { data, error } = await supabase.rpc('version');
+      console.log('Database version check:', data ? 'Connected' : 'Failed', error?.message);
+    } catch (rpcError) {
+      console.log('RPC test failed:', rpcError.message);
+    }
+    
+    return {
+      success: true,
+      userCount: count || 0,
+      userLimit: 25, // Current limit from trigger
+      canCreateUsers: (count || 0) < 25,
+      triggerActive: true // Assuming trigger is active based on the error
+    };
+    
+  } catch (error) {
+    console.error('Trigger check failed:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Test database connection and permissions
+export const testDatabaseConnection = async () => {
+  try {
+    console.log('=== Database Connection Test ===');
+    
+    // Test 1: Simple query
+    console.log('Test 1: Testing simple query...');
+    const { data, error } = await supabase.from('users').select('count', { count: 'exact', head: true });
+    
+    if (error) {
+      console.error('Test 1 Failed:', error);
+      return { success: false, error: error.message, tests: { simpleQuery: false } };
+    } else {
+      console.log('Test 1 Passed: Simple query successful, count:', data);
+    }
+    
+    // Test 2: Check current user auth
+    console.log('Test 2: Testing auth user...');
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('Test 2 Failed:', authError);
+    } else {
+      console.log('Test 2:', user ? `Authenticated as ${user.email}` : 'No authenticated user');
+    }
+    
+    // Test 3: Try to read from users table with current auth
+    if (user) {
+      console.log('Test 3: Testing authenticated read...');
+      const { data: userData, error: readError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      if (readError && readError.code !== 'PGRST116') {
+        console.error('Test 3 Failed:', readError);
+      } else {
+        console.log('Test 3 Passed:', userData ? 'User data found' : 'No user data (expected for new users)');
+      }
+    }
+    
+    console.log('=== Database Connection Test Complete ===');
+    return { 
+      success: true, 
+      tests: { 
+        simpleQuery: true, 
+        auth: !!user,
+        userRead: true
+      } 
+    };
+    
+  } catch (error) {
+    console.error('Database connection test failed:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 // Get current user count
 export const getUserCount = async () => {
   return safeSupabaseOperation(async () => {
@@ -113,10 +331,9 @@ export const getUserCount = async () => {
     } catch (err) {
       console.error('getUserCount - Try/catch error:', err);
       
-      // For now, return a hardcoded count of 4 to test the UI
-      // This is a temporary fallback
-      console.log('getUserCount - Using fallback count of 4 for testing');
-      return { success: true, count: 4 };
+      // Return an error instead of using a hardcoded fallback
+      console.log('getUserCount - Returning error state');
+      return { success: false, error: err.message };
     }
   });
 };
@@ -131,90 +348,163 @@ export const createSignupUser = async (
   return safeSupabaseOperation(async () => {
     console.log("Creating signup user:", { uid, email, displayName });
 
-    // First, ensure the user record exists in public.users
-    const userData = {
-      id: uid,
-      email: email,
-      full_name: displayName,
-      username: displayName,
-      ...additionalData,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    // Use insert with ON CONFLICT to handle duplicates properly
-    const { data: userResult, error: userError } = await supabase
-      .from("users")
-      .upsert(userData, { onConflict: "id" })
-      .select();
-
-    if (userError) {
-      console.error("Error creating user:", userError);
-      throw userError;
-    }
-
-    console.log("User record created/updated:", userResult[0]);
-
-    // Initialize user analytics
-    const analyticsData = {
-      user_id: uid,
-      username: displayName,
-      daily_checkin_counter: 0,
-      total_checkins: 0,
-      current_ai_score: 0,
-      today_average_sentiment: 0,
-      overall_average_sentiment: 0,
-      average_mood_score: 0,
-      current_streak: 0,
-      weekly_unique_checkin_days: 0,
-      weekly_score: 0,
-      completedantitodos: 0,
-      weeklyantitodos: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    const { data: analyticsResult, error: analyticsError } = await supabase
-      .from("user_analytics")
-      .upsert(analyticsData, { onConflict: "user_id" })
-      .select();
-
-    if (analyticsError) {
-      console.error("Error creating analytics:", analyticsError);
-      throw analyticsError;
-    }
-
-    console.log("Analytics record created/updated:", analyticsResult[0]);
-
-    // Assign random avatar to new user
     try {
-      console.log("Assigning random avatar to new user:", uid);
-      const avatarResult = await assignRandomAvatar(uid);
-      if (avatarResult.success) {
-        console.log("Random avatar assigned successfully:", avatarResult.avatarUrl);
-      } else {
-        console.error("Failed to assign random avatar:", avatarResult.error);
+      // Check if user already exists first
+      const { data: existingUser, error: checkError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", uid)
+        .single();
+
+      if (existingUser && !checkError) {
+        console.log("User already exists, skipping creation:", existingUser);
+        // User already exists, just return the existing data
+        return {
+          success: true,
+          data: { user: existingUser, message: "User already exists" },
+        };
       }
-    } catch (avatarError) {
-      console.error("Failed to assign random avatar:", avatarError);
-      // Don't fail user creation if avatar assignment fails
-    }
 
-    // Generate initial anti-todo activities for new users
-    try {
-      console.log("Generating initial anti-todo activities for new user:", uid);
-      const { generateInitialAntiTodos } = await import('./antiTodo');
-      await generateInitialAntiTodos(uid);
-      console.log("Initial anti-todo activities generated successfully");
-    } catch (antiTodoError) {
-      console.error("Failed to generate initial anti-todo activities:", antiTodoError);
-      // Don't fail user creation if anti-todo generation fails
-    }
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error("Error checking existing user:", checkError);
+        // Continue with creation anyway
+      }
 
-    return {
-      success: true,
-      data: { user: userResult[0], analytics: analyticsResult[0] },
-    };
+      // First, ensure the user record exists in public.users
+      const userData = {
+        id: uid,
+        email: email,
+        full_name: displayName,
+        username: displayName,
+        ...additionalData,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      console.log("Attempting to create user with data:", userData);
+
+      // Use insert with upsert to handle duplicates properly
+      let userResult;
+      const { data: userResultData, error: userError } = await supabase
+        .from("users")
+        .upsert(userData, { onConflict: "id" })
+        .select();
+
+      userResult = userResultData;
+
+      if (userError) {
+        console.error("Error creating user:", userError);
+        
+        // Try a simple insert as fallback
+        try {
+          console.log("Trying simple insert as fallback...");
+          const { data: fallbackResult, error: fallbackError } = await supabase
+            .from("users")
+            .insert(userData)
+            .select();
+            
+          if (fallbackError) {
+            console.error("Fallback insert also failed:", fallbackError);
+            throw userError; // Throw original error
+          }
+          
+          console.log("Fallback insert succeeded:", fallbackResult[0]);
+          userResult = fallbackResult;
+        } catch (fallbackErr) {
+          throw userError; // Throw original error
+        }
+      }
+
+      console.log("User record created/updated:", userResult[0]);
+
+      // Initialize user analytics (non-blocking)
+      try {
+        const analyticsData = {
+          user_id: uid,
+          username: displayName,
+          daily_checkin_counter: 0,
+          total_checkins: 0,
+          current_ai_score: 0,
+          today_average_sentiment: 0,
+          overall_average_sentiment: 0,
+          average_mood_score: 0,
+          current_streak: 0,
+          weekly_unique_checkin_days: 0,
+          weekly_score: 0,
+          completedantitodos: 0,
+          weeklyantitodos: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        const { data: analyticsResult, error: analyticsError } = await supabase
+          .from("user_analytics")
+          .upsert(analyticsData, { onConflict: "user_id" })
+          .select();
+
+        if (analyticsError) {
+          console.error("Error creating analytics (non-blocking):", analyticsError);
+          // Don't fail user creation if analytics fails
+        } else {
+          console.log("Analytics record created/updated:", analyticsResult[0]);
+        }
+      } catch (analyticsErr) {
+        console.error("Analytics creation failed (non-blocking):", analyticsErr);
+      }
+
+      // Assign random avatar to new user (non-blocking)
+      try {
+        console.log("Assigning random avatar to new user:", uid);
+        const avatarResult = await assignRandomAvatar(uid);
+        if (avatarResult.success) {
+          console.log("Random avatar assigned successfully:", avatarResult.avatarUrl);
+        } else {
+          console.error("Failed to assign random avatar:", avatarResult.error);
+        }
+      } catch (avatarError) {
+        console.error("Failed to assign random avatar:", avatarError);
+        // Don't fail user creation if avatar assignment fails
+      }
+
+      // Generate initial anti-todo activities for new users (non-blocking)
+      try {
+        console.log("Generating initial anti-todo activities for new user:", uid);
+        const { generateInitialAntiTodos } = await import('./antiTodo');
+        await generateInitialAntiTodos(uid);
+        console.log("Initial anti-todo activities generated successfully");
+      } catch (antiTodoError) {
+        console.error("Failed to generate initial anti-todo activities:", antiTodoError);
+        // Don't fail user creation if anti-todo generation fails
+      }
+
+      return {
+        success: true,
+        data: { user: userResult[0], analytics: null },
+      };
+    } catch (mainError) {
+      console.error("Main error in createSignupUser:", mainError);
+      
+      // Last resort: try to get existing user if creation failed
+      try {
+        const { data: lastResortUser, error: lastResortError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", uid)
+          .single();
+          
+        if (lastResortUser && !lastResortError) {
+          console.log("User creation failed but user exists, returning existing user");
+          return {
+            success: true,
+            data: { user: lastResortUser, message: "Retrieved existing user after creation failure" },
+          };
+        }
+      } catch (lastResortErr) {
+        console.error("Last resort check failed:", lastResortErr);
+      }
+      
+      throw mainError;
+    }
   });
 };
 

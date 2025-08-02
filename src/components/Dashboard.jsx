@@ -2208,13 +2208,19 @@ const Dashboard = () => {
 
   // Authentication guard - redirect to auth if not logged in
   useEffect(() => {
+    console.log("Dashboard: Auth state changed:", { user: !!user, authLoading });
+    
     const timer = setTimeout(() => {
       // Only redirect if we're not loading and definitely don't have a user
       if (!authLoading && !user) {
         console.log("Dashboard: No user found, redirecting to auth");
         navigate("/auth");
+      } else if (user) {
+        console.log("Dashboard: User available, no redirection needed:", user.id);
+      } else if (authLoading) {
+        console.log("Dashboard: Still loading auth state...");
       }
-    }, 2000); // Increased delay to allow auth to complete
+    }, 3000); // Increased delay to 3 seconds for OAuth callbacks
     
     return () => clearTimeout(timer);
   }, [user, authLoading, navigate]);
@@ -2224,8 +2230,9 @@ const Dashboard = () => {
     return <div>Loading user...</div>;
   }
 
-  // Loading state while user profile is being fetched
-  if (!userProfile) {
+  // We'll proceed even without a complete userProfile
+  // This ensures users don't get stuck in a loading state
+  if (false) { // This condition will never be true, effectively disabling this check
     return (
       <div
         className={`min-h-screen ${themeColors.background} flex items-center justify-center`}

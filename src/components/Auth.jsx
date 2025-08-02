@@ -12,8 +12,8 @@ import { Label } from "./ui/label";
 import { ProfileCompletionModal } from "./ProfileCompletionModal";
 import { WaitlistSection } from "./WaitlistSection";
 import { UserLimitBanner } from "./UserLimitBanner";
-import { supabase, supabaseHelpers } from "../supabase";
-import { createSignupUser, createActiveUser, getUserCount, debugSupabaseConnection } from "../services/database";
+import { supabase, supabaseHelpers, USER_CAPACITY } from "../supabase";
+import { createSignupUser, createActiveUser, getUserCount, debugSupabaseConnection, testDatabaseConnection, debugOAuthFlow, testNewUserCreation, checkDatabaseTriggers } from "../services/database";
 import { 
   Eye, 
   EyeOff, 
@@ -101,13 +101,17 @@ export function Auth() {
         // Debug Supabase connection first
         debugSupabaseConnection();
         
+        // Test database connection and permissions
+        const dbTest = await testDatabaseConnection();
+        console.log('Auth: Database test result:', dbTest);
+        
         console.log('Auth: Checking user count...');
         const result = await getUserCount();
         console.log('Auth: User count result:', result);
         if (result.success) {
           setUserCount(result.count);
-          console.log(`Auth: Current user count: ${result.count}`);
-          if (result.count >= 4) {
+          console.log(`Auth: Current user count: ${result.count}, capacity: ${USER_CAPACITY}`);
+          if (result.count >= USER_CAPACITY) {
             console.log('Auth: User limit reached, setting userLimitReached to true');
             setUserLimitReached(true);
           } else {
@@ -116,16 +120,16 @@ export function Auth() {
           }
         } else {
           console.error('Auth: Failed to get user count:', result.error);
-          // For testing purposes, assume we're at capacity if there's an error
-          console.log('Auth: Assuming capacity reached due to error');
-          setUserLimitReached(true);
-          setUserCount(4);
+          // Don't assume we're at capacity on error, let users continue
+          console.log('Auth: Error during user count check, defaulting to not at capacity');
+          setUserLimitReached(false);
+          setUserCount(0);
         }
       } catch (error) {
         console.error("Auth: Error checking user count:", error);
-        // For testing purposes, assume we're at capacity if there's an error
-        setUserLimitReached(true);
-        setUserCount(4);
+        // Don't assume we're at capacity on error, let users continue
+        setUserLimitReached(false);
+        setUserCount(0);
       }
     };
     
@@ -168,34 +172,114 @@ export function Auth() {
     }
   }, [user, loading, navigate]);
 
-  // Handle OAuth callback
+  // Handle OAuth callback with improved detection
   useEffect(() => {
     const handleAuthCallback = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      if (data.session?.user && !user) {
-        // Check if this is a new user
-        const { data: existingUser } = await supabase
-          .from("users")
-          .select("*")
-          .eq("id", data.session.user.id)
-          .single();
-
-        if (!existingUser) {
-          // New user - create records and show profile completion
-          await createSignupUser(
-            data.session.user.id,
-            data.session.user.email,
-            data.session.user.user_metadata?.full_name ||
-              data.session.user.email,
-            { termsAccepted },
-          );
-          setShowProfileModal(true);
+      try {
+        console.log("Auth: Checking for OAuth callback...");
+        
+        // Check URL parameters for OAuth callback indicators
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasOAuthParams = urlParams.has('access_token') || urlParams.has('code') || window.location.hash.includes('access_token');
+        
+        if (hasOAuthParams) {
+          console.log("Auth: OAuth callback detected in URL parameters");
         }
+        
+        // Always check for session, regardless of URL params
+        const { data, error } = await supabase.auth.getSession();
+        console.log("Auth: OAuth callback session check:", { 
+          hasSession: !!data.session, 
+          hasUser: !!data.session?.user,
+          currentUser: !!user,
+          error: error?.message
+        });
+        
+        if (data.session?.user && !user) {
+          console.log("Auth: Found session user, processing...", data.session.user.id);
+          
+          // Check if this is a new user
+          const { data: existingUser, error: userCheckError } = await supabase
+            .from("users")
+            .select("*")
+            .eq("id", data.session.user.id)
+            .single();
+
+          console.log("Auth: User check result:", { 
+            exists: !!existingUser, 
+            error: userCheckError?.code 
+          });
+
+          if (!existingUser && userCheckError?.code === 'PGRST116') {
+            console.log("Auth: New user detected, creating signup user...");
+            // New user - create records and show profile completion
+            await createSignupUser(
+              data.session.user.id,
+              data.session.user.email,
+              data.session.user.user_metadata?.full_name ||
+                data.session.user.email,
+              { termsAccepted },
+            );
+            setShowProfileModal(true);
+          } else {
+            console.log("Auth: Existing user, navigating to dashboard...");
+            // Existing user, navigate to dashboard after a short delay
+            setTimeout(() => {
+              navigate("/dashboard", { replace: true });
+            }, 1000);
+          }
+        } else if (data.session?.user && user) {
+          console.log("Auth: User already loaded, navigating to dashboard...");
+          // User is already loaded, just navigate
+          setTimeout(() => {
+            navigate("/dashboard", { replace: true });
+          }, 500);
+        }
+      } catch (error) {
+        console.error("Auth: Error in OAuth callback handling:", error);
       }
     };
 
+    // Run immediately and also when user state changes
     handleAuthCallback();
-  }, [user, termsAccepted]);
+  }, [user, termsAccepted, navigate]);
+
+  useEffect(() => {
+    console.log("Auth: Component mounted, checking immediate auth state...");
+    
+    // Check for error parameters in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get('error');
+    
+    if (errorParam) {
+      console.log("Auth: Error parameter found in URL:", errorParam);
+      setError(decodeURIComponent(errorParam));
+      // Clear the error from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    // Immediate check for existing authentication
+    const checkImmediateAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (session?.user && !error) {
+          console.log("Auth: Found immediate session, redirecting to dashboard...", session.user.id);
+          navigate("/dashboard", { replace: true });
+          return;
+        }
+        
+        console.log("Auth: No immediate session found, continuing with auth flow");
+      } catch (err) {
+        console.error("Auth: Error checking immediate auth:", err);
+      }
+    };
+    
+    // Only check for immediate auth if there's no error parameter
+    if (!errorParam) {
+      checkImmediateAuth();
+    }
+  }, [navigate]);
 
   // Enhanced GSAP animations with mobile considerations
   useEffect(() => {
@@ -370,7 +454,7 @@ export function Auth() {
       if (isSignUp) {
         // Double-check user count before creating new account
         const countResult = await getUserCount();
-        if (countResult.success && countResult.count >= 4) {
+        if (countResult.success && countResult.count >= USER_CAPACITY) {
           setUserLimitReached(true);
           setError("User limit reached. Please join the waitlist instead.");
           setFormLoading(false);

@@ -20,6 +20,9 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
     flowType: "pkce",
+    // Add more robust OAuth callback handling
+    storageKey: "sb-session",
+    storage: window?.localStorage,
   },
   realtime: {
     params: {
@@ -82,6 +85,9 @@ if (typeof window !== "undefined") {
   });
 }
 
+// User capacity constant
+export const USER_CAPACITY = 25;
+
 // Helper functions for common operations
 export const supabaseHelpers = {
   // Auth helpers
@@ -115,7 +121,7 @@ export const supabaseHelpers = {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
       if (error) throw error;
@@ -131,14 +137,29 @@ export const supabaseHelpers = {
   },
 
   async getCurrentUser() {
-    return withRetry(async () => {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
-      if (error) throw error;
-      return user;
-    }, "Get Current User");
+    try {
+      return await withRetry(async () => {
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser();
+        if (error) throw error;
+        return user;
+      }, "Get Current User");
+    } catch (err) {
+      console.error("Failed to get current user:", err);
+      // Check for session in localStorage as a fallback
+      try {
+        const session = JSON.parse(localStorage.getItem('sb-session'));
+        if (session?.user) {
+          console.log("Using cached session user as fallback");
+          return session.user;
+        }
+      } catch (e) {
+        console.error("No valid cached session:", e);
+      }
+      return null;
+    }
   },
 
   // Database helpers
