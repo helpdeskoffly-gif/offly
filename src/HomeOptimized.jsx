@@ -313,19 +313,19 @@ const HeroSection = React.memo(
       >
         <div className="max-w-7xl mx-auto w-full">
           <OptimizedMotionDiv
-            className="flex flex-col items-center text-center space-y-12"
+            className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center"
             initial="hidden"
             animate={inView ? "visible" : "hidden"}
             variants={containerVariants}
           >
-            {/* Hero Text Content */}
+            {/* Hero Text Content - Left side on desktop */}
             <div
               ref={(el) => {
                 if (el) {
                   animateItem(el, { delay: 0.2 });
                 }
               }}
-              className="max-w-4xl mx-auto"
+              className="text-center lg:text-left order-2 lg:order-1"
             >
               <div
                 ref={(el) => {
@@ -392,7 +392,7 @@ const HeroSection = React.memo(
                     animateItem(el, { delay: 0.5 });
                   }
                 }}
-                className="flex flex-col sm:flex-row gap-4 justify-center"
+                className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
               >
                 <button
                   ref={(el) => {
@@ -432,7 +432,7 @@ const HeroSection = React.memo(
               </div>
             </div>
 
-            {/* Hero Image - Below Text */}
+            {/* Hero Image - Right side on desktop */}
             <div
               ref={(el) => {
                 if (el) {
@@ -443,9 +443,9 @@ const HeroSection = React.memo(
                   );
                 }
               }}
-              className="flex justify-center"
+              className="flex justify-center lg:justify-end order-1 lg:order-2"
             >
-              <div className="relative max-w-xs sm:max-w-sm md:max-w-md lg:max-w-sm xl:max-w-md w-full rounded-3xl overflow-hidden shadow-lg">
+              <div className="relative max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl w-full rounded-3xl overflow-hidden shadow-lg">
                 <img
                   src={heroImage}
                   alt="Offly App Hero"
