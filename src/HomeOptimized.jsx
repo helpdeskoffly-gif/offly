@@ -46,6 +46,9 @@ import { Skeleton } from "./components/ui/skeleton";
 import { trackLandingPageView } from "./services/database";
 import { Sparkles, ArrowRight, Star, Zap, Heart, TrendingUp } from "lucide-react";
 
+// Import hero image
+import heroImage from "./assets/hero.png";
+
 export function HomeOptimized() {
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -310,19 +313,19 @@ const HeroSection = React.memo(
       >
         <div className="max-w-7xl mx-auto w-full">
           <OptimizedMotionDiv
-            className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center"
+            className="flex flex-col items-center text-center space-y-12"
             initial="hidden"
             animate={inView ? "visible" : "hidden"}
             variants={containerVariants}
           >
-            {/* Left Content - Enhanced with premium animations */}
+            {/* Hero Text Content */}
             <div
               ref={(el) => {
                 if (el) {
                   animateItem(el, { delay: 0.2 });
                 }
               }}
-              className="text-center lg:text-left order-2 lg:order-1"
+              className="max-w-4xl mx-auto"
             >
               <div
                 ref={(el) => {
@@ -389,7 +392,7 @@ const HeroSection = React.memo(
                     animateItem(el, { delay: 0.5 });
                   }
                 }}
-                className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+                className="flex flex-col sm:flex-row gap-4 justify-center"
               >
                 <button
                   ref={(el) => {
@@ -429,20 +432,26 @@ const HeroSection = React.memo(
               </div>
             </div>
 
-            {/* Right Mobile Wireframe - Enhanced */}
+            {/* Hero Image - Below Text */}
             <div
               ref={(el) => {
                 if (el) {
-                  animateItem(el, { delay: 0.6 });
+                  gsap.fromTo(
+                    el,
+                    { opacity: 0, scale: 0.8 },
+                    { opacity: 1, scale: 1, duration: 1, ease: "power2.out" }
+                  );
                 }
               }}
-              className="flex justify-center lg:justify-end order-1 lg:order-2"
+              className="flex justify-center"
             >
-              <MobileWireframe
-                theme={theme}
-                themeColors={themeColors}
-                premiumGradients={premiumGradients}
-              />
+              <div className="relative max-w-xs sm:max-w-sm md:max-w-md lg:max-w-sm xl:max-w-md w-full rounded-3xl overflow-hidden shadow-lg">
+                <img
+                  src={heroImage}
+                  alt="Offly App Hero"
+                  className="w-full h-auto object-contain"
+                />
+              </div>
             </div>
           </OptimizedMotionDiv>
         </div>

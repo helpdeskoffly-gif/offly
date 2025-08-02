@@ -111,7 +111,7 @@ const AntiTodoSection = memo(({ theme, themeColors, premiumGradients }) => {
               ))}
             </div>
 
-            <div className="mt-6 md:mt-8">
+            <div className="mt-6 md:mt-8 flex justify-center lg:justify-start">
               <MemoizedButton
                 className={`bg-gradient-to-r ${premiumGradients.tertiary} hover:shadow-xl hover:shadow-orange-500/25 text-white font-semibold transition-all duration-300`}
               >

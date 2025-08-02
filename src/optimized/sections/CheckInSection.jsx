@@ -112,7 +112,7 @@ const CheckInSection = memo(({ theme, themeColors, premiumGradients }) => {
               ))}
             </div>
 
-            <div className="mt-6 md:mt-8">
+            <div className="mt-6 md:mt-8 flex justify-center lg:justify-start">
               <MemoizedButton
                 className={`bg-gradient-to-r ${premiumGradients.secondary} hover:shadow-xl hover:shadow-emerald-500/25 text-gray-900 font-semibold transition-all duration-300`}
               >
