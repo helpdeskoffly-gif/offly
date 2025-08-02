@@ -427,34 +427,6 @@ const HeroSection = React.memo(
                   Watch Demo
                 </button>
               </div>
-
-              {/* Premium stats */}
-              <div
-                ref={(el) => {
-                  if (el) {
-                    animateItem(el, { delay: 0.6 });
-                  }
-                }}
-                className="flex items-center justify-center lg:justify-start space-x-8 mt-8 lg:mt-12"
-              >
-                {[
-                  { icon: Heart, value: "10K+", label: "Happy Users" },
-                  { icon: TrendingUp, value: "95%", label: "Satisfaction" },
-                  { icon: Star, value: "4.9", label: "App Store Rating" },
-                ].map((stat, index) => (
-                  <div key={index} className="text-center">
-                    <div className={`flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br ${premiumGradients.secondary} mb-2`}>
-                      <stat.icon className="w-6 h-6 text-white" />
-                    </div>
-                    <div className={`text-2xl font-bold ${themeColors.text.primary}`}>
-                      {stat.value}
-                    </div>
-                    <div className={`text-sm ${themeColors.text.muted}`}>
-                      {stat.label}
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
 
             {/* Right Mobile Wireframe - Enhanced */}
