@@ -76,71 +76,31 @@ export const updateAntiTodoItemStatus = async (itemId, status) => {
     // If activity was completed, update analytics and check achievements
     if (status === 'completed' && updatedItem) {
       try {
-        const { updateUserAnalytics, awardPoints, getUserPlant, updatePlantGrowth, checkAndUnlockAchievements } = await import('./database');
+        const { updateUserAnalytics, updateAchievementProgress } = await import('./database');
         
-        console.log('🎯 Anti-todo item completed, processing rewards...');
+        console.log('🎯 Anti-todo item completed, updating analytics...');
         
-        // Update user analytics (includes anti-todo stats) - MUST be done first
+        // Update user analytics (includes anti-todo stats) - CRITICAL for achievements
         await updateUserAnalytics(updatedItem.user_id);
-        console.log('✅ User analytics updated');
+        console.log('✅ User analytics updated with anti-todo completion');
         
-        // Award points for anti-todo completion
+        // Check for new achievements - this will award points if achievements are unlocked
         try {
-          const activityPoints = 10; // Simple 10 points for activity completion
-
-          const pointsResult = await awardPoints(
-            updatedItem.user_id, 
-            activityPoints, 
-            'anti_todo', 
-            updatedItem.id, 
-            'Activity completed'
-          );
-          
-          if (pointsResult.success) {
-            console.log(`✅ Awarded ${activityPoints} points for anti-todo completion`);
-            
-            // Update plant growth with earned points
-            let plantXp = 0;
-            try {
-              const plantResult = await getUserPlant(updatedItem.user_id);
-              if (plantResult.success && plantResult.data) {
-                plantXp = Math.floor(activityPoints / 2); // 1 XP per 2 points
-                await updatePlantGrowth(plantResult.data.id, plantXp);
-                console.log(`✅ Added ${plantXp} XP to user's plant`);
-              }
-            } catch (plantError) {
-              console.error("Failed to update plant growth:", plantError);
-            }
-            
-            // Check for new achievements using the proper function - AFTER analytics update
-            await checkAndUnlockAchievements(updatedItem.user_id);
-            console.log('✅ Achievements checked and updated');
-            
-            // Trigger UI refresh for points
-            if (typeof window !== 'undefined' && window.fetchUserPoints) {
-              window.fetchUserPoints();
-              console.log('✅ UI points refreshed');
-            }
-            
-            // Return updated item with points information
-            return {
-              ...updatedItem,
-              pointsEarned: {
-                total: activityPoints,
-                plantXp: plantXp
-              }
-            };
-          } else {
-            console.error('Failed to award points:', pointsResult.error);
+          const achievementResult = await updateAchievementProgress(updatedItem.user_id);
+          if (achievementResult.success && achievementResult.newAchievements?.length > 0) {
+            console.log(`🏆 New achievements unlocked: ${achievementResult.newAchievements.map(a => a.achievement_name).join(', ')}`);
           }
-        } catch (pointsError) {
-          console.error("Failed to award points for anti-todo completion:", pointsError);
+        } catch (achievementError) {
+          console.error('Error checking achievements after anti-todo completion:', achievementError);
         }
         
-        console.log('✅ Analytics, achievements, and gamification updated after anti-todo completion');
-      } catch (achievementError) {
-        console.error('Error updating analytics/achievements after anti-todo completion:', achievementError);
-        // Don't fail the status update if achievement check fails
+        // Note: No direct points awarded - points only come from achievements
+        console.log('💡 No direct points awarded - achievements will handle point rewards');
+        
+        console.log('✅ Analytics and achievements updated after anti-todo completion');
+      } catch (error) {
+        console.error('Error updating analytics after anti-todo completion:', error);
+        // Don't fail the status update if analytics update fails
       }
     }
 

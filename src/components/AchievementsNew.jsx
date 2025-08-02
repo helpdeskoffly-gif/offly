@@ -6,7 +6,7 @@ import { Badge } from "./ui/badge";
 import { 
   Trophy, Target, RefreshCw, Sparkles, Coins, CheckCircle, Lock, 
   Flame, Heart, Palette, Users, Sprout, Clock, Book, Award, Star,
-  Crown, Zap, Bolt, Infinity, Compass, Leaf, TreePine,
+  Crown, Fire, Zap, Lightning, Bolt, Infinity, Compass, Leaf, TreePine,
   Flower, Trees, Mountain, MessageCircle, UserCheck, HeartHandshake,
   Flower2, Sunrise, Moon, Calendar, CalendarDays
 } from "lucide-react";
@@ -23,14 +23,12 @@ function Achievements() {
   const { theme } = useTheme();
   const [user, setUser] = useState(null);
   const [filter, setFilter] = useState('all'); // all, completed, incomplete
+  const [categoryFilter, setCategoryFilter] = useState('all'); // all, milestone, streak, wellness, social, plant, timing
 
-  // Icon mapping for achievement icons - using only available Lucide React icons
+  // Icon mapping for achievement icons
   const iconMap = {
-    Sparkles, Target, Trophy, Heart, Flame, Award, Star, Crown, Zap, 
-    // Map missing icons to available alternatives
-    Fire: Flame, // Fire -> Flame
-    Lightning: Bolt, // Lightning -> Bolt  
-    Bolt, Infinity, Compass, Leaf, TreePine, Flower, Trees, Mountain,
+    Sparkles, Target, Trophy, Heart, Flame, Award, Star, Crown, Fire, Zap, 
+    Lightning, Bolt, Infinity, Compass, Leaf, TreePine, Flower, Trees, Mountain,
     MessageCircle, Users, UserCheck, HeartHandshake, Flower2, Sprout, Sunrise, 
     Moon, Calendar, CalendarDays, CheckCircle, Lock
   };
@@ -118,26 +116,10 @@ function Achievements() {
       console.log('🔄 Refreshing achievements...');
       setRefreshing(true);
       
-      // First initialize user achievements if needed
-      await initializeUserAchievements(user.id);
+      // Update achievement progress first
+      await updateAchievementProgress(user.id);
       
-      // Update achievement progress using the SQL function
-      const { error: progressError } = await supabase.rpc('calculate_achievement_progress', {
-        user_uuid: user.id
-      });
-      
-      if (progressError) {
-        console.error('❌ Error calling achievement calculation function:', progressError);
-        // Fall back to manual update
-        await updateAchievementProgress(user.id);
-      } else {
-        console.log('✅ Achievement progress calculated via SQL function');
-      }
-      
-      // Refresh points
-      fetchUserPoints();
-      
-      // Reload achievements
+      // Then reload achievements
       await loadUserData(user.id);
       console.log('✅ Achievements refreshed successfully');
     } catch (error) {
@@ -146,8 +128,6 @@ function Achievements() {
       setRefreshing(false);
     }
   };
-
-
 
   // Expose refresh function globally for Dashboard to call
   useEffect(() => {
@@ -165,14 +145,19 @@ function Achievements() {
   const filteredAchievements = useMemo(() => {
     let filtered = achievements;
 
-    // Filter by completion status only
+    // Filter by completion status
     if (filter === 'completed') {
       filtered = filtered.filter(a => a.is_completed);
     } else if (filter === 'incomplete') {
       filtered = filtered.filter(a => !a.is_completed);
     }
 
-    // Sort by completion status (completed first), then by category, then by target
+    // Filter by category
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(a => a.category === categoryFilter);
+    }
+
+    // Sort by completion status (completed first), then by category, then by sort_order
     return filtered.sort((a, b) => {
       if (a.is_completed !== b.is_completed) {
         return b.is_completed - a.is_completed; // Completed first
@@ -180,19 +165,23 @@ function Achievements() {
       if (a.category !== b.category) {
         return a.category.localeCompare(b.category);
       }
-      return (a.target || 0) - (b.target || 0);
+      return (a.sort_order || 0) - (b.sort_order || 0);
     });
-  }, [achievements, filter]);
+  }, [achievements, filter, categoryFilter]);
 
   // Calculate achievement statistics
   const stats = useMemo(() => {
     const total = achievements.length;
     const completed = achievements.filter(a => a.is_completed).length;
+    const totalPoints = achievements
+      .filter(a => a.is_completed)
+      .reduce((sum, a) => sum + (a.points_earned || 0), 0);
     
     return {
       total,
       completed,
-      completionPercentage: total > 0 ? Math.round((completed / total) * 100) : 0
+      completionPercentage: total > 0 ? Math.round((completed / total) * 100) : 0,
+      totalPoints
     };
   }, [achievements]);
 
@@ -388,10 +377,10 @@ function Achievements() {
             <CardContent className="p-6 text-center">
               <Coins className="w-8 h-8 mx-auto mb-3 text-emerald-500" />
               <div className={`text-2xl font-bold ${themeColors.text.primary} mb-1`}>
-                {points || 0}
+                {stats.totalPoints}
               </div>
               <div className={`text-sm ${themeColors.text.secondary}`}>
-                Current Balance
+                Points from Achievements
               </div>
             </CardContent>
           </Card>
@@ -411,21 +400,40 @@ function Achievements() {
 
         {/* Filters Section */}
         <div className={`${themeColors.card} rounded-xl p-4 border shadow-lg`}>
-          <div className="flex flex-wrap gap-2 justify-center">
-            {['all', 'completed', 'incomplete'].map((filterOption) => (
-              <Button
-                key={filterOption}
-                variant={filter === filterOption ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setFilter(filterOption)}
-                className={filter === filterOption 
-                  ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white" 
-                  : `${themeColors.text.secondary} hover:${themeColors.text.primary}`
-                }
-              >
-                {filterOption.charAt(0).toUpperCase() + filterOption.slice(1)}
-              </Button>
-            ))}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+            <div className="flex flex-wrap gap-2">
+              {['all', 'completed', 'incomplete'].map((filterOption) => (
+                <Button
+                  key={filterOption}
+                  variant={filter === filterOption ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setFilter(filterOption)}
+                  className={filter === filterOption 
+                    ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white" 
+                    : `${themeColors.text.secondary} hover:${themeColors.text.primary}`
+                  }
+                >
+                  {filterOption.charAt(0).toUpperCase() + filterOption.slice(1)}
+                </Button>
+              ))}
+            </div>
+            
+            <div className="flex flex-wrap gap-2">
+              {['all', ...Object.keys(categories)].map((category) => (
+                <Button
+                  key={category}
+                  variant={categoryFilter === category ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setCategoryFilter(category)}
+                  className={categoryFilter === category 
+                    ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white" 
+                    : `${themeColors.text.secondary} hover:${themeColors.text.primary}`
+                  }
+                >
+                  {category === 'all' ? 'All Categories' : categories[category]?.name}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
 

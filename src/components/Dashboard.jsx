@@ -36,6 +36,7 @@ import {
   checkProfileCompletion,
   getUserAnalytics,
 } from "../services/database";
+import { debugAchievementsAndPoints, forceRecalculateAchievements } from "../services/achievementDebug";
 import { notificationService } from "../services/notifications";
 import { openaiService } from "../services/openai";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/Card";
@@ -117,6 +118,7 @@ import {
   ChevronLeft,
   Share2,
 } from "lucide-react";
+import { sendFeedbackEmail, openMailtoFallback } from "../services/emailService";
 
 // Helper function moved outside component to prevent re-creation
 const getMoodLabelFromEmoji = (emoji) => {
@@ -206,6 +208,26 @@ const Dashboard = () => {
       });
     }
   }, [userProfile]);
+
+  // Expose debug functions to window for testing
+  useEffect(() => {
+    if (user && typeof window !== 'undefined') {
+      window.debugUserAchievements = () => debugAchievementsAndPoints(user.id);
+      window.forceRecalculateUserAchievements = () => forceRecalculateAchievements(user.id);
+      window.refreshAchievements = () => {
+        if (typeof window.refreshAchievements === 'function') {
+          window.refreshAchievements();
+        }
+      };
+    }
+    
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete window.debugUserAchievements;
+        delete window.forceRecalculateUserAchievements;
+      }
+    };
+  }, [user]);
   const [recentCheckins, setRecentCheckins] = useState([]);
   const [weeklyChartCheckins, setWeeklyChartCheckins] = useState([]);
   const [showAINudges, setShowAINudges] = useState(false);
@@ -222,6 +244,8 @@ const Dashboard = () => {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [feedbackStatus, setFeedbackStatus] = useState(null);
   const feedbackRef = useRef(null);
 
   const containerRef = useRef(null);
@@ -685,6 +709,59 @@ const Dashboard = () => {
   const handleSettingsModalChange = (isOpen) => {
     setShowSettingsModal(isOpen);
     // localStorage is saved in the useEffect above
+  };
+
+  // Handle feedback submission
+  const handleFeedbackSubmit = async () => {
+    if (!feedbackText.trim()) {
+      setFeedbackStatus({ type: 'error', message: 'Please enter your feedback before submitting.' });
+      return;
+    }
+
+    setIsSubmittingFeedback(true);
+    setFeedbackStatus(null);
+
+    try {
+      const feedbackData = {
+        message: feedbackText,
+        userEmail: user?.email || 'anonymous@offly.app',
+        userName: userProfile?.username || user?.email?.split('@')[0] || 'Anonymous User',
+        type: 'Dashboard Feedback',
+        attachment: selectedFile
+      };
+
+      // Try to send via EmailJS first
+      const result = await sendFeedbackEmail(feedbackData);
+
+      if (result.success) {
+        setFeedbackStatus({ type: 'success', message: 'Thank you! Your feedback has been sent successfully.' });
+        setFeedbackText("");
+        setSelectedFile(null);
+        
+        // Close modal after a short delay to show success message
+        setTimeout(() => {
+          setIsFeedbackOpen(false);
+          setFeedbackStatus(null);
+        }, 2000);
+      } else {
+        // Fallback to mailto if EmailJS fails
+        console.log('EmailJS failed, using mailto fallback');
+        openMailtoFallback(feedbackData);
+        setFeedbackStatus({ type: 'success', message: 'Opening your email client to send feedback...' });
+        
+        setTimeout(() => {
+          setIsFeedbackOpen(false);
+          setFeedbackText("");
+          setSelectedFile(null);
+          setFeedbackStatus(null);
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Failed to send feedback:', error);
+      setFeedbackStatus({ type: 'error', message: 'Failed to send feedback. Please try again or contact us directly.' });
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
   };
 
   // Simple tab change without animations
@@ -1476,6 +1553,31 @@ const Dashboard = () => {
           setRecentCheckins(checkinsResult.data);
         }
 
+        // Check for new achievements after checkin
+        try {
+          console.log('🏆 Checking for achievements after checkin...');
+          const { updateAchievementProgress } = await import('../services/database');
+          const achievementResult = await updateAchievementProgress(user.id);
+          
+          if (achievementResult.success && achievementResult.newAchievements && achievementResult.newAchievements.length > 0) {
+            // Show achievement notification
+            const achievementNames = achievementResult.newAchievements
+              .map((a) => a.achievement_name)
+              .join(", ");
+            setSuccessMessage(
+              `🏆 Achievement unlocked: ${achievementNames}! Check your Achievements tab to see your progress.`,
+            );
+            setToastType("achievement");
+            
+            // Refresh achievements UI if available
+            if (typeof window !== 'undefined' && window.refreshAchievements) {
+              setTimeout(() => window.refreshAchievements(), 500);
+            }
+          }
+        } catch (achievementError) {
+          console.error('Error checking achievements after checkin:', achievementError);
+        }
+
         // Refresh calendar data
         setCalendarRefreshTrigger(prev => prev + 1);
 
@@ -1502,34 +1604,7 @@ const Dashboard = () => {
           setWeeklyChartCheckins(Object.values(uniqueDailyCheckins));
         }
 
-        // Check for new achievements using the new database function
-        try {
-          const { checkAndUnlockAchievements } = await import('../services/database');
-          const result = await checkAndUnlockAchievements(user.id);
-          
-          if (result.success && result.newAchievements && result.newAchievements.length > 0) {
-            // Show achievement notification
-            const achievementNames = result.newAchievements
-              .map((a) => a.achievement_name)
-              .join(", ");
-            setSuccessMessage(
-              `🏆 Achievement unlocked: ${achievementNames}! Check your Achievements tab to see your progress.`,
-            );
-            setToastType("achievement");
-          }
-          
-          // Refresh achievements UI if the function is available
-          if (typeof window !== 'undefined' && window.refreshAchievements) {
-            window.refreshAchievements();
-          }
-          
-          // Refresh points after checking achievements (in case new ones were unlocked)
-          if (typeof window !== 'undefined' && window.fetchUserPoints) {
-            window.fetchUserPoints();
-          }
-        } catch (error) {
-          console.error("Error checking achievements:", error);
-        }
+
 
         // Close drawer and reset form
         setShowCheckinDrawer(false);
@@ -2553,25 +2628,35 @@ const Dashboard = () => {
                   </div>
                 </div>
                 
+                {/* Status Messages */}
+                {feedbackStatus && (
+                  <div className={`p-3 rounded-lg text-sm ${
+                    feedbackStatus.type === 'success' 
+                      ? 'bg-green-100 text-green-800 border border-green-200' 
+                      : 'bg-red-100 text-red-800 border border-red-200'
+                  }`}>
+                    {feedbackStatus.message}
+                  </div>
+                )}
+                
                 <div className="flex space-x-3 pt-4">
                   <Button
                     variant="ghost"
-                    onClick={() => setIsFeedbackOpen(false)}
+                    onClick={() => {
+                      setIsFeedbackOpen(false);
+                      setFeedbackStatus(null);
+                    }}
                     className="flex-1"
+                    disabled={isSubmittingFeedback}
                   >
                     Cancel
                   </Button>
                   <Button
-                    onClick={() => {
-                      // Dummy submission for now
-                      console.log("Feedback submitted:", { text: feedbackText, file: selectedFile });
-                      setFeedbackText("");
-                      setSelectedFile(null);
-                      setIsFeedbackOpen(false);
-                    }}
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700"
+                    onClick={handleFeedbackSubmit}
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 disabled:opacity-50"
+                    disabled={isSubmittingFeedback}
                   >
-                    Send Feedback
+                    {isSubmittingFeedback ? 'Sending...' : 'Send Feedback'}
                   </Button>
                 </div>
               </div>

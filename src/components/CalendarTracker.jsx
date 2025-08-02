@@ -296,7 +296,7 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
     }
   }, []);
 
-    const handleDayClick = async (day) => {
+  const handleDayClick = async (day) => {
     if (!day || !user) return;
     
     const dayData = checkinData[day];
@@ -304,15 +304,25 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
 
     setLoadingDayData(true);
     try {
-      // Format the date properly for database query
+      // Format the date properly for database query - ensure consistent timezone handling
       const clickedDate = new Date(currentYear, currentMonth, day);
       const dateString = clickedDate.toISOString().split('T')[0]; // YYYY-MM-DD format
       
-      console.log('🔍 Fetching detailed checkins for date:', {
-        day,
-        dateString,
+      console.log('🔍 Calendar Click Debug:', {
+        clickedDay: day,
+        currentMonth: currentMonth + 1, // +1 because JS months are 0-indexed
         currentYear,
-        currentMonth
+        clickedDate,
+        dateString,
+        todaysDate: new Date().toISOString().split('T')[0],
+        isToday: dateString === new Date().toISOString().split('T')[0],
+        availableCheckins: dayData.checkins.map(c => ({
+          id: c.id,
+          created_at: c.created_at,
+          mood_score: c.mood_score,
+          sentiment: c.sentiment
+        })),
+        checkinDatesInData: realCheckins.filter(c => c.checkin_date).map(c => c.checkin_date)
       });
 
       // Show dialog immediately with loading state
@@ -320,20 +330,58 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
       setSelectedDayCheckins([]);
       setShowDialog(true);
 
-      // Fetch detailed checkins for this specific date
+      // First try to use the cached data from checkinData
+      if (dayData.checkins && dayData.checkins.length > 0) {
+        console.log('📦 Using cached checkin data for day:', day);
+        
+        // Validate that the cached data is for the correct date
+        const expectedDateString = dateString;
+        const validCheckins = dayData.checkins.filter(checkin => {
+          // If checkin has a checkin_date, validate it matches
+          if (checkin.checkin_date) {
+            const checkinDateString = new Date(checkin.checkin_date).toISOString().split('T')[0];
+            return checkinDateString === expectedDateString;
+          }
+          // If no checkin_date, check created_at
+          if (checkin.created_at) {
+            const createdDateString = new Date(checkin.created_at).toISOString().split('T')[0];
+            return createdDateString === expectedDateString;
+          }
+          return true; // Keep if no date info to filter by
+        });
+        
+        console.log('🔍 Date validation results:', {
+          expectedDate: expectedDateString,
+          originalCount: dayData.checkins.length,
+          validCount: validCheckins.length,
+          invalidCheckins: dayData.checkins.filter(c => !validCheckins.includes(c))
+        });
+        
+        setSelectedDayCheckins(validCheckins.length > 0 ? validCheckins : dayData.checkins);
+        setLoadingDayData(false);
+        return;
+      }
+
+      // Fallback: Fetch detailed checkins for this specific date from database
+      console.log('🔍 Fetching fresh checkins from database for date:', dateString);
       const result = await getUserCheckinsForDate(user.id, dateString);
       
-      if (result.success && result.data) {
+      if (result.success && result.data && result.data.length > 0) {
         setSelectedDayCheckins(result.data);
         
-        console.log('✅ Fetched detailed checkins:', {
+        console.log('✅ Fetched fresh checkins from database:', {
           date: dateString,
           count: result.data.length,
-          checkins: result.data
+          checkins: result.data.map(c => ({
+            id: c.id,
+            checkin_date: c.checkin_date,
+            created_at: c.created_at,
+            mood_score: c.mood_score
+          }))
         });
       } else {
-        console.error('Failed to fetch detailed checkins:', result.error);
-        // Fallback to cached data
+        console.warn('❌ No checkins found in database for date:', dateString);
+        // Show empty state or cached data
         setSelectedDayCheckins(dayData.checkins || []);
       }
     } catch (error) {

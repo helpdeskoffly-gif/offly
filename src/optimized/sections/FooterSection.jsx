@@ -3,7 +3,7 @@ import { gsap } from "gsap";
 import { useOptimizedInView } from "../../hooks/useOptimizedInView.js";
 import Logo from "../../components/Logo";
 
-const FooterSection = memo(() => {
+const FooterSection = memo(({ theme, themeColors }) => {
   const { ref, inView } = useOptimizedInView();
   const containerRef = useRef(null);
   const logoRef = useRef(null);
@@ -77,7 +77,11 @@ const FooterSection = memo(() => {
   }, [inView]);
 
   return (
-    <footer className="bg-slate-950 border-t border-slate-800" ref={ref}>
+    <footer className={`${
+      theme === "dark"
+        ? "bg-slate-950 border-slate-800"
+        : "bg-gradient-to-b from-indigo-100/80 to-gray-100 border-indigo-200"
+    } border-t`} ref={ref}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div
           ref={containerRef}
@@ -88,7 +92,7 @@ const FooterSection = memo(() => {
             <div className="flex items-center mb-4">
               <Logo size="lg" />
             </div>
-            <p className="text-slate-400 mb-6 max-w-md">
+            <p className={`${themeColors.text.muted} mb-6 max-w-md`}>
               Your emotional wellness companion. Track your joy, build
               intentional habits, and nurture your mental health with AI-powered
               insights.
@@ -98,10 +102,12 @@ const FooterSection = memo(() => {
                 <a
                   key={social}
                   href="#"
-                  className="text-slate-400"
+                  className={themeColors.text.muted}
                 >
                   <span className="sr-only">{social}</span>
-                  <div className="w-6 h-6 bg-slate-600 rounded"></div>
+                  <div className={`w-6 h-6 ${
+                    theme === "dark" ? "bg-slate-600" : "bg-indigo-300"
+                  } rounded`}></div>
                 </a>
               ))}
             </div>
@@ -109,13 +115,13 @@ const FooterSection = memo(() => {
 
           {/* Product Links */}
           <div ref={productLinksRef}>
-            <h4 className="text-white font-semibold mb-4">Product</h4>
+            <h4 className={`${themeColors.text.primary} font-semibold mb-4`}>Product</h4>
             <ul className="space-y-2">
               {productLinks.map((item) => (
                 <li key={item}>
                   <a
                     href="#"
-                    className="text-slate-400"
+                    className={`${themeColors.text.muted} hover:${themeColors.text.secondary} transition-colors`}
                   >
                     {item}
                   </a>
@@ -126,13 +132,13 @@ const FooterSection = memo(() => {
 
           {/* Company Links */}
           <div ref={companyLinksRef}>
-            <h4 className="text-white font-semibold mb-4">Company</h4>
+            <h4 className={`${themeColors.text.primary} font-semibold mb-4`}>Company</h4>
             <ul className="space-y-2">
               {companyLinks.map((item) => (
                 <li key={item}>
                   <a
                     href="#"
-                    className="text-slate-400"
+                    className={`${themeColors.text.muted} hover:${themeColors.text.secondary} transition-colors`}
                   >
                     {item}
                   </a>
@@ -145,9 +151,11 @@ const FooterSection = memo(() => {
         {/* Bottom section */}
         <div
           ref={bottomSectionRef}
-          className="border-t border-slate-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center"
+          className={`border-t ${
+            theme === "dark" ? "border-slate-800" : "border-indigo-200"
+          } mt-12 pt-8 flex flex-col md:flex-row justify-between items-center`}
         >
-          <p ref={copyrightRef} className="text-slate-400 text-sm mb-4 md:mb-0">
+          <p ref={copyrightRef} className={`${themeColors.text.muted} text-sm mb-4 md:mb-0`}>
             © 2024 Offly. All rights reserved.
           </p>
           <div ref={legalLinksRef} className="flex space-x-6">
@@ -155,7 +163,7 @@ const FooterSection = memo(() => {
               <a
                 key={item}
                 href="#"
-                className="text-slate-400 text-sm"
+                className={`${themeColors.text.muted} hover:${themeColors.text.secondary} text-sm transition-colors`}
               >
                 {item}
               </a>

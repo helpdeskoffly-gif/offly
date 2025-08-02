@@ -325,9 +325,12 @@ export const AntiTodoList = ({ userId }) => {
           setShowToast(true);
           setTimeout(() => setShowToast(false), 4000);
           
-          // Refresh achievements UI if the function is available
+          // Refresh achievements UI after a small delay to ensure analytics are updated
           if (typeof window !== 'undefined' && window.refreshAchievements) {
-            window.refreshAchievements();
+            setTimeout(() => {
+              window.refreshAchievements();
+              console.log('🏆 Refreshing achievements after anti-todo completion');
+            }, 1000);
           }
         }
         

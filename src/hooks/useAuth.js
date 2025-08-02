@@ -19,6 +19,57 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
   const [analyticsLoaded, setAnalyticsLoaded] = useState(false);
 
+  // Session timeout management (24 hours)
+  const SESSION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  const [sessionTimeoutId, setSessionTimeoutId] = useState(null);
+
+  // Function to handle automatic logout
+  const handleSessionTimeout = async () => {
+    console.log("Session timeout - logging out user");
+    try {
+      await supabase.auth.signOut();
+      // Clear any stored session data
+      localStorage.removeItem('sb-session');
+      localStorage.removeItem('offly-session-start');
+    } catch (error) {
+      console.error("Error during session timeout logout:", error);
+    }
+  };
+
+  // Function to start session timeout timer
+  const startSessionTimeout = () => {
+    // Clear any existing timeout
+    if (sessionTimeoutId) {
+      clearTimeout(sessionTimeoutId);
+    }
+
+    // Store session start time
+    const sessionStart = new Date().getTime();
+    localStorage.setItem('offly-session-start', sessionStart.toString());
+
+    // Set new timeout
+    const timeoutId = setTimeout(handleSessionTimeout, SESSION_TIMEOUT);
+    setSessionTimeoutId(timeoutId);
+    
+    console.log("Session timeout set for 24 hours");
+  };
+
+  // Function to check if session has expired
+  const checkSessionExpiry = () => {
+    const sessionStart = localStorage.getItem('offly-session-start');
+    if (!sessionStart) return false;
+
+    const currentTime = new Date().getTime();
+    const sessionAge = currentTime - parseInt(sessionStart);
+    
+    if (sessionAge > SESSION_TIMEOUT) {
+      console.log("Session has expired, logging out");
+      handleSessionTimeout();
+      return true;
+    }
+    return false;
+  };
+
   useEffect(() => {
     let mounted = true;
     let lastProcessedUserId = null; // Track last processed user to prevent duplicates
@@ -91,6 +142,11 @@ export const useAuth = () => {
     return () => {
       mounted = false;
       subscription?.unsubscribe();
+      
+      // Clean up session timeout
+      if (sessionTimeoutId) {
+        clearTimeout(sessionTimeoutId);
+      }
     };
   }, []);
 
@@ -119,6 +175,11 @@ export const useAuth = () => {
       // Set user immediately
       setUserState(supabaseUser);
       setLoading(false); // Set loading false immediately
+
+      // Start session timeout for 24-hour auto logout
+      if (!checkSessionExpiry()) {
+        startSessionTimeout();
+      }
 
       // Ensure user exists in database (critical for OAuth users)
       // But only if we're not on the OAuth callback page (to prevent duplicate creation)
@@ -303,6 +364,12 @@ export const useAuth = () => {
   const signOut = async () => {
     try {
       console.log("Signing out user...");
+      
+      // Clear session timeout
+      if (sessionTimeoutId) {
+        clearTimeout(sessionTimeoutId);
+        setSessionTimeoutId(null);
+      }
       
       // Clear states immediately to provide immediate feedback
       setLoading(true);

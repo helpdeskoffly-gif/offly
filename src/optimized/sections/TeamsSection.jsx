@@ -71,7 +71,11 @@ const TeamsSection = memo(({ theme, themeColors }) => {
 
   return (
     <div
-      className="py-32 bg-gradient-to-br from-gray-950 via-purple-950/20 to-emerald-950/20"
+      className={`py-32 ${
+        theme === "dark"
+          ? "bg-gradient-to-br from-gray-950 via-purple-950/20 to-emerald-950/20"
+          : "bg-gradient-to-br from-indigo-50 via-purple-50/80 to-blue-100/60"
+      }`}
       ref={ref}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -80,17 +84,21 @@ const TeamsSection = memo(({ theme, themeColors }) => {
           ref={sectionRef}
           style={{ opacity: 0, transform: "translateY(40px)" }}
         >
-          <MemoizedBadge className="mb-6 bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+          <MemoizedBadge className={`mb-6 ${
+            theme === "dark"
+              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+              : "bg-indigo-500/15 text-indigo-700 border-indigo-400/30"
+          }`}>
             🏢 For Organizations
           </MemoizedBadge>
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6">
+          <h2 className={`text-4xl sm:text-5xl font-bold ${themeColors.text.primary} mb-6`}>
             Built for{" "}
             <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
               teams
             </span>{" "}
             as well
           </h2>
-          <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-12">
+          <p className={`text-xl ${themeColors.text.secondary} max-w-3xl mx-auto mb-12`}>
             Transform your workplace culture with shared emotional wellness
             insights.
           </p>
@@ -104,14 +112,18 @@ const TeamsSection = memo(({ theme, themeColors }) => {
               style={{ opacity: 0, transform: "translateY(40px)" }}
             >
               <MemoizedCard
-                className={`bg-gradient-to-br ${item.bgColor} border-gray-700 p-8 text-center backdrop-blur-sm`}
+                className={`bg-gradient-to-br ${item.bgColor} ${
+                  theme === "dark"
+                    ? "border-gray-700"
+                    : "border-indigo-200/60"
+                } p-8 text-center backdrop-blur-sm`}
               >
                 <div
                   className={`text-5xl font-bold bg-gradient-to-r ${item.color} bg-clip-text text-transparent mb-4`}
                 >
                   {item.stat}
                 </div>
-                <p className="text-gray-300 text-lg">{item.label}</p>
+                <p className={`${themeColors.text.secondary} text-lg`}>{item.label}</p>
               </MemoizedCard>
             </div>
           ))}
@@ -125,7 +137,11 @@ const TeamsSection = memo(({ theme, themeColors }) => {
           <MemoizedButton
             variant="outline"
             size="lg"
-            className="border-emerald-500/50 text-emerald-400 px-8 py-4 text-lg"
+            className={`px-8 py-4 text-lg ${
+              theme === "dark"
+                ? "border-emerald-500/50 text-emerald-400"
+                : "border-indigo-500/60 text-indigo-700 hover:bg-indigo-50"
+            }`}
           >
             Learn about Teams
           </MemoizedButton>

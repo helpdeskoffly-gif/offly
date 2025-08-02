@@ -89,14 +89,18 @@ const TestimonialsSection = memo(({ theme, themeColors }) => {
 
   return (
     <div
-      className="py-32 bg-gradient-to-b from-gray-900 to-slate-900"
+      className={`py-32 ${
+        theme === "dark"
+          ? "bg-gradient-to-b from-gray-900 to-slate-900"
+          : "bg-gradient-to-b from-indigo-50 to-purple-100/80"
+      }`}
       ref={ref}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div ref={titleSectionRef} className="text-center mb-16">
           <h2
             ref={titleRef}
-            className="text-4xl sm:text-5xl font-bold text-white mb-6"
+            className={`text-4xl sm:text-5xl font-bold ${themeColors.text.primary} mb-6`}
           >
             What our{" "}
             <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
@@ -105,7 +109,7 @@ const TestimonialsSection = memo(({ theme, themeColors }) => {
           </h2>
           <p
             ref={subtitleRef}
-            className="text-xl text-gray-400 max-w-3xl mx-auto"
+            className={`text-xl ${themeColors.text.secondary} max-w-3xl mx-auto`}
           >
             Real stories from people who've transformed their emotional wellness
             journey with Offly.
@@ -121,7 +125,7 @@ const TestimonialsSection = memo(({ theme, themeColors }) => {
               key={testimonial.name}
               ref={(el) => (testimonialRefs.current[index] = el)}
             >
-              <MemoizedCard className="p-6 bg-slate-800/50 border-slate-700/50 backdrop-blur-sm shadow-xl h-full">
+              <MemoizedCard className={`p-6 ${themeColors.card} shadow-xl h-full`}>
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center mr-4">
                     <span className="text-white font-bold text-lg">
@@ -129,10 +133,10 @@ const TestimonialsSection = memo(({ theme, themeColors }) => {
                     </span>
                   </div>
                   <div>
-                    <h4 className="text-white font-semibold">
+                    <h4 className={`${themeColors.text.primary} font-semibold`}>
                       {testimonial.name}
                     </h4>
-                    <p className="text-slate-400 text-sm">{testimonial.role}</p>
+                    <p className={`${themeColors.text.muted} text-sm`}>{testimonial.role}</p>
                   </div>
                 </div>
 
@@ -149,7 +153,7 @@ const TestimonialsSection = memo(({ theme, themeColors }) => {
                   ))}
                 </div>
 
-                <p className="text-slate-300 leading-relaxed">
+                <p className={`${themeColors.text.secondary} leading-relaxed`}>
                   {testimonial.content}
                 </p>
               </MemoizedCard>

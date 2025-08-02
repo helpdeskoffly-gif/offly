@@ -13,7 +13,7 @@ const AntiTodoSection = memo(({ theme, themeColors, premiumGradients }) => {
       className={`py-16 md:py-24 ${
         theme === "dark"
           ? "bg-gradient-to-b from-slate-900 to-gray-900"
-          : "bg-gradient-to-b from-orange-50 to-yellow-50"
+          : "bg-gradient-to-b from-blue-50 to-indigo-50"
       } relative overflow-hidden`}
       ref={ref}
       id="anti-todo"

@@ -118,7 +118,7 @@ const FAQItem = memo(({ question, answer, isOpen, onToggle, index, theme }) => {
 
 FAQItem.displayName = "FAQItem";
 
-const FAQSection = memo(() => {
+const FAQSection = memo(({ theme = "dark", themeColors }) => {
   const { ref, inView } = useOptimizedInView();
   const containerRef = useRef(null);
   const badgeRef = useRef(null);
@@ -130,7 +130,6 @@ const FAQSection = memo(() => {
 
   const [openItems, setOpenItems] = useState(new Set([0]));
   const [activeTab, setActiveTab] = useState("getting-started");
-  const [theme, setTheme] = useState("dark");
 
   const toggleItem = (itemIndex) => {
     const newOpenItems = new Set(openItems);
@@ -227,7 +226,7 @@ const FAQSection = memo(() => {
   ];
 
   return (
-    <div className={`py-32 ${theme === "dark" ? "bg-gradient-to-br from-gray-950 via-gray-900 to-black" : "bg-gradient-to-br from-gray-50 via-white to-gray-100"} relative overflow-hidden`} ref={ref}>
+    <div className={`py-32 ${theme === "dark" ? "bg-gradient-to-br from-gray-950 via-gray-900 to-black" : "bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50"} relative overflow-hidden`} ref={ref}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div ref={containerRef} className="text-center mb-20">
           <div ref={badgeRef}>
@@ -327,10 +326,10 @@ const FAQSection = memo(() => {
               <p className={`${theme === "dark" ? "text-gray-300" : "text-gray-600"} text-lg leading-relaxed`}>
                 Reach out to us directly via{" "}
                 <a
-                  href="mailto:support@offly.app"
+                  href="mailto:helpdesk.offly@gmail.com"
                   className="text-emerald-600 dark:text-emerald-400 font-semibold hover:underline"
                 >
-                  support@offly.app
+                  helpdesk.offly@gmail.com
                 </a>{" "}
                 or message us in the app. We're ✨ here for you!
               </p>

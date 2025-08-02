@@ -13,7 +13,7 @@ const CheckInSection = memo(({ theme, themeColors, premiumGradients }) => {
       className={`py-16 md:py-24 ${
         theme === "dark"
           ? "bg-gradient-to-b from-gray-900 to-slate-900"
-          : "bg-gradient-to-b from-yellow-50 to-orange-50"
+          : "bg-gradient-to-b from-indigo-50 to-blue-50"
       } relative overflow-hidden`}
       ref={ref}
       id="check-in"

@@ -13,7 +13,7 @@ const PricingSection = memo(({ theme, themeColors, premiumGradients }) => {
       className={`py-16 md:py-24 ${
         theme === "dark"
           ? "bg-gradient-to-b from-gray-900 to-slate-900"
-          : "bg-gradient-to-b from-blue-200 via-indigo-200 to-purple-200"
+          : "bg-gradient-to-b from-indigo-100 via-purple-100 to-blue-100"
       } relative overflow-hidden`}
       ref={ref}
       id="pricing"
@@ -92,7 +92,7 @@ const PricingSection = memo(({ theme, themeColors, premiumGradients }) => {
             className={`rounded-2xl border shadow-xl p-6 md:p-8 h-full ${
               theme === "dark"
                 ? "bg-slate-800/80 border-slate-700/50 backdrop-blur-xl"
-                : "bg-gradient-to-br from-blue-50/90 via-white/95 to-indigo-50/80 border-blue-200/50 backdrop-blur-xl"
+                : "bg-gradient-to-br from-indigo-50/95 via-white/95 to-purple-50/90 border-indigo-200/60 backdrop-blur-xl"
             }`}
           >
             <div className="text-center space-y-6">

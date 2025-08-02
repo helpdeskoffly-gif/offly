@@ -13,7 +13,7 @@ const AIInsightsSection = memo(({ theme, themeColors, premiumGradients }) => {
       className={`py-16 md:py-24 ${
         theme === "dark"
           ? "bg-gradient-to-b from-gray-900 to-slate-900"
-          : "bg-gradient-to-b from-purple-50 to-pink-50"
+          : "bg-gradient-to-b from-indigo-50 to-purple-50"
       } relative overflow-hidden`}
       ref={ref}
       id="ai-insights"

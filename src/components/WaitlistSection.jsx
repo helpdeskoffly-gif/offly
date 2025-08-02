@@ -6,9 +6,10 @@ import { Button } from "./ui/Button";
 import { Card } from "./ui/Card";
 import { addToWaitlist } from "../services/database";
 
-export function WaitlistSection() {
+export function WaitlistSection({ theme: propTheme, themeColors: propThemeColors }) {
   console.log("WaitlistSection rendered");
-  const { theme } = useTheme();
+  const { theme: contextTheme } = useTheme();
+  const theme = propTheme || contextTheme; // Use prop theme if provided, otherwise use context
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState(""); // '', 'loading', 'success', 'error'
   const [message, setMessage] = useState("");
@@ -34,18 +35,18 @@ export function WaitlistSection() {
     card:
       theme === "dark"
         ? "bg-slate-800/50 border-slate-700/50"
-        : "bg-white/70 border-orange-200/50",
+        : "bg-white/80 border-indigo-200/50",
   };
 
   const premiumGradients = {
     primary:
       theme === "dark"
         ? "from-violet-500 via-purple-500 to-fuchsia-500"
-        : "from-violet-600 via-purple-600 to-fuchsia-600",
+        : "from-indigo-600 via-purple-600 to-violet-600",
     secondary:
       theme === "dark"
         ? "from-emerald-400 via-teal-400 to-cyan-400"
-        : "from-emerald-500 via-teal-500 to-cyan-500",
+        : "from-emerald-600 via-teal-600 to-cyan-600",
   };
 
   const validateEmail = (email) => {

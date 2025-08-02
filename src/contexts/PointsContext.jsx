@@ -10,14 +10,45 @@ export const PointsProvider = ({ children }) => {
 
   const fetchUserPoints = useCallback(async () => {
     if (!user) return;
-    const { data, error } = await supabase
-      .from('user_points')
-      .select('total_points')
-      .eq('user_id', user.id)
-      .single();
+    
+    try {
+      // First try to get from users table (which should have synced points)
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('points')
+        .eq('id', user.id)
+        .single();
 
-    if (data) {
-      setPoints(data.total_points);
+      if (userData && !userError) {
+        console.log('✅ Points from users table:', userData.points);
+        setPoints(userData.points || 0);
+        return;
+      }
+
+      // Fallback: calculate from user_points table
+      const { data: pointsData, error: pointsError } = await supabase
+        .from('user_points')
+        .select('total_earned, total_spent')
+        .eq('user_id', user.id)
+        .single();
+
+      if (pointsData && !pointsError) {
+        const calculatedPoints = (pointsData.total_earned || 0) - (pointsData.total_spent || 0);
+        console.log('✅ Calculated points from user_points:', calculatedPoints);
+        setPoints(calculatedPoints);
+        
+        // Sync to users table
+        await supabase
+          .from('users')
+          .update({ points: calculatedPoints })
+          .eq('id', user.id);
+      } else {
+        console.log('⚠️ No points data found, setting to 0');
+        setPoints(0);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching user points:', error);
+      setPoints(0);
     }
   }, [user]);
 

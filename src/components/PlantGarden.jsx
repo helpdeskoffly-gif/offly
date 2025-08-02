@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { gsap } from "gsap";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../contexts/ThemeContext.jsx";
 import { Button } from "./ui/Button";
@@ -46,6 +45,7 @@ import {
   getUserInventory, 
   spendPoints, 
   updatePlantGrowth,
+  resetPlantToLevel1,
   purchaseStoreItem,
   useInventoryItem
 } from "../services/database.js";
@@ -54,6 +54,35 @@ export function PlantGarden() {
   const { user } = useAuth();
   const { theme } = useTheme();
   const { points, updatePoints, fetchUserPoints } = usePoints();
+  
+  // Add CSS animations as a style tag
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fade-in {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      @keyframes scale-in {
+        from { opacity: 0; transform: scale(0.8); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      
+      @keyframes bounce-in {
+        from { opacity: 0; transform: scale(0) rotate(180deg); }
+        to { opacity: 1; transform: scale(1) rotate(0deg); }
+      }
+      
+      .animate-fade-in { animation: fade-in 0.6s ease-out forwards; }
+      .animate-scale-in { animation: scale-in 0.6s ease-out forwards; }
+      .animate-bounce-in { animation: bounce-in 0.6s ease-out forwards; }
+      .animate-fade-in-delayed { animation: fade-in 0.6s ease-out 0.3s both; }
+    `;
+    document.head.appendChild(style);
+    
+    return () => document.head.removeChild(style);
+  }, []);
   
   // State management
   
@@ -124,8 +153,8 @@ export function PlantGarden() {
 
       // Reset plant to seedling
       if (userPlant) {
-        await updatePlantGrowth(userPlant.id, 0);
-        setUserPlant({ ...userPlant, growth_level: 1, growth_xp: 0 });
+        await resetPlantToLevel1(user.id);
+        setUserPlant({ ...userPlant, growth_level: 1, growth_xp: 0, growth_xp_required: 100 });
       }
 
       setShowLifecycleComplete(false);
@@ -219,7 +248,7 @@ export function PlantGarden() {
         // Track plant care action for achievements
         try {
           const { supabase } = await import('../supabase');
-          const { checkAndUnlockAchievements } = await import('../services/database');
+          const { updateAchievementProgress } = await import('../services/database');
           
           // Record plant care action
           await supabase
@@ -232,7 +261,7 @@ export function PlantGarden() {
             });
           
           // Check for achievements using the proper function
-          await checkAndUnlockAchievements(user.id);
+          await updateAchievementProgress(user.id);
           
           // Refresh points after checking achievements (in case new ones were unlocked)
           fetchUserPoints();
@@ -275,7 +304,7 @@ export function PlantGarden() {
         // Track plant care action for achievements
         try {
           const { supabase } = await import('../supabase');
-          const { checkAndUnlockAchievements } = await import('../services/database');
+          const { updateAchievementProgress } = await import('../services/database');
           
           // Record plant care action
           await supabase
@@ -288,7 +317,7 @@ export function PlantGarden() {
             });
           
           // Check for achievements using the proper function
-          await checkAndUnlockAchievements(user.id);
+          await updateAchievementProgress(user.id);
           
           // Refresh points after checking achievements (in case new ones were unlocked)
           fetchUserPoints();
@@ -331,7 +360,7 @@ export function PlantGarden() {
         // Track plant care action for achievements
         try {
           const { supabase } = await import('../supabase');
-          const { checkAndUnlockAchievements } = await import('../services/database');
+          const { updateAchievementProgress } = await import('../services/database');
           
           // Record plant care action
           await supabase
@@ -344,7 +373,7 @@ export function PlantGarden() {
             });
           
           // Check for achievements using the proper function
-          await checkAndUnlockAchievements(user.id);
+          await updateAchievementProgress(user.id);
           
           // Refresh points after checking achievements (in case new ones were unlocked)
           fetchUserPoints();
@@ -567,7 +596,7 @@ export function PlantGarden() {
             <div className="relative">
               <div className={`w-full h-3 sm:h-4 rounded-full ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-gray-200/70'} shadow-inner overflow-hidden`}>
                 <div 
-                  className="h-full bg-gradient-to-r from-green-400 via-emerald-500 via-teal-500 to-blue-500 rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
+                  className="h-full bg-gradient-to-r from-green-400 via-emerald-500 to-blue-500 rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
                   style={{ width: `${Math.min(100, xpPercentage)}%` }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-pulse"></div>
@@ -678,32 +707,15 @@ export function PlantGarden() {
       </div>
 
       {/* Trees Planted Card */}
-      <div 
-        ref={(el) => {
-          if (el) {
-            gsap.fromTo(el, 
-              { opacity: 0, y: 30 },
-              { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }
-            );
-          }
-        }}
-        className={`p-4 sm:p-6 rounded-xl ${theme === 'dark' ? 'bg-slate-800/50 border border-slate-700/50' : 'bg-white/70 border border-slate-200/60'} backdrop-blur-sm shadow-lg`}
-      >
+      <div className={`p-4 sm:p-6 rounded-xl ${theme === 'dark' ? 'bg-slate-800/50 border border-slate-700/50' : 'bg-white/70 border border-slate-200/60'} backdrop-blur-sm shadow-lg animate-fade-in`}>
         <div className="flex items-center justify-between mb-4">
           <h3 className={`text-lg sm:text-xl font-semibold ${themeColors.text.primary}`}>🌳 Trees Planted</h3>
           <div className="flex items-center gap-2">
             {achievementBadges.map((badge, index) => (
               <div 
                 key={index} 
-                className="relative"
-                ref={(el) => {
-                  if (el) {
-                    gsap.fromTo(el, 
-                      { scale: 0, rotation: 180 },
-                      { scale: 1, rotation: 0, duration: 0.6, ease: "back.out(1.7)", delay: 0.2 * index }
-                    );
-                  }
-                }}
+                className="relative animate-bounce-in"
+                style={{ animationDelay: `${0.2 * index}s` }}
               >
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
                   <span className="text-white text-xs sm:text-sm font-bold">
@@ -717,32 +729,12 @@ export function PlantGarden() {
         </div>
         
         <div className="text-center">
-          <div 
-            ref={(el) => {
-              if (el) {
-                gsap.fromTo(el, 
-                  { scale: 0.8, opacity: 0 },
-                  { scale: 1, opacity: 1, duration: 0.8, ease: "elastic.out(1, 0.3)", delay: 0.3 }
-                );
-              }
-            }}
-            className="text-4xl sm:text-6xl font-bold mb-2"
-          >
+          <div className="text-4xl sm:text-6xl font-bold mb-2 animate-scale-in">
             <span className="bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">
               {treesPlanted}
             </span>
           </div>
-          <p 
-            ref={(el) => {
-              if (el) {
-                gsap.fromTo(el, 
-                  { opacity: 0, y: 10 },
-                  { opacity: 1, y: 0, duration: 0.6, delay: 0.5 }
-                );
-              }
-            }}
-            className={`text-sm sm:text-base ${themeColors.text.secondary}`}
-          >
+          <p className={`text-sm sm:text-base ${themeColors.text.secondary} animate-fade-in-delayed`}>
             {treesPlanted === 0 ? 'Start your journey!' : 
              treesPlanted === 1 ? 'First tree planted!' :
              `${treesPlanted} trees planted so far!`}
@@ -754,69 +746,20 @@ export function PlantGarden() {
       {showLifecycleComplete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowLifecycleComplete(false)}></div>
-          <div 
-            ref={(el) => {
-              if (el) {
-                gsap.fromTo(el, 
-                  { scale: 0.8, opacity: 0, y: 20 },
-                  { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: "back.out(1.7)" }
-                );
-              }
-            }}
-            className={`relative w-full max-w-md p-6 rounded-2xl ${theme === 'dark' ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-200'} shadow-2xl`}
-          >
+          <div className={`relative w-full max-w-md p-6 rounded-2xl ${theme === 'dark' ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-200'} shadow-2xl animate-scale-in`}>
             <div className="text-center">
-              <div 
-                ref={(el) => {
-                  if (el) {
-                    gsap.fromTo(el, 
-                      { scale: 0, rotation: -180 },
-                      { scale: 1, rotation: 0, duration: 0.8, ease: "elastic.out(1, 0.3)", delay: 0.2 }
-                    );
-                  }
-                }}
-                className="text-6xl mb-4"
-              >
+              <div className="text-6xl mb-4 animate-bounce-in">
                 🌳
               </div>
-              <h2 
-                ref={(el) => {
-                  if (el) {
-                    gsap.fromTo(el, 
-                      { opacity: 0, y: 20 },
-                      { opacity: 1, y: 0, duration: 0.6, delay: 0.4 }
-                    );
-                  }
-                }}
-                className={`text-2xl font-bold mb-2 ${themeColors.text.primary}`}
-              >
+              <h2 className={`text-2xl font-bold mb-2 ${themeColors.text.primary} animate-fade-in-delayed`}>
                 Tree Lifecycle Complete!
               </h2>
-              <p 
-                ref={(el) => {
-                  if (el) {
-                    gsap.fromTo(el, 
-                      { opacity: 0, y: 20 },
-                      { opacity: 1, y: 0, duration: 0.6, delay: 0.6 }
-                    );
-                  }
-                }}
-                className={`text-sm mb-6 ${themeColors.text.secondary}`}
-              >
+              <p className={`text-sm mb-6 ${themeColors.text.secondary} animate-fade-in-delayed`}>
                 Congratulations! Your tree has reached maturity. Plant it and start a new seedling!
               </p>
               
-              <div 
-                ref={(el) => {
-                  if (el) {
-                    gsap.fromTo(el, 
-                      { opacity: 0, y: 20 },
-                      { opacity: 1, y: 0, duration: 0.6, delay: 0.8 }
-                    );
-                  }
-                }}
-                className="flex gap-3"
-              >
+              <div className="flex gap-3 animate-fade-in-delayed"
+                style={{ animationDelay: '0.4s' }}>
                 <Button
                   onClick={handleTreeCompletion}
                   className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:scale-105 transition-transform duration-300"

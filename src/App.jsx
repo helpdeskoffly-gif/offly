@@ -11,6 +11,7 @@ import { Loading } from "./components/Loading";
 import SupabaseErrorBoundary from "./components/SupabaseErrorBoundary";
 import TermsAndConditions from "./components/TermsAndConditions";
 import { WaitlistPage } from "./components/WaitlistPage";
+import SessionTimeoutWarning from "./components/SessionTimeoutWarning";
 import { supabase } from "./supabase";
 
 // OAuth Callback Handler Component
@@ -226,6 +227,7 @@ function App() {
   return (
     <SupabaseErrorBoundary>
       <ThemeProvider>
+        <SessionTimeoutWarning />
         <Router>
           <Routes>
             {/* OAuth callback handler */}

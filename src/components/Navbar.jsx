@@ -6,6 +6,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { getUserAvatarUrl } from "../services/avatars";
 import Logo from "./Logo";
 import { MessageSquare, X, Upload } from "lucide-react";
+import { sendFeedbackEmail, openMailtoFallback } from "../services/emailService";
 
 export function Navbar() {
   const { user, userProfile, signOut } = useAuth();
@@ -16,6 +17,8 @@ export function Navbar() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [feedbackStatus, setFeedbackStatus] = useState(null); // success, error, or null
 
   const [profileImageError, setProfileImageError] = useState(false);
   const dropdownRef = useRef(null);
@@ -72,12 +75,56 @@ export function Navbar() {
     }
   };
 
-  const handleFeedbackSubmit = () => {
-    // TODO: Integrate with backend
-    console.log("Feedback submitted:", { text: feedbackText, file: selectedFile });
-    setIsFeedbackOpen(false);
-    setFeedbackText("");
-    setSelectedFile(null);
+  const handleFeedbackSubmit = async () => {
+    if (!feedbackText.trim()) {
+      setFeedbackStatus({ type: 'error', message: 'Please enter your feedback before submitting.' });
+      return;
+    }
+
+    setIsSubmittingFeedback(true);
+    setFeedbackStatus(null);
+
+    try {
+      const feedbackData = {
+        message: feedbackText,
+        userEmail: user?.email || 'anonymous@offly.app',
+        userName: userProfile?.username || user?.email?.split('@')[0] || 'Anonymous User',
+        type: 'General Feedback',
+        attachment: selectedFile
+      };
+
+      // Try to send via EmailJS first
+      const result = await sendFeedbackEmail(feedbackData);
+
+      if (result.success) {
+        setFeedbackStatus({ type: 'success', message: 'Thank you! Your feedback has been sent successfully.' });
+        setFeedbackText("");
+        setSelectedFile(null);
+        
+        // Close modal after a short delay to show success message
+        setTimeout(() => {
+          setIsFeedbackOpen(false);
+          setFeedbackStatus(null);
+        }, 2000);
+      } else {
+        // Fallback to mailto if EmailJS fails
+        console.log('EmailJS failed, using mailto fallback');
+        openMailtoFallback(feedbackData);
+        setFeedbackStatus({ type: 'success', message: 'Opening your email client to send feedback...' });
+        
+        setTimeout(() => {
+          setIsFeedbackOpen(false);
+          setFeedbackText("");
+          setSelectedFile(null);
+          setFeedbackStatus(null);
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Failed to send feedback:', error);
+      setFeedbackStatus({ type: 'error', message: 'Failed to send feedback. Please try again or contact us directly.' });
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
   };
 
   const handleFileChange = (event) => {
@@ -472,19 +519,35 @@ export function Navbar() {
                 </div>
               </div>
 
+              {/* Status Messages */}
+              {feedbackStatus && (
+                <div className={`p-3 rounded-lg text-sm ${
+                  feedbackStatus.type === 'success' 
+                    ? 'bg-green-100 text-green-800 border border-green-200' 
+                    : 'bg-red-100 text-red-800 border border-red-200'
+                }`}>
+                  {feedbackStatus.message}
+                </div>
+              )}
+
               <div className="flex space-x-3 pt-4">
                 <Button
                   variant="ghost"
-                  onClick={() => setIsFeedbackOpen(false)}
+                  onClick={() => {
+                    setIsFeedbackOpen(false);
+                    setFeedbackStatus(null);
+                  }}
                   className="flex-1"
+                  disabled={isSubmittingFeedback}
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleFeedbackSubmit}
-                  className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:shadow-lg"
+                  className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:shadow-lg disabled:opacity-50"
+                  disabled={isSubmittingFeedback}
                 >
-                  Send Feedback
+                  {isSubmittingFeedback ? 'Sending...' : 'Send Feedback'}
                 </Button>
               </div>
             </div>

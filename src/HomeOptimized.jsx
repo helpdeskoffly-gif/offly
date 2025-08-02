@@ -127,23 +127,23 @@ export function HomeOptimized() {
       primary:
         theme === "dark"
           ? "from-violet-500 via-purple-500 to-fuchsia-500"
-          : "from-violet-600 via-purple-600 to-fuchsia-600",
+          : "from-indigo-600 via-purple-600 to-violet-600",
       secondary:
         theme === "dark"
           ? "from-emerald-400 via-teal-400 to-cyan-400"
-          : "from-emerald-500 via-teal-500 to-cyan-500",
+          : "from-emerald-600 via-teal-600 to-cyan-600",
       tertiary:
         theme === "dark"
           ? "from-rose-400 via-pink-400 to-fuchsia-400"
-          : "from-rose-500 via-pink-500 to-fuchsia-500",
+          : "from-blue-600 via-indigo-600 to-purple-600",
       premium:
         theme === "dark"
           ? "from-amber-400 via-orange-400 to-red-400"
-          : "from-amber-500 via-orange-500 to-red-500",
+          : "from-amber-600 via-orange-600 to-red-600",
       glass:
         theme === "dark"
           ? "from-slate-800/80 via-slate-700/60 to-slate-800/80"
-          : "from-white/90 via-gray-50/80 to-white/90",
+          : "from-white/95 via-indigo-50/90 to-purple-50/80",
     }),
     [theme],
   );
@@ -153,7 +153,7 @@ export function HomeOptimized() {
       background:
         theme === "dark"
           ? "bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950"
-          : "bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50",
+          : "bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50",
       text: {
         primary: theme === "dark" ? "text-white" : "text-gray-900",
         secondary: theme === "dark" ? "text-slate-300" : "text-gray-700",
@@ -162,11 +162,11 @@ export function HomeOptimized() {
       card:
         theme === "dark"
           ? "bg-slate-800/80 border-slate-700/50 backdrop-blur-xl"
-          : "bg-white/90 border-gray-200/50 backdrop-blur-xl",
+          : "bg-white/95 border-indigo-200/40 backdrop-blur-xl",
       glass:
         theme === "dark"
           ? "bg-slate-800/40 border-slate-700/30 backdrop-blur-xl"
-          : "bg-white/60 border-gray-200/30 backdrop-blur-xl",
+          : "bg-white/70 border-indigo-200/30 backdrop-blur-xl",
     }),
     [theme],
   );
@@ -282,17 +282,17 @@ export function HomeOptimized() {
       </Suspense>
 
       <Suspense fallback={<SectionSkeleton />}>
-        <LazyCTASection handleJoinWaitlist={handleJoinWaitlist} user={user} />
+        <LazyCTASection handleJoinWaitlist={handleJoinWaitlist} user={user} theme={theme} themeColors={themeColors} premiumGradients={premiumGradients} />
       </Suspense>
 
       {/* Waitlist Section - Only for logged out users */}
-      {!user && <WaitlistSection />}
+      {!user && <WaitlistSection theme={theme} themeColors={themeColors} />}
 
       {/* FAQ Section */}
-      <FAQSection />
+      <FAQSection theme={theme} themeColors={themeColors} />
 
       <Suspense fallback={<SectionSkeleton />}>
-        <LazyFooterSection />
+        <LazyFooterSection theme={theme} themeColors={themeColors} />
       </Suspense>
     </div>
   );
@@ -879,7 +879,11 @@ const CelebrateStreaksSection = React.memo(
 
     return (
       <div
-        className="py-32 md:py-40 bg-gradient-to-br from-slate-950 via-gray-900 to-emerald-950/30 relative overflow-hidden"
+        className={`py-32 md:py-40 ${
+          theme === "dark"
+            ? "bg-gradient-to-br from-slate-950 via-gray-900 to-emerald-950/30"
+            : "bg-gradient-to-br from-indigo-50 via-purple-50/70 to-blue-100/50"
+        } relative overflow-hidden`}
         ref={ref}
       >
         {/* Premium background elements */}
@@ -901,7 +905,7 @@ const CelebrateStreaksSection = React.memo(
                   animateItem(el, { delay: 0.1 });
                 }
               }}
-              className="text-5xl sm:text-6xl md:text-7xl font-bold text-white mb-8"
+              className={`text-5xl sm:text-6xl md:text-7xl font-bold ${themeColors.text.primary} mb-8`}
             >
               Celebrate your{" "}
               <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-red-400 bg-clip-text text-transparent">
@@ -914,7 +918,7 @@ const CelebrateStreaksSection = React.memo(
                   animateItem(el, { delay: 0.2 });
                 }
               }}
-              className="text-xl md:text-2xl text-gray-400 max-w-4xl mx-auto leading-relaxed"
+              className={`text-xl md:text-2xl ${themeColors.text.secondary} max-w-4xl mx-auto leading-relaxed`}
             >
               You're not a machine - you don't need to optimize everything. But
               building gentle habits? That's worth celebrating.
@@ -934,7 +938,7 @@ const CelebrateStreaksSection = React.memo(
                   );
                 }
               }}
-              className="rounded-3xl border bg-card text-card-foreground shadow-2xl p-10 md:p-12 bg-slate-800/80 border-slate-700/50 backdrop-blur-xl max-w-lg border-amber-500/20"
+              className={`rounded-3xl border shadow-2xl p-10 md:p-12 backdrop-blur-xl max-w-lg ${themeColors.card} border-amber-500/20`}
             >
               <div className="text-center space-y-8">
                 <div className="flex items-center justify-center space-x-6">
@@ -969,10 +973,10 @@ const CelebrateStreaksSection = React.memo(
                     </span>
                   </div>
                   <div className="text-left">
-                    <h3 className="text-3xl font-bold text-white">
+                    <h3 className={`text-3xl font-bold ${themeColors.text.primary}`}>
                       Day Streak!
                     </h3>
-                    <p className="text-slate-400 text-lg">Joy tracking</p>
+                    <p className={`${themeColors.text.muted} text-lg`}>Joy tracking</p>
                   </div>
                 </div>
 
@@ -998,10 +1002,10 @@ const CelebrateStreaksSection = React.memo(
                 </div>
 
                 <div className="space-y-6">
-                  <p className="text-white text-xl font-medium">
+                  <p className={`${themeColors.text.primary} text-xl font-medium`}>
                     7-day joy streak!
                   </p>
-                  <p className="text-slate-400 leading-relaxed text-lg">
+                  <p className={`${themeColors.text.secondary} leading-relaxed text-lg`}>
                     Share with your circle or keep it just for you. Both are
                     perfect.
                   </p>
@@ -1018,7 +1022,9 @@ const CelebrateStreaksSection = React.memo(
                           );
                         }
                       }}
-                      className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-base font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background h-12 px-6 border-amber-500/50 text-amber-400 hover:bg-amber-500/10 transition-colors duration-300"
+                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-xl text-base font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border h-12 px-6 border-amber-500/50 text-amber-400 hover:bg-amber-500/10 transition-colors duration-300 ${
+                        theme === "dark" ? "bg-background" : "bg-white/50"
+                      }`}
                     >
                       Share
                     </button>
@@ -1033,7 +1039,11 @@ const CelebrateStreaksSection = React.memo(
                           );
                         }
                       }}
-                      className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-base font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-12 px-6 text-slate-400 hover:text-white transition-colors duration-300"
+                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-xl text-base font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-12 px-6 transition-colors duration-300 ${
+                        theme === "dark"
+                          ? "text-slate-400 hover:text-white"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
                     >
                       Keep private
                     </button>

@@ -13,7 +13,7 @@ const CommunitySection = memo(({ theme, themeColors, premiumGradients }) => {
       className={`py-16 md:py-24 ${
         theme === "dark"
           ? "bg-gradient-to-b from-slate-900 to-gray-900"
-          : "bg-gradient-to-b from-emerald-200 via-green-200 to-teal-200"
+          : "bg-gradient-to-b from-purple-50 to-indigo-50"
       } relative overflow-hidden`}
       ref={ref}
       id="community"

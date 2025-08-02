@@ -194,7 +194,7 @@ const TermsAndConditions = () => {
       content: [
         "You may request deletion of your account and data at any time:",
         "• Use the \"Delete Account\" option in the app settings",
-        "• Or email us at support@offly.app",
+        "• Or email us at helpdesk.offly@gmail.com",
         "",
         "Once deleted, your personal data and check-in history will be permanently removed within 30 days",
         "Some data may be retained for legal or business purposes as required by law",
@@ -241,7 +241,7 @@ const TermsAndConditions = () => {
       icon: <Mail className="w-5 h-5" />,
       content: [
         "If you have questions about these terms or our service:",
-        "• Email: support@offly.app",
+        "• Email: helpdesk.offly@gmail.com",
         "• Response time: We aim to respond within 48 hours"
       ]
     },
@@ -326,7 +326,7 @@ const TermsAndConditions = () => {
             </h3>
             <div className="flex items-center justify-center gap-2 text-slate-400">
               <Mail className="w-5 h-5" />
-              <span>support@offly.app</span>
+              <span>helpdesk.offly@gmail.com</span>
             </div>
             <p className={`${themeColors.text.muted} mt-4`}>
               Thank you for using Offly and being part of a more mindful, positive world.

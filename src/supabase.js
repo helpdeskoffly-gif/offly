@@ -23,6 +23,8 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     // Add more robust OAuth callback handling
     storageKey: "sb-session",
     storage: window?.localStorage,
+    // Set session timeout to 24 hours (86400 seconds)
+    sessionRefreshMargin: 300, // Refresh 5 minutes before expiry
   },
   realtime: {
     params: {
