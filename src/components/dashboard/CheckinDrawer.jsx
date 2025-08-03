@@ -154,7 +154,7 @@ const CheckinDrawer = ({
           <DrawerHeader className="text-center pb-4 flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                <div className={`w-8 h-8 rounded-full ${currentTheme === "dark" ? "bg-gradient-to-r from-purple-500 to-pink-500" : "bg-gradient-to-r from-emerald-500 to-green-500"} flex items-center justify-center`}>
                   <Sparkles className="w-4 h-4 text-white" />
                 </div>
                 <DrawerTitle
@@ -181,7 +181,7 @@ const CheckinDrawer = ({
           <div className="flex-1 overflow-y-auto px-6">
             <div ref={contentRef} className="space-y-6 pb-4">
               <div className="text-center space-y-3">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                <div className={`w-16 h-16 ${currentTheme === "dark" ? "bg-gradient-to-br from-purple-400 to-pink-400" : "bg-gradient-to-br from-emerald-400 to-green-400"} rounded-full flex items-center justify-center mx-auto shadow-lg`}>
                   <Heart className="w-8 h-8 text-white" />
                 </div>
                 <div>
@@ -206,7 +206,9 @@ const CheckinDrawer = ({
                       onClick={() => setSelectedMood(emoji)}
                       className={`p-4 rounded-xl border-2 transition-all duration-200 text-2xl hover:scale-105 ${
                         selectedMood === emoji
-                          ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-lg"
+                          ? currentTheme === "dark" 
+                            ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-lg"
+                            : "border-emerald-500 bg-emerald-50 shadow-lg"
                           : `border-gray-200 dark:border-slate-600 ${themeColors.hover}`
                       }`}
                     >
@@ -233,7 +235,9 @@ const CheckinDrawer = ({
                           w-full p-3 text-left rounded-lg transition-all duration-200 text-sm
                           ${
                             selectedSuggestion === suggestion
-                              ? "bg-purple-500 text-white"
+                              ? currentTheme === "dark"
+                                ? "bg-purple-500 text-white"
+                                : "bg-emerald-500 text-white"
                               : `${themeColors.card} ${themeColors.hover} ${themeColors.text.secondary}`
                           }
                         `}
@@ -256,7 +260,7 @@ const CheckinDrawer = ({
                 </h3>
 
                 {selectedSuggestion && (
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                  <div className={`flex items-center gap-2 p-3 rounded-lg ${currentTheme === "dark" ? "bg-purple-500/10 border border-purple-500/20" : "bg-emerald-500/10 border border-emerald-500/20"}`}>
                     <span
                       className={`text-sm ${themeColors.text.primary} truncate flex-1`}
                     >
@@ -312,7 +316,7 @@ const CheckinDrawer = ({
                   isSubmitting ||
                   (!selectedMood && !notes.trim() && !selectedSuggestion)
                 }
-                className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`flex-1 ${currentTheme === "dark" ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600" : "bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600"} disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">

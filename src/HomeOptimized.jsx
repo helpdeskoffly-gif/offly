@@ -63,6 +63,13 @@ export function HomeOptimized() {
   // Track landing page view on mount
   useEffect(() => {
     trackLandingPageView();
+    
+    // Set GSAP performance optimizations
+    gsap.config({
+      force3D: true,
+      nullTargetWarn: false,
+      trialWarn: false
+    });
   }, []);
 
   // Enhanced scroll progress refs for GSAP
@@ -71,30 +78,63 @@ export function HomeOptimized() {
   const y2Ref = useRef(null);
   const parallaxRefs = useRef([]);
 
+  // Optimized parallax effect using ScrollTrigger instead of scroll listener
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const maxScroll = document.body.scrollHeight - window.innerHeight;
-      scrollProgressRef.current = scrollY / maxScroll;
-
-      if (y1Ref.current) {
-        gsap.set(y1Ref.current, { y: -50 * scrollProgressRef.current });
-      }
-      if (y2Ref.current) {
-        gsap.set(y2Ref.current, { y: -100 * scrollProgressRef.current });
-      }
-
-      // Enhanced parallax effect
-      parallaxRefs.current.forEach((ref, index) => {
-        if (ref) {
-          const speed = 0.5 + (index * 0.1);
-          gsap.set(ref, { y: -scrollY * speed });
+    // Set ScrollTrigger performance optimizations
+    ScrollTrigger.config({
+      limitCallbacks: true,
+      ignoreMobileResize: true
+    });
+    
+    const tl = gsap.timeline();
+    
+    // Parallax animations using ScrollTrigger for better performance
+    if (y1Ref.current) {
+      gsap.to(y1Ref.current, {
+        y: -50,
+        scrollTrigger: {
+          trigger: y1Ref.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 1, // Smooth scrubbing
+          invalidateOnRefresh: true
         }
       });
-    };
+    }
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    if (y2Ref.current) {
+      gsap.to(y2Ref.current, {
+        y: -100,
+        scrollTrigger: {
+          trigger: y2Ref.current,
+          start: "top bottom", 
+          end: "bottom top",
+          scrub: 1,
+          invalidateOnRefresh: true
+        }
+      });
+    }
+
+    // Enhanced parallax effect for additional elements
+    parallaxRefs.current.forEach((ref, index) => {
+      if (ref) {
+        const speed = -30 - (index * 10); // Reduced intensity for better performance
+        gsap.to(ref, {
+          y: speed,
+          scrollTrigger: {
+            trigger: ref,
+            start: "top bottom",
+            end: "bottom top", 
+            scrub: 1,
+            invalidateOnRefresh: true
+          }
+        });
+      }
+    });
+
+    return () => {
+      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+    };
   }, []);
 
   // Memoized handlers to prevent unnecessary re-renders
@@ -405,7 +445,7 @@ const HeroSection = React.memo(
                       );
                     }
                   }}
-                  className={`bg-gradient-to-r ${premiumGradients.secondary} text-gray-900 font-semibold px-8 py-4 text-lg w-full sm:w-auto rounded-xl inline-flex items-center justify-center whitespace-nowrap font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 shadow-xl hover:shadow-2xl transition-all duration-300`}
+                  className={`bg-gradient-to-r ${premiumGradients.secondary} text-gray-900 font-semibold px-8 py-4 text-lg w-full sm:w-auto rounded-xl inline-flex items-center justify-center whitespace-nowrap ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 shadow-xl hover:shadow-2xl`}
                   onClick={handleJoinWaitlist}
                 >
                   {user ? "Go to Dashboard" : "Try Offly Free"}
@@ -423,7 +463,7 @@ const HeroSection = React.memo(
                       );
                     }
                   }}
-                  className={`px-8 py-4 text-lg border-2 ${theme === "dark" ? "border-slate-700 text-slate-300 hover:border-slate-600" : "border-gray-200 text-gray-700 hover:border-gray-300"} backdrop-blur-sm w-full sm:w-auto rounded-xl inline-flex items-center justify-center whitespace-nowrap font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-transparent hover:bg-opacity-5 transition-all duration-300`}
+                  className={`px-8 py-4 text-lg border-2 ${theme === "dark" ? "border-slate-700 text-slate-300 hover:border-slate-600" : "border-gray-200 text-gray-700 hover:border-gray-300"} backdrop-blur-sm w-full sm:w-auto rounded-xl inline-flex items-center justify-center whitespace-nowrap font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-transparent hover:bg-opacity-5`}
                   onClick={handleWatchDemo}
                 >
                   <Zap className="w-5 h-5 mr-2" />
@@ -432,7 +472,7 @@ const HeroSection = React.memo(
               </div>
             </div>
 
-            {/* Hero Image - Right side on desktop */}
+            {/* Hero Image - Right side on desktop - Reduced Size */}
             <div
               ref={(el) => {
                 if (el) {
@@ -445,7 +485,7 @@ const HeroSection = React.memo(
               }}
               className="flex justify-center lg:justify-end order-1 lg:order-2"
             >
-              <div className="relative max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl w-full rounded-3xl overflow-hidden shadow-lg">
+              <div className="relative max-w-[240px] sm:max-w-[280px] md:max-w-[320px] lg:max-w-[350px] xl:max-w-[380px] w-full rounded-3xl overflow-hidden shadow-lg">
                 <img
                   src={heroImage}
                   alt="Offly App Hero"
@@ -596,7 +636,7 @@ const MobileWireframe = React.memo(
               ].map((action, i) => (
                 <div
                   key={i}
-                  className={`${themeColors.card} border rounded-xl p-4 md:p-5 backdrop-blur-sm cursor-pointer hover:scale-105 transition-transform duration-300`}
+                  className={`${themeColors.card} border rounded-xl p-4 md:p-5 backdrop-blur-sm cursor-pointer hover:scale-105`}
                 >
                   <div className="flex items-center space-x-3 mb-2">
                     <div className="text-2xl md:text-3xl">{action.emoji}</div>
@@ -1003,7 +1043,7 @@ const CelebrateStreaksSection = React.memo(
                           );
                         }
                       }}
-                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-xl text-base font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border h-12 px-6 border-amber-500/50 text-amber-400 hover:bg-amber-500/10 transition-colors duration-300 ${
+                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-xl text-base font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border h-12 px-6 border-amber-500/50 text-amber-400 hover:bg-amber-500/10 ${
                         theme === "dark" ? "bg-background" : "bg-white/50"
                       }`}
                     >
@@ -1020,7 +1060,7 @@ const CelebrateStreaksSection = React.memo(
                           );
                         }
                       }}
-                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-xl text-base font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-12 px-6 transition-colors duration-300 ${
+                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-xl text-base font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-12 px-6 ${
                         theme === "dark"
                           ? "text-slate-400 hover:text-white"
                           : "text-gray-600 hover:text-gray-900"

@@ -76,14 +76,14 @@ export const Community = () => {
   const headerRef = useRef(null);
   const loadingRef = useRef(null);
 
-  // Premium gradients matching the app
+  // Premium gradients matching the app - green theme for light mode
   const premiumGradients = {
     primary: theme === "dark"
       ? "from-violet-500 via-purple-500 to-fuchsia-500"
-      : "from-violet-600 via-purple-600 to-fuchsia-600",
+      : "from-emerald-600 via-green-600 to-teal-600",
     secondary: theme === "dark"
       ? "from-blue-500 via-indigo-500 to-purple-500"
-      : "from-blue-600 via-indigo-600 to-purple-600",
+      : "from-teal-600 via-cyan-600 to-blue-600",
     accent: theme === "dark"
       ? "from-emerald-400 via-teal-400 to-cyan-400"
       : "from-emerald-500 via-teal-500 to-cyan-500",
@@ -576,30 +576,30 @@ export const Community = () => {
           </div>
         )}
 
-        {/* Community Tabs */}
-        <div className="w-full overflow-hidden">
+        {/* Community Tabs - Improved Mobile Responsive */}
+        <div className="w-full">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className={`grid w-full grid-cols-3 ${themeColors.card} p-1 rounded-xl`}>
+            <TabsList className={`grid w-full grid-cols-3 ${themeColors.card} p-1 rounded-xl h-auto`}>
               <TabsTrigger 
                 value="all" 
-                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white"
+                className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white transition-all duration-200 rounded-lg"
               >
-                <Globe className="w-4 h-4" />
-                <span className="hidden sm:inline">All</span>
+                <Globe className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="text-xs sm:text-sm font-medium truncate">For You</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="friends"
-                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white"
+                className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white transition-all duration-200 rounded-lg"
               >
-                <Users className="w-4 h-4" />
-                <span className="hidden sm:inline">Friends</span>
+                <Users className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="text-xs sm:text-sm font-medium truncate">Friends</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="my_posts"
-                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white"
+                className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white transition-all duration-200 rounded-lg"
               >
-                <User className="w-4 h-4" />
-                <span className="hidden sm:inline">Mine</span>
+                <User className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="text-xs sm:text-sm font-medium truncate">Mine</span>
               </TabsTrigger>
             </TabsList>
 

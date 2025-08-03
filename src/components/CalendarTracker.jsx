@@ -260,7 +260,7 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
     neutral:
       theme === "dark"
         ? "bg-gradient-to-br from-blue-400 via-indigo-400 to-purple-400 shadow-lg shadow-blue-500/40 ring-2 ring-blue-400/30"
-        : "bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 shadow-lg shadow-blue-500/50 ring-2 ring-blue-500/40",
+        : "bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-500 shadow-lg shadow-teal-500/50 ring-2 ring-teal-500/40",
     negative:
       theme === "dark"
         ? "bg-gradient-to-br from-pink-400 via-rose-400 to-red-400 shadow-lg shadow-pink-500/40 ring-2 ring-pink-400/30"
@@ -431,7 +431,7 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
         {/* Premium Header */}
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 shadow-lg shadow-purple-500/25">
+            <div className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl ${theme === "dark" ? "bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 shadow-lg shadow-purple-500/25" : "bg-gradient-to-br from-emerald-500 via-green-500 to-teal-500 shadow-lg shadow-emerald-500/25"}`}>
               <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
             <div>
@@ -498,7 +498,7 @@ const CalendarTracker = ({ theme = "dark", className = "", currentStreak = 0, re
                       transition-all duration-300 cursor-pointer transform hover:scale-105
                       ${
                         status?.isToday && !status?.hasCheckin
-                          ? `ring-2 ring-indigo-400 ring-offset-2 ${theme === "dark" ? "ring-offset-slate-900" : "ring-offset-white"} ${themeColors.text.primary} border border-indigo-400/30`
+                          ? `ring-2 ${theme === "dark" ? "ring-indigo-400" : "ring-emerald-400"} ring-offset-2 ${theme === "dark" ? "ring-offset-slate-900" : "ring-offset-white"} ${themeColors.text.primary} border ${theme === "dark" ? "border-indigo-400/30" : "border-emerald-400/30"}`
                           : ""
                       }
                       ${

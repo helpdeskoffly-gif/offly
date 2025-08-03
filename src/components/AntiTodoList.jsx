@@ -527,37 +527,37 @@ export const AntiTodoList = ({ userId }) => {
         <div className="absolute inset-0 bg-blue-100/5 dark:bg-black/10" />
         
         <div className="relative z-10 p-4 sm:p-6 lg:p-8">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6 lg:gap-8">
-            <div className="flex items-center space-x-3 sm:space-x-4 lg:space-x-6">
-              <div className={`w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-gradient-to-br ${premiumGradients.accent} rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-xl shadow-emerald-500/25`}>
-                <Target className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-white drop-shadow-lg" />
-                <div className="absolute -inset-2 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-2xl sm:rounded-3xl blur-xl -z-10 animate-pulse"></div>
-              </div>
-              <div>
-                <h2 className={`text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold ${themeColors.text.primary} mb-1 sm:mb-2`}>
-                  Anti-Todo Activities
-                </h2>
-                <p className={`text-sm sm:text-base lg:text-lg ${themeColors.text.secondary}`}>
-                  Joyful activities designed to spark happiness
-                </p>
-              </div>
+          {/* Header with Title and Icon */}
+          <div className="flex items-center space-x-3 sm:space-x-4 lg:space-x-6 mb-4 sm:mb-6">
+            <div className={`w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-gradient-to-br ${premiumGradients.accent} rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-xl shadow-emerald-500/25`}>
+              <Target className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-white drop-shadow-lg" />
+              <div className="absolute -inset-2 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-2xl sm:rounded-3xl blur-xl -z-10 animate-pulse"></div>
             </div>
-
-            {/* Enhanced Stats */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:gap-4">
-              {Object.entries(statusConfig).map(([status, config]) => {
-                const count = stats[status.replace(' ', '') === 'notstarted' ? 'available' : status.replace(' ', '').toLowerCase()] || 0;
-                return (
-                  <Badge key={status} className={`${config.color} px-2 sm:px-3 lg:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium border backdrop-blur-sm rounded-full`}>
-                    {count} {config.label}
-                  </Badge>
-                );
-              })}
+            <div className="flex-1">
+              <h2 className={`text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold ${themeColors.text.primary} mb-1 sm:mb-2`}>
+                Anti-Todo Activities
+              </h2>
+              <p className={`text-sm sm:text-base lg:text-lg ${themeColors.text.secondary}`}>
+                Joyful activities designed to spark happiness
+              </p>
             </div>
           </div>
 
+          {/* Enhanced Stats - All Cards in One Row */}
+          <div className="grid grid-cols-4 gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-6 lg:mb-8">
+            {Object.entries(statusConfig).map(([status, config]) => {
+              const count = stats[status.replace(' ', '') === 'notstarted' ? 'available' : status.replace(' ', '').toLowerCase()] || 0;
+              return (
+                <div key={status} className={`${config.color} px-2 py-3 sm:px-3 sm:py-4 text-center border backdrop-blur-sm rounded-lg`}>
+                  <div className="text-lg sm:text-xl lg:text-2xl font-bold">{count}</div>
+                  <div className="text-xs sm:text-sm font-medium">{config.label}</div>
+                </div>
+              );
+            })}
+          </div>
+
           {/* Enhanced Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4 sm:mt-6 lg:mt-8">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <Button
               onClick={handleRegenerate}
               disabled={isRegenerating}
@@ -578,9 +578,9 @@ export const AntiTodoList = ({ userId }) => {
 
             <Button
               onClick={handleClearAll}
-              className={`bg-gradient-to-r ${premiumGradients.tertiary} hover:shadow-xl hover:scale-105 text-white h-10 px-8 rounded-2xl font-semibold transition-all duration-300`}
+              className={`bg-gradient-to-r ${premiumGradients.tertiary} hover:shadow-xl hover:scale-105 text-white h-10 sm:h-11 lg:h-12 px-4 sm:px-6 lg:px-8 rounded-xl sm:rounded-2xl font-semibold transition-all duration-300 text-sm sm:text-base`}
             >
-              <Zap className="w-5 h-5 mr-3" />
+              <Zap className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
               Clear Completed
             </Button>
           </div>
@@ -627,7 +627,7 @@ export const AntiTodoList = ({ userId }) => {
             >
               <Sparkles className="w-6 h-6 mr-3" />
               Generate Activities
-            </Button>
+            </Button> d
           </div>
         </div>
       ) : (
@@ -647,198 +647,56 @@ export const AntiTodoList = ({ userId }) => {
                 <div className={`absolute inset-0 bg-gradient-to-r ${category.gradient} opacity-2 rounded-2xl sm:rounded-3xl`}></div>
                 <div className={`absolute inset-[1px] ${themeColors.card} rounded-2xl sm:rounded-3xl`}></div>
                 
-                <CardContent className="relative z-10 p-3 sm:p-4 lg:p-6 xl:p-8">
-                  {/* Mobile Layout - Redesigned */}
-                  <div className="lg:hidden space-y-4 sm:space-y-6">
-                    {/* Icon and Title Section */}
-                    <div className="flex items-start gap-3 sm:gap-4">
-                      <div className={`w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-gradient-to-br ${category.gradient} rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-current/20 flex-shrink-0 group-hover:scale-105 transition-transform duration-300`}>
-                        <IconComponent className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-white drop-shadow-sm" />
+                <CardContent className="relative z-10 p-4 sm:p-5 lg:p-6">
+                  {/* Mobile Layout - Complete Redesign */}
+                  <div className="lg:hidden">
+                    {/* Header Section with Icon and Title */}
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className={`w-14 h-14 bg-gradient-to-br ${category.gradient} rounded-2xl flex items-center justify-center shadow-lg shadow-current/20 flex-shrink-0 group-hover:scale-105 transition-transform duration-300`}>
+                        <IconComponent className="w-7 h-7 text-white drop-shadow-sm" />
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <h3 className={`text-base sm:text-lg lg:text-xl font-bold ${themeColors.text.primary} leading-relaxed group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-300 mb-2 sm:mb-3`}>
+                        <h3 className={`text-lg font-bold ${themeColors.text.primary} leading-tight mb-2 line-clamp-2`}>
                           {item.content.replace(/\(.*?\)\s*/, '')}
                         </h3>
                         
-                        {/* Status and Time Row */}
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
-                          <div className="flex items-center gap-2 sm:gap-3">
-                            <Badge className={`${config.color} px-2 sm:px-3 lg:px-4 py-1 sm:py-2 text-xs sm:text-sm font-semibold border backdrop-blur-sm rounded-lg sm:rounded-xl`}>
-                              {config.label}
-                            </Badge>
-                            <div className={`flex items-center gap-1 sm:gap-2 ${themeColors.text.muted} px-2 sm:px-3 py-1 sm:py-2 rounded-lg sm:rounded-xl bg-blue-100/5`}>
-                              <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-                              <span className="text-xs sm:text-sm">{item.content.match(/\((.*?)\)/)?.[1] || '15 min'}</span>
-                            </div>
+                        {/* Meta Information - All badges in same row */}
+                        <div className="flex items-center gap-2 mb-3 flex-wrap">
+                          <Badge className={`bg-gradient-to-r ${category.gradient} text-white px-3 py-1 rounded-full text-xs font-medium shadow-sm`}>
+                            {category.name}
+                          </Badge>
+                          <Badge className={`${config.color} px-3 py-1 text-xs font-semibold border-0 rounded-lg shadow-sm`}>
+                            {config.label}
+                          </Badge>
+                          <div className={`flex items-center gap-1 ${themeColors.text.muted} text-xs`}>
+                            <Clock className="w-3 h-3" />
+                            <span>{item.content.match(/\((.*?)\)/)?.[1] || '15 min'}</span>
                           </div>
-                          
-                          {/* Share button for completed items */}
-                          {item.status === 'completed' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleShare(item)}
-                              className={`${themeColors.text.muted} hover:${themeColors.text.primary} transition-all duration-300 h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 rounded-lg sm:rounded-xl backdrop-blur-sm hover:bg-blue-100/10 hover:scale-110`}
-                              title="Share to Community"
-                            >
-                              <Share2 className="w-5 h-5" />
-                            </Button>
-                          )}
                         </div>
                       </div>
-                    </div>
-
-                    {/* Category Badge */}
-                    <div className="flex justify-start">
-                      <Badge className={`bg-gradient-to-r ${category.gradient} text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-medium shadow-sm text-xs sm:text-sm`}>
-                        {category.name}
-                      </Badge>
+                      
+                      {/* Share button for completed items */}
+                      {item.status === 'completed' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleShare(item)}
+                          className={`${themeColors.text.muted} hover:${themeColors.text.primary} transition-all duration-300 h-10 w-10 rounded-xl backdrop-blur-sm hover:bg-blue-100/10 hover:scale-110 flex-shrink-0`}
+                          title="Share to Community"
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
 
                     {/* Action Buttons - Mobile */}
-                    <div className="space-y-2 sm:space-y-3">
+                    <div className="flex flex-col gap-2">
                       {item.status === 'not started' && (
                         <Button
                           onClick={() => handleItemAction(item.id, 'ongoing')}
                           disabled={loadingItems.has(item.id)}
-                          className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white px-4 sm:px-6 py-3 sm:py-4 h-12 sm:h-14 rounded-xl sm:rounded-2xl font-semibold transition-all duration-300 w-full text-sm sm:text-base`}
-                        >
-                          {loadingItems.has(item.id) ? (
-                            <>
-                              <Zap className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 animate-pulse" />
-                              Starting...
-                            </>
-                          ) : (
-                            <>
-                              <Play className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
-                              Start Activity
-                            </>
-                          )}
-                        </Button>
-                      )}
-
-                      {item.status === 'ongoing' && (
-                        <div className="space-y-2 sm:space-y-3">
-                          <Button
-                            onClick={() => handleItemAction(item.id, 'completed')}
-                            disabled={loadingItems.has(item.id)}
-                            className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white px-4 sm:px-6 py-3 sm:py-4 h-12 sm:h-14 rounded-xl sm:rounded-2xl font-semibold transition-all duration-300 w-full text-sm sm:text-base`}
-                          >
-                            {loadingItems.has(item.id) ? (
-                              <>
-                                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 animate-pulse" />
-                                Completing...
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
-                                Complete Activity
-                              </>
-                            )}
-                          </Button>
-                          
-                          <Button
-                            onClick={() => handleItemAction(item.id, 'stopped')}
-                            disabled={loadingItems.has(item.id)}
-                            className={`bg-gradient-to-r ${premiumGradients.tertiary} hover:shadow-lg hover:scale-105 text-white px-4 sm:px-6 py-3 sm:py-4 h-12 sm:h-14 rounded-xl sm:rounded-2xl font-semibold transition-all duration-300 w-full text-sm sm:text-base`}
-                          >
-                            {loadingItems.has(item.id) ? (
-                              <>
-                                <Square className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 animate-pulse" />
-                                Stopping...
-                              </>
-                            ) : (
-                              <>
-                                <Square className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
-                                Stop Activity
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      )}
-
-                      {(item.status === 'completed' || item.status === 'stopped') && (
-                        <div className="space-y-2 sm:space-y-3">
-                          <div className={`bg-gradient-to-r ${premiumGradients.tertiary} px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl flex items-center justify-center h-12 sm:h-14 font-semibold text-white shadow-lg text-sm sm:text-base`}>
-                            <CheckCircle className="w-5 h-5 mr-3" />
-                            {item.status === 'completed' ? 'Completed' : 'Stopped'}
-                          </div>
-                          
-                          {item.status === 'stopped' && (
-                            <Button
-                              onClick={() => handleItemAction(item.id, 'ongoing')}
-                              disabled={loadingItems.has(item.id)}
-                              className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white h-14 px-6 rounded-2xl transition-all duration-300 w-full text-base font-semibold`}
-                            >
-                              <Play className="w-5 h-5 mr-3" />
-                              Resume Activity
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Desktop Layout */}
-                  <div className="hidden lg:flex flex-col lg:flex-row gap-6">
-                    {/* Icon and Content Section */}
-                    <div className="flex-1 space-y-4">
-                      <div className="flex items-start gap-4">
-                        {/* Activity Icon */}
-                        <div className={`w-14 h-14 bg-gradient-to-br ${category.gradient} rounded-2xl flex items-center justify-center shadow-lg shadow-current/20 flex-shrink-0 group-hover:scale-105 transition-transform duration-300`}>
-                          <IconComponent className="w-7 h-7 text-white drop-shadow-sm" />
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          {/* Status Badge */}
-                          <div className="flex items-center justify-between mb-3">
-                            <Badge className={`${config.color} px-4 py-2 text-sm font-semibold border backdrop-blur-sm rounded-xl`}>
-                              {config.label}
-                            </Badge>
-                            
-                            {/* Show share button only for completed items */}
-                            {item.status === 'completed' && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleShare(item)}
-                                className={`${themeColors.text.muted} hover:${themeColors.text.primary} transition-all duration-300 h-10 w-10 rounded-xl backdrop-blur-sm hover:bg-blue-100/10 hover:scale-110`}
-                                title="Share to Community"
-                              >
-                                <Share2 className="w-5 h-5" />
-                              </Button>
-                            )}
-                          </div>
-
-                          {/* Activity Content */}
-                          <div className="space-y-3">
-                            <h3 className={`text-xl font-semibold ${themeColors.text.primary} leading-relaxed group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-300`}>
-                              {item.content.replace(/\(.*?\)\s*/, '')}
-                            </h3>
-                            
-                            {/* Category and timing */}
-                            <div className="flex items-center gap-4 text-sm">
-                              <Badge className={`bg-gradient-to-r ${category.gradient} text-white px-3 py-1 rounded-lg font-medium shadow-sm`}>
-                                {category.name}
-                              </Badge>
-                              <div className={`flex items-center gap-2 ${themeColors.text.muted} px-3 py-1 rounded-lg bg-blue-100/5`}>
-                                <Clock className="w-4 h-4" />
-                                {item.content.match(/\((.*?)\)/)?.[1] || '15 min'}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Enhanced Action Buttons */}
-                    <div className="flex flex-col gap-3 lg:w-auto w-full">
-                      {item.status === 'not started' && (
-                        <Button
-                          onClick={() => handleItemAction(item.id, 'ongoing')}
-                          disabled={loadingItems.has(item.id)}
-                          className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white px-4 py-2 h-10 rounded-lg font-medium transition-all duration-300 w-full lg:min-w-[100px]`}
+                          className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-[1.02] text-white h-12 rounded-xl font-semibold transition-all duration-300 w-full text-sm shadow-md`}
                         >
                           {loadingItems.has(item.id) ? (
                             <>
@@ -848,28 +706,30 @@ export const AntiTodoList = ({ userId }) => {
                           ) : (
                             <>
                               <Play className="w-4 h-4 mr-2" />
-                              Start
+                              Start Activity
                             </>
                           )}
                         </Button>
                       )}
 
                       {item.status === 'ongoing' && (
-                        <>
+                        <div className="grid grid-cols-2 gap-2">
                           <Button
                             onClick={() => handleItemAction(item.id, 'completed')}
                             disabled={loadingItems.has(item.id)}
-                            className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white px-4 py-2 h-10 rounded-lg font-medium transition-all duration-300 w-full lg:min-w-[100px]`}
+                            className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-[1.02] text-white h-12 rounded-xl font-semibold transition-all duration-300 text-sm shadow-md`}
                           >
                             {loadingItems.has(item.id) ? (
                               <>
-                                <CheckCircle className="w-4 h-4 mr-2 animate-pulse" />
-                                Completing...
+                                <CheckCircle className="w-4 h-4 mr-1 animate-pulse" />
+                                <span className="hidden sm:inline">Completing...</span>
+                                <span className="sm:hidden">...</span>
                               </>
                             ) : (
                               <>
-                                <CheckCircle className="w-4 h-4 mr-2" />
-                                Complete
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                <span className="hidden sm:inline">Complete</span>
+                                <span className="sm:hidden">Done</span>
                               </>
                             )}
                           </Button>
@@ -877,26 +737,28 @@ export const AntiTodoList = ({ userId }) => {
                           <Button
                             onClick={() => handleItemAction(item.id, 'stopped')}
                             disabled={loadingItems.has(item.id)}
-                            className={`bg-gradient-to-r ${premiumGradients.tertiary} hover:shadow-lg hover:scale-105 text-white px-4 py-2 h-10 rounded-lg font-medium transition-all duration-300 w-full lg:min-w-[100px]`}
+                            className={`bg-gradient-to-r ${premiumGradients.tertiary} hover:shadow-lg hover:scale-[1.02] text-white h-12 rounded-xl font-semibold transition-all duration-300 text-sm shadow-md`}
                           >
                             {loadingItems.has(item.id) ? (
                               <>
-                                <Square className="w-4 h-4 mr-2 animate-pulse" />
-                                Stopping...
+                                <Square className="w-4 h-4 mr-1 animate-pulse" />
+                                <span className="hidden sm:inline">Stopping...</span>
+                                <span className="sm:hidden">...</span>
                               </>
                             ) : (
                               <>
-                                <Square className="w-4 h-4 mr-2" />
-                                Stop
+                                <Square className="w-4 h-4 mr-1" />
+                                <span className="hidden sm:inline">Stop</span>
+                                <span className="sm:hidden">Stop</span>
                               </>
                             )}
                           </Button>
-                        </>
+                        </div>
                       )}
 
                       {(item.status === 'completed' || item.status === 'stopped') && (
-                        <div className="space-y-2 w-full lg:w-auto">
-                          <div className={`bg-gradient-to-r ${premiumGradients.tertiary} px-4 py-2 rounded-lg flex items-center justify-center h-10 font-medium text-white shadow-lg w-full lg:min-w-[100px]`}>
+                        <div className="space-y-2">
+                          <div className={`bg-gradient-to-r ${premiumGradients.tertiary} px-4 py-3 rounded-xl flex items-center justify-center h-12 font-semibold text-white shadow-lg text-sm`}>
                             <CheckCircle className="w-4 h-4 mr-2" />
                             {item.status === 'completed' ? 'Completed' : 'Stopped'}
                           </div>
@@ -905,14 +767,146 @@ export const AntiTodoList = ({ userId }) => {
                             <Button
                               onClick={() => handleItemAction(item.id, 'ongoing')}
                               disabled={loadingItems.has(item.id)}
-                              className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-105 text-white h-10 px-4 rounded-lg transition-all duration-300 w-full lg:min-w-[100px]`}
+                              className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-[1.02] text-white h-12 rounded-xl transition-all duration-300 w-full text-sm font-semibold shadow-md`}
                             >
                               <Play className="w-4 h-4 mr-2" />
-                              Resume
+                              Resume Activity
                             </Button>
                           )}
                         </div>
                       )}
+                    </div>
+                  </div>
+
+                  {/* Desktop Layout - Complete Redesign */}
+                  <div className="hidden lg:block">
+                    <div className="flex items-start gap-6">
+                      {/* Left Section - Icon and Content */}
+                      <div className="flex-1">
+                        <div className="flex items-start gap-4 mb-4">
+                          {/* Activity Icon */}
+                          <div className={`w-16 h-16 bg-gradient-to-br ${category.gradient} rounded-2xl flex items-center justify-center shadow-lg shadow-current/20 flex-shrink-0 group-hover:scale-105 transition-transform duration-300`}>
+                            <IconComponent className="w-8 h-8 text-white drop-shadow-sm" />
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            {/* Title */}
+                            <h3 className={`text-xl font-bold ${themeColors.text.primary} leading-tight mb-3 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors duration-300`}>
+                              {item.content.replace(/\(.*?\)\s*/, '')}
+                            </h3>
+                            
+                            {/* Meta Information Row - All badges in same row */}
+                            <div className="flex items-center gap-3 mb-3 flex-wrap">
+                              <Badge className={`bg-gradient-to-r ${category.gradient} text-white px-3 py-1.5 rounded-full text-sm font-medium shadow-sm`}>
+                                {category.name}
+                              </Badge>
+                              <Badge className={`${config.color} px-4 py-2 text-sm font-semibold border-0 rounded-lg shadow-sm`}>
+                                {config.label}
+                              </Badge>
+                              <div className={`flex items-center gap-2 ${themeColors.text.muted} text-sm`}>
+                                <Clock className="w-4 h-4" />
+                                <span>{item.content.match(/\((.*?)\)/)?.[1] || '15 min'}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Share button for completed items */}
+                          {item.status === 'completed' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleShare(item)}
+                              className={`${themeColors.text.muted} hover:${themeColors.text.primary} transition-all duration-300 h-12 w-12 rounded-xl backdrop-blur-sm hover:bg-blue-100/10 hover:scale-110 flex-shrink-0`}
+                              title="Share to Community"
+                            >
+                              <Share2 className="w-5 h-5" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Right Section - Action Buttons */}
+                      <div className="flex flex-col gap-3 min-w-[160px]">
+                        {item.status === 'not started' && (
+                          <Button
+                            onClick={() => handleItemAction(item.id, 'ongoing')}
+                            disabled={loadingItems.has(item.id)}
+                            className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-[1.02] text-white h-12 rounded-xl font-semibold transition-all duration-300 w-full shadow-md`}
+                          >
+                            {loadingItems.has(item.id) ? (
+                              <>
+                                <Zap className="w-4 h-4 mr-2 animate-pulse" />
+                                Starting...
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-4 h-4 mr-2" />
+                                Start Activity
+                              </>
+                            )}
+                          </Button>
+                        )}
+
+                        {item.status === 'ongoing' && (
+                          <div className="space-y-3">
+                            <Button
+                              onClick={() => handleItemAction(item.id, 'completed')}
+                              disabled={loadingItems.has(item.id)}
+                              className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-[1.02] text-white h-12 rounded-xl font-semibold transition-all duration-300 w-full shadow-md`}
+                            >
+                              {loadingItems.has(item.id) ? (
+                                <>
+                                  <CheckCircle className="w-4 h-4 mr-2 animate-pulse" />
+                                  Completing...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="w-4 h-4 mr-2" />
+                                  Complete
+                                </>
+                              )}
+                            </Button>
+                            
+                            <Button
+                              onClick={() => handleItemAction(item.id, 'stopped')}
+                              disabled={loadingItems.has(item.id)}
+                              className={`bg-gradient-to-r ${premiumGradients.tertiary} hover:shadow-lg hover:scale-[1.02] text-white h-12 rounded-xl font-semibold transition-all duration-300 w-full shadow-md`}
+                            >
+                              {loadingItems.has(item.id) ? (
+                                <>
+                                  <Square className="w-4 h-4 mr-2 animate-pulse" />
+                                  Stopping...
+                                </>
+                              ) : (
+                                <>
+                                  <Square className="w-4 h-4 mr-2" />
+                                  Stop
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        )}
+
+                        {(item.status === 'completed' || item.status === 'stopped') && (
+                          <div className="space-y-3">
+                            <div className={`bg-gradient-to-r ${premiumGradients.tertiary} px-4 py-3 rounded-xl flex items-center justify-center h-12 font-semibold text-white shadow-lg`}>
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              {item.status === 'completed' ? 'Completed' : 'Stopped'}
+                            </div>
+                            
+                            {item.status === 'stopped' && (
+                              <Button
+                                onClick={() => handleItemAction(item.id, 'ongoing')}
+                                disabled={loadingItems.has(item.id)}
+                                className={`bg-gradient-to-r ${config.buttonGradient} hover:shadow-lg hover:scale-[1.02] text-white h-12 rounded-xl font-semibold transition-all duration-300 w-full shadow-md`}
+                              >
+                                <Play className="w-4 h-4 mr-2" />
+                                Resume
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>

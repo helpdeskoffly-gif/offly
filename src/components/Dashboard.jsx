@@ -1108,7 +1108,7 @@ const Dashboard = () => {
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className={`w-80 sm:w-72 p-0 ${themeColors.card} border shadow-xl rounded-xl overflow-hidden`}
+          className={`w-80 sm:w-72 p-0 ${themeColors.card} shadow-xl rounded-xl overflow-hidden border-0`}
           align="end"
         >
           {/* Profile Header */}
@@ -2337,29 +2337,21 @@ const Dashboard = () => {
             <div className="flex items-center space-x-1.5 sm:space-x-2 lg:space-x-3">
               <NotificationPanel />
               
-              {/* Feedback Button */}
+              {/* Feedback Button - Clean Icon */}
               <Button
                 variant="ghost"
                 onClick={() => setIsFeedbackOpen(true)}
-                className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 ${
-                  theme === "dark" 
-                    ? "bg-green-900/20 hover:bg-green-800/30 border-green-700/30 hover:border-green-600/50" 
-                    : "bg-green-100/50 hover:bg-green-200/50 border-green-200/50 hover:border-green-300/50"
-                } backdrop-blur-sm border rounded-lg sm:rounded-xl transition-all duration-300`}
+                className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 hover:bg-green-100/30 dark:hover:bg-green-900/20 rounded-lg transition-all duration-300"
               >
                 <MessageSquare className={`w-4 h-4 sm:w-5 sm:h-5 ${
                   theme === "dark" ? "text-green-400" : "text-green-600"
                 }`} />
               </Button>
               
-              {/* Plant Icon */}
+              {/* Plant Icon - Clean Design */}
               <div 
                 onClick={() => setShowPlantGarden(true)}
-                className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 ${
-                  theme === "dark" 
-                    ? "bg-green-900/20 hover:bg-green-800/30 border-green-700/30 hover:border-green-600/50" 
-                    : "bg-green-100/50 hover:bg-green-200/50 border-green-200/50 hover:border-green-300/50"
-                } backdrop-blur-sm border rounded-lg sm:rounded-xl transition-all duration-300 cursor-pointer group`}
+                className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 hover:bg-green-100/30 dark:hover:bg-green-900/20 rounded-lg transition-all duration-300 cursor-pointer group"
               >
                 <span className={`text-base sm:text-lg transition-colors duration-300 ${
                   theme === "dark" ? "text-emerald-400 group-hover:text-emerald-300" : "text-emerald-600 group-hover:text-emerald-700"

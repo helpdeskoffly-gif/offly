@@ -98,13 +98,25 @@ const TeamsSection = memo(({ theme, themeColors }) => {
             </span>{" "}
             as well
           </h2>
-          <p className={`text-xl ${themeColors.text.secondary} max-w-3xl mx-auto mb-12`}>
+          <p className={`text-xl ${themeColors.text.secondary} max-w-3xl mx-auto mb-4`}>
             Transform your workplace culture with shared emotional wellness
             insights.
           </p>
+          
+          {/* Coming Soon Banner */}
+          <div className="mb-8">
+            <div className={`inline-flex items-center px-4 py-2 rounded-full ${
+              theme === "dark"
+                ? "bg-amber-500/20 border-2 border-amber-400/40 text-amber-300"
+                : "bg-amber-100 border-2 border-amber-300/60 text-amber-700"
+            } animate-pulse`}>
+              <span className="text-lg mr-2">🚀</span>
+              <span className="font-bold text-lg">COMING SOON</span>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           {stats.map((item, index) => (
             <div
               key={index}
@@ -124,6 +136,17 @@ const TeamsSection = memo(({ theme, themeColors }) => {
                   {item.stat}
                 </div>
                 <p className={`${themeColors.text.secondary} text-lg`}>{item.label}</p>
+                
+                {/* Coming Soon Badge for stats */}
+                <div className="mt-3">
+                  <span className={`text-xs px-3 py-1 rounded-full ${
+                    theme === "dark" 
+                      ? "bg-amber-500/10 text-amber-400 border border-amber-400/20" 
+                      : "bg-amber-100 text-amber-700 border border-amber-300/40"
+                  }`}>
+                    Preview Stats
+                  </span>
+                </div>
               </MemoizedCard>
             </div>
           ))}
@@ -143,7 +166,7 @@ const TeamsSection = memo(({ theme, themeColors }) => {
                 : "border-indigo-500/60 text-indigo-700 hover:bg-indigo-50"
             }`}
           >
-            Learn about Teams
+            Coming Soon - Learn about Teams
           </MemoizedButton>
         </div>
       </div>

@@ -285,7 +285,7 @@ export function WaitlistSection({ theme: propTheme, themeColors: propThemeColors
           </div>
 
           <h2
-            className={`text-3xl sm:text-4xl lg:text-5xl font-bold ${themeColors.text.primary} mb-6`}
+            className={`text-2xl sm:text-3xl lg:text-4xl font-bold ${themeColors.text.primary} mb-4`}
           >
             Be the first to experience{" "}
             <span
@@ -296,16 +296,15 @@ export function WaitlistSection({ theme: propTheme, themeColors: propThemeColors
           </h2>
 
           <p
-            className={`text-lg sm:text-xl ${themeColors.text.secondary} max-w-2xl mx-auto mb-8`}
+            className={`text-base sm:text-lg ${themeColors.text.secondary} max-w-xl mx-auto mb-6`}
           >
-            Join thousands of early adopters who are ready to transform their
-            emotional wellness journey. Get exclusive early access and special
-            launch benefits.
+            Join thousands of early adopters ready to transform their
+            emotional wellness journey.
           </p>
         </div>
 
-        <div ref={formSectionRef} className="max-w-2xl mx-auto">
-          <Card className={`${themeColors.card} backdrop-blur-lg p-8`}>
+        <div ref={formSectionRef} className="max-w-lg mx-auto">
+          <Card className={`${themeColors.card} backdrop-blur-lg p-6`}>
             {status === "success" ? (
               <div ref={successSectionRef} className="text-center">
                 <div className="text-6xl mb-4">🎉</div>
@@ -341,10 +340,10 @@ export function WaitlistSection({ theme: propTheme, themeColors: propThemeColors
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label
-                    className={`block text-sm font-medium ${themeColors.text.secondary} mb-3`}
+                    className={`block text-sm font-medium ${themeColors.text.secondary} mb-2`}
                   >
                     Email Address
                   </label>
@@ -354,7 +353,7 @@ export function WaitlistSection({ theme: propTheme, themeColors: propThemeColors
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Enter your email address"
-                      className={`w-full px-4 py-4 rounded-xl border ${
+                      className={`w-full px-3 py-3 rounded-lg border ${
                         status === "error"
                           ? "border-red-500 focus:border-red-500"
                           : theme === "dark"
@@ -364,11 +363,11 @@ export function WaitlistSection({ theme: propTheme, themeColors: propThemeColors
                         theme === "dark"
                           ? "bg-slate-700/50 text-white placeholder-slate-400"
                           : "bg-white text-gray-900 placeholder-gray-500"
-                      } focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all duration-200 text-lg`}
+                      } focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all duration-200 text-base`}
                       disabled={status === "loading"}
                     />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                      <span className="text-2xl">✉️</span>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <span className="text-lg">✉️</span>
                     </div>
                   </div>
                 </div>
@@ -386,7 +385,7 @@ export function WaitlistSection({ theme: propTheme, themeColors: propThemeColors
                   <Button
                     type="submit"
                     disabled={status === "loading"}
-                    className={`w-full bg-gradient-to-r ${premiumGradients.primary} hover:shadow-xl hover:shadow-violet-500/25 text-white font-semibold py-4 text-lg transition-all duration-300`}
+                    className={`w-full bg-gradient-to-r ${premiumGradients.primary} hover:shadow-xl hover:shadow-violet-500/25 text-white font-semibold py-3 text-base transition-all duration-300`}
                   >
                     {status === "loading" ? (
                       <div className="flex items-center justify-center">
