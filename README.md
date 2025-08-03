@@ -1,5 +1,6 @@
 # 🌟 Offly - AI-Powered Mood Tracking & Wellness Platform
 
+
 ![Offly Logo](public/offly-logo.svg)
 
 > **Transform your daily mood tracking into a rewarding wellness journey with AI-powered insights, gamification, and personalized activities.**
