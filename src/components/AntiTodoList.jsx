@@ -43,9 +43,13 @@ export const AntiTodoList = ({ userId }) => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [totalCompletedCount, setTotalCompletedCount] = useState(0); // Track total completions from analytics
+  const [isFetchingCount, setIsFetchingCount] = useState(false); // Prevent concurrent fetches
+  const [lastActionTime, setLastActionTime] = useState(0); // Prevent rapid actions
   
   const containerRef = useRef(null);
   const headerRef = useRef(null);
+  const fetchTimeoutRef = useRef(null);
+  const isUnmountedRef = useRef(false);
 
   // Premium gradients matching the project
   const premiumGradients = {
@@ -180,12 +184,28 @@ export const AntiTodoList = ({ userId }) => {
   };
 
   const fetchTotalCompletionCount = async () => {
+    // Multiple layer protection against recursion
+    if (isFetchingCount || isUnmountedRef.current) {
+      console.log('Fetch blocked: already in progress or component unmounted');
+      return;
+    }
+    
+    const now = Date.now();
+    if (now - lastActionTime < 2000) { // Minimum 2 second gap between fetches
+      console.log('Fetch blocked: too soon after last action');
+      return;
+    }
+    
+    setIsFetchingCount(true);
+    
     try {
       const { data, error } = await supabase
         .from('user_analytics')
         .select('completedantitodos')
         .eq('user_id', userId)
         .single();
+      
+      if (isUnmountedRef.current) return; // Exit if component unmounted during fetch
       
       if (error) {
         // If no analytics record exists, set to 0
@@ -202,7 +222,14 @@ export const AntiTodoList = ({ userId }) => {
       }
     } catch (error) {
       console.error('Error fetching total completion count:', error);
-      setTotalCompletedCount(0);
+      if (!isUnmountedRef.current) {
+        setTotalCompletedCount(0);
+      }
+    } finally {
+      if (!isUnmountedRef.current) {
+        setIsFetchingCount(false);
+        setLastActionTime(Date.now());
+      }
     }
   };
 
@@ -261,6 +288,16 @@ export const AntiTodoList = ({ userId }) => {
     }
   }, []);
 
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      isUnmountedRef.current = true;
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const fetchAndInitializeAntiTodos = async () => {
       try {
@@ -281,7 +318,9 @@ export const AntiTodoList = ({ userId }) => {
         }
         
         // Always refresh completion count to ensure accuracy
-        await fetchTotalCompletionCount();
+        if (!isFetchingCount) {
+          await fetchTotalCompletionCount();
+        }
         
         // Enhanced card entrance animation
         setTimeout(() => {
@@ -316,14 +355,25 @@ export const AntiTodoList = ({ userId }) => {
   }, [userId]);
 
   const handleItemAction = async (itemId, action) => {
-    if (loadingItems.has(itemId)) return; // Prevent multiple simultaneous actions on same item
+    const now = Date.now();
+    
+    // Prevent rapid successive actions
+    if (now - lastActionTime < 1000) {
+      console.log('Action blocked: too soon after last action');
+      return;
+    }
+    
+    if (loadingItems.has(itemId) || isUnmountedRef.current) {
+      return; // Prevent multiple simultaneous actions on same item
+    }
     
     setLoadingItems(prev => new Set([...prev, itemId]));
+    setLastActionTime(now);
     
     try {
       const result = await updateAntiTodoItemStatus(itemId, action);
       
-      if (result) {
+      if (result && !isUnmountedRef.current) {
         setAntiTodoList(prev => 
           prev.map(item => 
             item.id === itemId 
@@ -334,10 +384,17 @@ export const AntiTodoList = ({ userId }) => {
         
         // Refresh total completion count if item was completed
         if (action === 'completed') {
-          // Add a small delay to prevent rapid successive calls
-          setTimeout(async () => {
-            await fetchTotalCompletionCount();
-          }, 500);
+          // Clear any existing timeout
+          if (fetchTimeoutRef.current) {
+            clearTimeout(fetchTimeoutRef.current);
+          }
+          
+          // Debounced fetch with proper cleanup - longer delay to avoid service recursion
+          fetchTimeoutRef.current = setTimeout(() => {
+            if (!isFetchingCount && !isUnmountedRef.current) {
+              fetchTotalCompletionCount();
+            }
+          }, 3000); // Increased delay to 3 seconds
           
           setToastMessage(`🎉 Anti-todo completed!`);
           setShowToast(true);
@@ -346,8 +403,10 @@ export const AntiTodoList = ({ userId }) => {
           // Refresh achievements UI after a small delay to ensure analytics are updated
           if (typeof window !== 'undefined' && window.refreshAchievements) {
             setTimeout(() => {
-              window.refreshAchievements();
-            }, 1000);
+              if (!isUnmountedRef.current) {
+                window.refreshAchievements();
+              }
+            }, 4000); // Increased delay
           }
         }
         
@@ -364,11 +423,13 @@ export const AntiTodoList = ({ userId }) => {
     } catch (error) {
       console.error('Error updating item status:', error);
     } finally {
-      setLoadingItems(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(itemId);
-        return newSet;
-      });
+      if (!isUnmountedRef.current) {
+        setLoadingItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(itemId);
+          return newSet;
+        });
+      }
     }
   };
 
@@ -385,9 +446,15 @@ export const AntiTodoList = ({ userId }) => {
         setAntiTodoList(newList || []);
         
         // Refresh total completion count after regeneration to get latest count
-        setTimeout(async () => {
-          await fetchTotalCompletionCount();
-        }, 500);
+        if (fetchTimeoutRef.current) {
+          clearTimeout(fetchTimeoutRef.current);
+        }
+        
+        fetchTimeoutRef.current = setTimeout(() => {
+          if (!isFetchingCount && !isUnmountedRef.current) {
+            fetchTotalCompletionCount();
+          }
+        }, 2000);
         
         setTimeout(() => {
           gsap.fromTo(
