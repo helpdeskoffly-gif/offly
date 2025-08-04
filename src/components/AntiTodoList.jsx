@@ -181,7 +181,6 @@ export const AntiTodoList = ({ userId }) => {
 
   const fetchTotalCompletionCount = async () => {
     try {
-      console.log('🔍 Fetching total completion count for user:', userId);
       const { data, error } = await supabase
         .from('user_analytics')
         .select('completedantitodos')
@@ -189,22 +188,17 @@ export const AntiTodoList = ({ userId }) => {
         .single();
       
       if (error) {
-        console.error('❌ Error fetching analytics:', error);
-        // If no analytics record exists, try to create one
+        // If no analytics record exists, set to 0
         if (error.code === 'PGRST116') {
-          console.log('📝 No analytics record found, this might be a new user');
           setTotalCompletedCount(0);
         }
       } else if (data) {
-        console.log('✅ Analytics data found:', data);
         setTotalCompletedCount(data.completedantitodos || 0);
-        console.log('📊 Total completion count set to:', data.completedantitodos || 0);
       } else {
-        console.log('⚠️ No data returned but no error');
         setTotalCompletedCount(0);
       }
     } catch (error) {
-      console.error('💥 Exception fetching total completion count:', error);
+      console.error('Error fetching total completion count:', error);
       setTotalCompletedCount(0);
     }
   };
@@ -283,6 +277,9 @@ export const AntiTodoList = ({ userId }) => {
           setAntiTodoList(list);
         }
         
+        // Always refresh completion count to ensure accuracy
+        await fetchTotalCompletionCount();
+        
         // Enhanced card entrance animation
         setTimeout(() => {
           gsap.fromTo(
@@ -342,7 +339,6 @@ export const AntiTodoList = ({ userId }) => {
           if (typeof window !== 'undefined' && window.refreshAchievements) {
             setTimeout(() => {
               window.refreshAchievements();
-              console.log('🏆 Refreshing achievements after anti-todo completion');
             }, 1000);
           }
         }
@@ -378,7 +374,7 @@ export const AntiTodoList = ({ userId }) => {
         const newList = await getAntiTodoList(userId);
         setAntiTodoList(newList || []);
         
-        // Refresh total completion count after regeneration
+        // Refresh total completion count after regeneration to get latest count
         await fetchTotalCompletionCount();
         
         setTimeout(() => {
@@ -531,17 +527,6 @@ export const AntiTodoList = ({ userId }) => {
     completed: totalCompletedCount, // Use total completion count from analytics
     stopped: antiTodoList.filter(item => item.status === 'stopped').length,
   };
-
-  // Debug logging for stats
-  console.log('📊 Current AntiTodo Stats:', {
-    totalItems: antiTodoList.length,
-    available: stats.available,
-    inprogress: stats.inprogress,
-    completed: stats.completed,
-    stopped: stats.stopped,
-    totalCompletedFromAnalytics: totalCompletedCount,
-    currentListStatuses: antiTodoList.map(item => item.status)
-  });
 
   return (
     <div ref={containerRef} className="space-y-4 sm:space-y-6 lg:space-y-8">
