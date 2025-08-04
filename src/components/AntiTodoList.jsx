@@ -191,6 +191,9 @@ export const AntiTodoList = ({ userId }) => {
         // If no analytics record exists, set to 0
         if (error.code === 'PGRST116') {
           setTotalCompletedCount(0);
+        } else {
+          console.error('Error fetching analytics:', error);
+          setTotalCompletedCount(0);
         }
       } else if (data) {
         setTotalCompletedCount(data.completedantitodos || 0);
@@ -309,11 +312,12 @@ export const AntiTodoList = ({ userId }) => {
 
     if (userId) {
       fetchAndInitializeAntiTodos();
-      fetchTotalCompletionCount(); // Fetch total completion count on load
     }
   }, [userId]);
 
   const handleItemAction = async (itemId, action) => {
+    if (loadingItems.has(itemId)) return; // Prevent multiple simultaneous actions on same item
+    
     setLoadingItems(prev => new Set([...prev, itemId]));
     
     try {
@@ -330,7 +334,11 @@ export const AntiTodoList = ({ userId }) => {
         
         // Refresh total completion count if item was completed
         if (action === 'completed') {
-          await fetchTotalCompletionCount();
+          // Add a small delay to prevent rapid successive calls
+          setTimeout(async () => {
+            await fetchTotalCompletionCount();
+          }, 500);
+          
           setToastMessage(`🎉 Anti-todo completed!`);
           setShowToast(true);
           setTimeout(() => setShowToast(false), 4000);
@@ -365,6 +373,8 @@ export const AntiTodoList = ({ userId }) => {
   };
 
   const handleRegenerate = async () => {
+    if (isRegenerating) return; // Prevent multiple simultaneous calls
+    
     setIsRegenerating(true);
     
     try {
@@ -375,7 +385,9 @@ export const AntiTodoList = ({ userId }) => {
         setAntiTodoList(newList || []);
         
         // Refresh total completion count after regeneration to get latest count
-        await fetchTotalCompletionCount();
+        setTimeout(async () => {
+          await fetchTotalCompletionCount();
+        }, 500);
         
         setTimeout(() => {
           gsap.fromTo(
@@ -648,7 +660,7 @@ export const AntiTodoList = ({ userId }) => {
             >
               <Sparkles className="w-6 h-6 mr-3" />
               Generate Activities
-            </Button> d
+            </Button>
           </div>
         </div>
       ) : (
