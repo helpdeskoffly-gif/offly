@@ -181,18 +181,31 @@ export const AntiTodoList = ({ userId }) => {
 
   const fetchTotalCompletionCount = async () => {
     try {
+      console.log('🔍 Fetching total completion count for user:', userId);
       const { data, error } = await supabase
         .from('user_analytics')
         .select('completedantitodos')
         .eq('user_id', userId)
         .single();
       
-      if (!error && data) {
+      if (error) {
+        console.error('❌ Error fetching analytics:', error);
+        // If no analytics record exists, try to create one
+        if (error.code === 'PGRST116') {
+          console.log('📝 No analytics record found, this might be a new user');
+          setTotalCompletedCount(0);
+        }
+      } else if (data) {
+        console.log('✅ Analytics data found:', data);
         setTotalCompletedCount(data.completedantitodos || 0);
-        console.log('Total completion count from analytics:', data.completedantitodos);
+        console.log('📊 Total completion count set to:', data.completedantitodos || 0);
+      } else {
+        console.log('⚠️ No data returned but no error');
+        setTotalCompletedCount(0);
       }
     } catch (error) {
-      console.error('Error fetching total completion count:', error);
+      console.error('💥 Exception fetching total completion count:', error);
+      setTotalCompletedCount(0);
     }
   };
 
@@ -514,9 +527,21 @@ export const AntiTodoList = ({ userId }) => {
   const stats = {
     total: antiTodoList.length,
     available: antiTodoList.filter(item => item.status === 'not started').length,
-    inProgress: antiTodoList.filter(item => item.status === 'ongoing').length,
+    inprogress: antiTodoList.filter(item => item.status === 'ongoing').length,
     completed: totalCompletedCount, // Use total completion count from analytics
+    stopped: antiTodoList.filter(item => item.status === 'stopped').length,
   };
+
+  // Debug logging for stats
+  console.log('📊 Current AntiTodo Stats:', {
+    totalItems: antiTodoList.length,
+    available: stats.available,
+    inprogress: stats.inprogress,
+    completed: stats.completed,
+    stopped: stats.stopped,
+    totalCompletedFromAnalytics: totalCompletedCount,
+    currentListStatuses: antiTodoList.map(item => item.status)
+  });
 
   return (
     <div ref={containerRef} className="space-y-4 sm:space-y-6 lg:space-y-8">
@@ -546,7 +571,18 @@ export const AntiTodoList = ({ userId }) => {
           {/* Enhanced Stats - All Cards in One Row */}
           <div className="grid grid-cols-4 gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-6 lg:mb-8">
             {Object.entries(statusConfig).map(([status, config]) => {
-              const count = stats[status.replace(' ', '') === 'notstarted' ? 'available' : status.replace(' ', '').toLowerCase()] || 0;
+              // Simple mapping logic for each status
+              let count = 0;
+              if (status === 'not started') {
+                count = stats.available;
+              } else if (status === 'ongoing') {
+                count = stats.inprogress;
+              } else if (status === 'completed') {
+                count = stats.completed;
+              } else if (status === 'stopped') {
+                count = stats.stopped;
+              }
+              
               return (
                 <div key={status} className={`${config.color} px-2 py-3 sm:px-3 sm:py-4 text-center border backdrop-blur-sm rounded-lg`}>
                   <div className="text-lg sm:text-xl lg:text-2xl font-bold">{count}</div>
